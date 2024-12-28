@@ -28,7 +28,7 @@ var RepositorySet = wire.NewSet(
 )
 
 var ServiceSet = wire.NewSet(
-	services.NewMemberUseCase,
+	services.NewMemberService,
 )
 
 var RestHandlerSet = wire.NewSet(

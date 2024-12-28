@@ -21,7 +21,7 @@ type GrpcServer struct {
 func NewGrpcServer(
 	ctx context.Context,
 	config *config.Config,
-	memberUsecase services.MemberUseCase,
+	memberService services.MemberService,
 ) *GrpcServer {
 	opts := initOptions(config)
 
@@ -36,7 +36,7 @@ func NewGrpcServer(
 		reflection.Register(server)
 	}
 
-	taskv1.RegisterMemberServiceServer(server, &grpcserver.MemberHandler{MemberUseCase: memberUsecase})
+	taskv1.RegisterMemberServiceServer(server, &grpcserver.MemberHandler{MemberService: memberService})
 
 	return &GrpcServer{
 		Server: server,

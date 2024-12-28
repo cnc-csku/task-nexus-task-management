@@ -33,7 +33,7 @@ func InitializeGrpcServer() *api.GrpcServer {
 	configConfig := config.NewConfig()
 	client := database.NewMongoClient(configConfig, context)
 	memberRepository := mongo.NewMemberRepository(client)
-	memberUseCase := services.NewMemberUseCase(memberRepository)
-	grpcServer := api.NewGrpcServer(context, configConfig, memberUseCase)
+	memberService := services.NewMemberService(memberRepository)
+	grpcServer := api.NewGrpcServer(context, configConfig, memberService)
 	return grpcServer
 }

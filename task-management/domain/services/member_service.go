@@ -3,22 +3,23 @@ package services
 import (
 	"context"
 
-	taskv1 "github.com/cnc-csku/task-nexus/api-specification/gen/proto/task/v1"
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
+	"github.com/cnc-csku/task-nexus/task-management/domain/requests"
+	"github.com/cnc-csku/task-nexus/task-management/domain/responses"
 )
 
-type MemberUseCase interface {
-	GetMembers(ctx context.Context, in *taskv1.GetMembersRequest) (*taskv1.GetMembersResponse, error)
+type MemberService interface {
+	GetMembers(ctx context.Context, in *requests.GetMembersRequest) (*responses.GetMembersResponse, error)
 }
 
-type memberUseCase struct {
+type memberService struct {
 	memberRepo repositories.MemberRepository
 }
 
-func NewMemberUseCase(memberRepo repositories.MemberRepository) MemberUseCase {
-	return &memberUseCase{memberRepo}
+func NewMemberService(memberRepo repositories.MemberRepository) MemberService {
+	return &memberService{memberRepo}
 }
 
-func (u *memberUseCase) GetMembers(ctx context.Context, in *taskv1.GetMembersRequest) (*taskv1.GetMembersResponse, error) {
+func (u *memberService) GetMembers(ctx context.Context, in *requests.GetMembersRequest) (*responses.GetMembersResponse, error) {
 	return nil, nil
 }
