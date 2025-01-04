@@ -35,3 +35,6 @@ bin/
 
 # Protobuf generated files
 gen
+
+# Config file
+config.yaml

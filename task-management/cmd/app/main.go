@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	core_grpcclient "github.com/cnc-csku/task-nexus/go-lib/grpcclient"
 	"github.com/cnc-csku/task-nexus/go-lib/utils/network"
 	"github.com/cnc-csku/task-nexus/task-management/internal/wire"
 )
@@ -19,13 +20,13 @@ func main() {
 	defer grpcServer.Server.Stop()
 
 	// create a listener on TCP port
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcServer.Config.GrpcPort))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcServer.Config.GrpcServer.Port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	defer lis.Close()
 
-	// create a context that will be canceled when SIGINT or SIGTERM is received
+	// create a context that will be can	celed when SIGINT or SIGTERM is received
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -35,7 +36,7 @@ func main() {
 	// start gRPC server
 	grpcReady := make(chan bool)
 	go func() {
-		log.Printf("✅ gRPC server is running on %s:%s", localIP, grpcServer.Config.GrpcPort)
+		log.Printf("✅ gRPC server is running on %s:%s", localIP, grpcServer.Config.GrpcServer.Port)
 		close(grpcReady)
 
 		if err := grpcServer.Server.Serve(lis); err != nil {
@@ -62,4 +63,7 @@ func main() {
 
 	// cancel context after the server gracefully stopped
 	stop()
+
+	// close all gRPC client connections
+	core_grpcclient.CloseAllGrpcConnections()
 }

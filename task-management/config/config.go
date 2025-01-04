@@ -4,24 +4,59 @@ import (
 	"log"
 	"reflect"
 
+	core_grpcclient "github.com/cnc-csku/task-nexus/go-lib/grpcclient"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	// Service
-	ServiceName string `mapstructure:"SERVICE_NAME"`
+	ServiceName string                           `mapstructure:"serviceName"`
+	RestServer  RestServerConfig                 `mapstructure:"restServer"`
+	MongoDB     MongoDBConfig                    `mapstructure:"mongoDB"`
+	GrpcServer  GrpcServerConfig                 `mapstructure:"grpcServer"`
+	GrpcClient  core_grpcclient.GrpcClientConfig `mapstructure:"grpcClient"`
+}
 
-	// Rest Server
-	RestPort string `mapstructure:"REST_PORT"`
+type RestServerConfig struct {
+	Port string `mapstructure:"port"`
+}
 
-	// Database
-	MongoURI string `mapstructure:"MONGO_URI"`
+type MongoDBConfig struct {
+	URI      string `mapstructure:"uri"`
+	Port     string `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Database string `mapstructure:"database"`
+}
 
-	// gRPC Server
-	GrpcPort          string `mapstructure:"GRPC_PORT"`
-	GrpcMaxSendSize   int    `mapstructure:"GRPC_MAX_SEND_SIZE"`
-	GrpcMaxRecvSize   int    `mapstructure:"GRPC_MAX_RECV_SIZE"`
-	GrpcUseReflection bool   `mapstructure:"GRPC_USE_REFLECTION"`
+type GrpcServerConfig struct {
+	Port           string `mapstructure:"port"`
+	MaxSendMsgSize int    `mapstructure:"maxSendMsgSize"`
+	MaxRecvMsgSize int    `mapstructure:"maxRecvMsgSize"`
+	UseReflection  bool   `mapstructure:"useReflection"`
+}
+
+func NewConfig() *Config {
+	config := &Config{}
+
+	viper.SetConfigName("config.yaml")
+	viper.SetConfigFile("config.yaml")
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		log.Println("⚠️  .env file not found or cannot be read, using environment variables")
+
+		// Bind environment variables
+		envs := getMapstructureTags(config)
+		for _, env := range envs {
+			viper.MustBindEnv(env)
+		}
+	}
+
+	if err := viper.Unmarshal(config); err != nil {
+		log.Fatalln("Unable to decode into struct", err)
+	}
+
+	return config
 }
 
 func getMapstructureTags(v interface{}) []string {
@@ -41,26 +76,6 @@ func getMapstructureTags(v interface{}) []string {
 	return tags
 }
 
-func NewConfig() *Config {
-	config := Config{}
-
-	// Set the .env file and read environment variables
-	viper.SetConfigFile(".env")
-
-	// Attempt to read the .env file
-	if err := viper.ReadInConfig(); err != nil {
-		log.Println("⚠️  .env file not found or cannot be read, using environment variables")
-
-		// Bind environment variables
-		envs := getMapstructureTags(config)
-		for _, env := range envs {
-			viper.MustBindEnv(env)
-		}
-	}
-
-	if err := viper.Unmarshal(&config); err != nil {
-		log.Println("❌ Unable to decode into struct:", err)
-	}
-
-	return &config
+func ProvideGrpcClientConfig(config *Config) core_grpcclient.GrpcClientConfig {
+	return config.GrpcClient
 }

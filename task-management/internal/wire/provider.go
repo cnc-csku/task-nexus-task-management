@@ -1,8 +1,10 @@
 package wire
 
 import (
+	core_grpcclient "github.com/cnc-csku/task-nexus/go-lib/grpcclient"
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
+	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/grpcclient"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/database"
@@ -28,9 +30,18 @@ var RepositorySet = wire.NewSet(
 )
 
 var ServiceSet = wire.NewSet(
+	services.NewCommonService,
 	services.NewMemberService,
 )
 
 var RestHandlerSet = wire.NewSet(
 	rest.NewHealthCheckHandler,
+	rest.NewCommonHandler,
+	rest.NewMemberHandler,
+)
+
+var GrpcClientSet = wire.NewSet(
+	config.ProvideGrpcClientConfig,
+	core_grpcclient.NewGrpcClient,
+	grpcclient.NewGrpcClient,
 )

@@ -12,7 +12,10 @@ func InitializeApp() *api.EchoAPI {
 	wire.Build(
 		CtxSet,
 		ConfigSet,
+		GrpcClientSet,
 		InfraSet,
+		RepositorySet,
+		ServiceSet,
 		RestHandlerSet,
 		api.NewEchoAPI,
 	)
@@ -24,6 +27,7 @@ func InitializeGrpcServer() *api.GrpcServer {
 	wire.Build(
 		CtxSet,
 		ConfigSet,
+		GrpcClientSet,
 		InfraSet,
 		RepositorySet,
 		ServiceSet,

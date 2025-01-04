@@ -32,11 +32,12 @@ func NewGrpcServer(
 	healthServer.SetServingStatus(config.ServiceName, grpc_health_v1.HealthCheckResponse_SERVING)
 	grpc_health_v1.RegisterHealthServer(server, healthServer)
 
-	if config.GrpcUseReflection {
+	if config.GrpcServer.UseReflection {
 		reflection.Register(server)
 	}
 
-	taskv1.RegisterMemberServiceServer(server, &grpcserver.MemberHandler{MemberService: memberService})
+	// Register services
+	taskv1.RegisterMemberServiceServer(server, &grpcserver.MemberServer{MemberService: memberService})
 
 	return &GrpcServer{
 		Server: server,
@@ -48,8 +49,8 @@ func initOptions(
 	config *config.Config,
 ) []grpc.ServerOption {
 	const mbToBytes = 1024 * 1024
-	maxSendSize := config.GrpcMaxSendSize * mbToBytes
-	maxRecvSize := config.GrpcMaxRecvSize * mbToBytes
+	maxSendSize := config.GrpcServer.MaxSendMsgSize * mbToBytes
+	maxRecvSize := config.GrpcServer.MaxRecvMsgSize * mbToBytes
 
 	opts := []grpc.ServerOption{
 		grpc.MaxSendMsgSize(maxSendSize),
