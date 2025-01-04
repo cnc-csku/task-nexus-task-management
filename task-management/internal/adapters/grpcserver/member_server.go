@@ -8,16 +8,16 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
 )
 
-type MemberHandler struct {
+type MemberServer struct {
 	taskv1.UnimplementedMemberServiceServer
 	services.MemberService
 }
 
-func (h *MemberHandler) GetMembers(ctx context.Context, in *taskv1.GetMembersRequest) (*taskv1.GetMembersResponse, error) {
+func (s *MemberServer) GetMembers(ctx context.Context, in *taskv1.GetMembersRequest) (*taskv1.GetMembersResponse, error) {
 	// Convert request
 	req := &requests.GetMembersRequest{}
 
-	_, err := h.MemberService.GetMembers(ctx, req)
+	_, err := s.MemberService.GetMembers(ctx, req)
 	if err != nil {
 		return nil, err
 	}

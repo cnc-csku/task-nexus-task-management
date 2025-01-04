@@ -3,10 +3,10 @@ package api
 import (
 	"context"
 
-	taskv1 "github.com/cnc-csku/task-nexus/api-specification/gen/proto/task/v1"
-	"github.com/cnc-csku/task-nexus/task-management/config"
-	"github.com/cnc-csku/task-nexus/task-management/domain/services"
-	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/grpcserver"
+	notificationv1 "github.com/cnc-csku/task-nexus/api-specification/gen/proto/notification/v1"
+	"github.com/cnc-csku/task-nexus/notification/config"
+	"github.com/cnc-csku/task-nexus/notification/domain/services"
+	"github.com/cnc-csku/task-nexus/notification/internal/adapters/grpcserver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -21,7 +21,7 @@ type GrpcServer struct {
 func NewGrpcServer(
 	ctx context.Context,
 	config *config.Config,
-	memberService services.MemberService,
+	notificationService services.NotificationService,
 ) *GrpcServer {
 	opts := initOptions(config)
 
@@ -37,7 +37,7 @@ func NewGrpcServer(
 	}
 
 	// Register services
-	taskv1.RegisterMemberServiceServer(server, &grpcserver.MemberServer{MemberService: memberService})
+	notificationv1.RegisterNotificationServiceServer(server, &grpcserver.NotificationServer{NotificationService: notificationService})
 
 	return &GrpcServer{
 		Server: server,

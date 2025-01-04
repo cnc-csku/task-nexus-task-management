@@ -8,4 +8,5 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	api := e.Group("/api")
 
 	api.GET("/health", r.healthCheck.HealthCheck)
+	api.GET("/notification", r.common.TestNotification)
 }

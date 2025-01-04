@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package notification.v1;
+
+option go_package = "github.com/cnc-csku/task-nexus/api-specification/notification/v1";
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+service NotificationService {
+    rpc TestConnection(TestConnectionRequest) returns (TestConnectionResponse);
+}
+
+message TestConnectionRequest {}
+
+message TestConnectionResponse {
+    string message = 1;
+}

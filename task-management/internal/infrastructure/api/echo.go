@@ -44,7 +44,7 @@ func (a *EchoAPI) Start() error {
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	err := e.Start(":" + a.config.RestPort)
+	err := e.Start(":" + a.config.RestServer.Port)
 	if err != nil {
 
 		return err

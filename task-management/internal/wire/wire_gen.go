@@ -7,8 +7,10 @@
 package wire
 
 import (
+	"github.com/cnc-csku/task-nexus/go-lib/grpcclient"
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
+	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/grpcclient"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/api"
@@ -23,7 +25,15 @@ func InitializeApp() *api.EchoAPI {
 	configConfig := config.NewConfig()
 	client := database.NewMongoClient(configConfig, context)
 	healthCheckHandler := rest.NewHealthCheckHandler()
-	routerRouter := router.NewRouter(healthCheckHandler)
+	grpcClientConfig := config.ProvideGrpcClientConfig(configConfig)
+	grpcClient := core_grpcclient.NewGrpcClient(grpcClientConfig)
+	grpcclientGrpcClient := grpcclient.NewGrpcClient(context, grpcClient)
+	commonService := services.NewCommonService(grpcclientGrpcClient)
+	commonHandler := rest.NewCommonHandler(commonService)
+	memberRepository := mongo.NewMemberRepository(client)
+	memberService := services.NewMemberService(memberRepository, grpcclientGrpcClient)
+	memberHandler := rest.NewMemberHandler(memberService)
+	routerRouter := router.NewRouter(healthCheckHandler, commonHandler, memberHandler)
 	echoAPI := api.NewEchoAPI(context, configConfig, client, routerRouter)
 	return echoAPI
 }
@@ -33,7 +43,10 @@ func InitializeGrpcServer() *api.GrpcServer {
 	configConfig := config.NewConfig()
 	client := database.NewMongoClient(configConfig, context)
 	memberRepository := mongo.NewMemberRepository(client)
-	memberService := services.NewMemberService(memberRepository)
+	grpcClientConfig := config.ProvideGrpcClientConfig(configConfig)
+	grpcClient := core_grpcclient.NewGrpcClient(grpcClientConfig)
+	grpcclientGrpcClient := grpcclient.NewGrpcClient(context, grpcClient)
+	memberService := services.NewMemberService(memberRepository, grpcclientGrpcClient)
 	grpcServer := api.NewGrpcServer(context, configConfig, memberService)
 	return grpcServer
 }

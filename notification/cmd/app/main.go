@@ -10,11 +10,11 @@ import (
 
 	core_grpcclient "github.com/cnc-csku/task-nexus/go-lib/grpcclient"
 	"github.com/cnc-csku/task-nexus/go-lib/utils/network"
-	"github.com/cnc-csku/task-nexus/task-management/internal/wire"
+	"github.com/cnc-csku/task-nexus/notification/internal/infrastructure/wire"
 )
 
 func main() {
-	app := wire.InitializeApp()
+	// app := wire.InitializeApp()
 
 	grpcServer := wire.InitializeGrpcServer()
 	defer grpcServer.Server.Stop()
@@ -49,10 +49,10 @@ func main() {
 	go func() {
 		<-grpcReady // wait for grpc server to be ready
 
-		err = app.Start()
-		if err != nil {
-			log.Fatalln(err)
-		}
+		// err = app.Start()
+		// if err != nil {
+		// 	log.Fatalln(err)
+		// }
 	}()
 
 	// wait for SIGINT or SIGTERM
