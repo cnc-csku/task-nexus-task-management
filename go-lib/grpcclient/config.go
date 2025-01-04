@@ -1,4 +1,4 @@
-package core_grpcclient
+package grpcclient
 
 type GrpcClientConfig struct {
 	TaskManagementService grpcClientConfig `mapstructure:"taskManagementService"`

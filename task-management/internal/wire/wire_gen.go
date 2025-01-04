@@ -10,7 +10,7 @@ import (
 	"github.com/cnc-csku/task-nexus/go-lib/grpcclient"
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
-	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/grpcclient"
+	grpcclient2 "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/grpcclient"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/api"
@@ -26,8 +26,8 @@ func InitializeApp() *api.EchoAPI {
 	client := database.NewMongoClient(configConfig, context)
 	healthCheckHandler := rest.NewHealthCheckHandler()
 	grpcClientConfig := config.ProvideGrpcClientConfig(configConfig)
-	grpcClient := core_grpcclient.NewGrpcClient(grpcClientConfig)
-	grpcclientGrpcClient := grpcclient.NewGrpcClient(context, grpcClient)
+	grpcClient := grpcclient.NewGrpcClient(grpcClientConfig)
+	grpcclientGrpcClient := grpcclient2.NewGrpcClient(context, grpcClient)
 	commonService := services.NewCommonService(grpcclientGrpcClient)
 	commonHandler := rest.NewCommonHandler(commonService)
 	memberRepository := mongo.NewMemberRepository(client)
@@ -44,8 +44,8 @@ func InitializeGrpcServer() *api.GrpcServer {
 	client := database.NewMongoClient(configConfig, context)
 	memberRepository := mongo.NewMemberRepository(client)
 	grpcClientConfig := config.ProvideGrpcClientConfig(configConfig)
-	grpcClient := core_grpcclient.NewGrpcClient(grpcClientConfig)
-	grpcclientGrpcClient := grpcclient.NewGrpcClient(context, grpcClient)
+	grpcClient := grpcclient.NewGrpcClient(grpcClientConfig)
+	grpcclientGrpcClient := grpcclient2.NewGrpcClient(context, grpcClient)
 	memberService := services.NewMemberService(memberRepository, grpcclientGrpcClient)
 	grpcServer := api.NewGrpcServer(context, configConfig, memberService)
 	return grpcServer

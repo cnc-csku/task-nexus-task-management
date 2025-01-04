@@ -2,7 +2,6 @@ go 1.23
 
 use (
 	./task-management
-	./notification
 	./cronjob
 	./api-specification
 	./go-lib
