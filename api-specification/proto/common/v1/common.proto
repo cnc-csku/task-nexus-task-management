@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package common.v1;
+
+option go_package = "github.com/cnc-csku/task-nexus/api-specification/common/v1";
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+service CommonService {
+    rpc TestProtoValidate(TestProtoValidateRequest) returns (TestProtoValidateResponse);
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+    string status = 1;
+}
+
+message TestProtoValidateRequest {
+    string test = 1 [(buf.validate.field).required = true];
+}
+
+message TestProtoValidateResponse {
+    string test = 1;
+}

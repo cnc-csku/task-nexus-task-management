@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package task.v1;
+
+option go_package = "github.com/cnc-csku/task-nexus/api-specification/task/v1";
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+service MemberService {
+    rpc GetMembers(GetMembersRequest) returns (GetMembersResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/test-proto-validate"
+            body: "*"
+        };
+    }
+}
+
+message GetMembersRequest {
+    string id = 1 [(buf.validate.field).required = true];
+}
+
+message GetMembersResponse {
+    repeated Member members = 1;
+
+    message Member {
+        string id = 1;
+        string name = 2;
+        google.protobuf.Timestamp created_at = 3;
+    }
+}

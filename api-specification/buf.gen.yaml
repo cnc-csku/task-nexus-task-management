@@ -1,0 +1,20 @@
+version: v2
+clean: true
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      module: buf.build/protocolbuffers/go
+      value: github.com/cnc-csku/task-nexus/api-specification/gen
+      
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: gen
+    opt:
+      - paths=source_relative
+  - remote: buf.build/grpc/go
+    out: gen
+    opt:
+      - paths=source_relative
+  - remote: buf.build/grpc-ecosystem/openapiv2
+    out: openapi
