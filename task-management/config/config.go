@@ -3,17 +3,18 @@ package config
 import (
 	"log"
 
-	coreGrpcClient "github.com/cnc-csku/task-nexus/go-lib/grpcclient"
 	"github.com/caarlos0/env/v11"
+	coreGrpcClient "github.com/cnc-csku/task-nexus/go-lib/grpcclient"
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	ServiceName string                          `env:"SERVICE_NAME"`
-	RestServer  RestServerConfig                `envPrefix:"REST_SERVER_"`
-	MongoDB     MongoDBConfig                   `envPrefix:"MONGO_"`
-	GrpcServer  GrpcServerConfig                `envPrefix:"GRPC_SERVER_"`
-	GrpcClient  coreGrpcClient.GrpcClientConfig `envPrefix:"GRPC_CLIENT_"`
+	ServiceName  string                          `env:"SERVICE_NAME"`
+	RestServer   RestServerConfig                `envPrefix:"REST_SERVER_"`
+	MongoDB      MongoDBConfig                   `envPrefix:"MONGO_"`
+	GrpcServer   GrpcServerConfig                `envPrefix:"GRPC_SERVER_"`
+	GrpcClient   coreGrpcClient.GrpcClientConfig `envPrefix:"GRPC_CLIENT_"`
+	OllamaClient OllamaClientConfig              `envPrefix:"OLLAMA_CLIENT_"`
 }
 
 type RestServerConfig struct {
@@ -33,6 +34,13 @@ type GrpcServerConfig struct {
 	MaxSendMsgSize int    `env:"MAX_SEND_MSG_SIZE"`
 	MaxRecvMsgSize int    `env:"MAX_RECV_MSG_SIZE"`
 	UseReflection  bool   `env:"USE_REFLECTION"`
+}
+
+type OllamaClientConfig struct {
+	Endpoint      string `env:"ENDPOINT"`
+	UseProxy      bool   `env:"USE_PROXY"`
+	HttpProxyHost string `env:"HTTP_PROXY_HOST"`
+	HttpProxyPort string `env:"HTTP_PROXY_PORT"`
 }
 
 func NewConfig() *Config {

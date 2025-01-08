@@ -8,6 +8,7 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/database"
+	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
 	"github.com/google/wire"
 )
@@ -23,6 +24,7 @@ var ConfigSet = wire.NewSet(
 var InfraSet = wire.NewSet(
 	database.NewMongoClient,
 	router.NewRouter,
+	llm.NewOllamaClient,
 )
 
 var RepositorySet = wire.NewSet(
