@@ -2,80 +2,56 @@ package config
 
 import (
 	"log"
-	"reflect"
 
-	core_grpcclient "github.com/cnc-csku/task-nexus/go-lib/grpcclient"
-	"github.com/spf13/viper"
+	coreGrpcClient "github.com/cnc-csku/task-nexus/go-lib/grpcclient"
+	"github.com/caarlos0/env/v11"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	ServiceName string                           `mapstructure:"serviceName"`
-	RestServer  RestServerConfig                 `mapstructure:"restServer"`
-	MongoDB     MongoDBConfig                    `mapstructure:"mongoDB"`
-	GrpcServer  GrpcServerConfig                 `mapstructure:"grpcServer"`
-	GrpcClient  core_grpcclient.GrpcClientConfig `mapstructure:"grpcClient"`
+	ServiceName string                          `env:"SERVICE_NAME"`
+	RestServer  RestServerConfig                `envPrefix:"REST_SERVER_"`
+	MongoDB     MongoDBConfig                   `envPrefix:"MONGO_"`
+	GrpcServer  GrpcServerConfig                `envPrefix:"GRPC_SERVER_"`
+	GrpcClient  coreGrpcClient.GrpcClientConfig `envPrefix:"GRPC_CLIENT_"`
 }
 
 type RestServerConfig struct {
-	Port string `mapstructure:"port"`
+	Port string `env:"PORT"`
 }
 
 type MongoDBConfig struct {
-	URI      string `mapstructure:"uri"`
-	Port     string `mapstructure:"port"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Database string `mapstructure:"database"`
+	URI      string `env:"URI"`
+	Port     string `env:"PORT"`
+	Username string `env:"USERNAME"`
+	Password string `env:"PASSWORD"`
+	Database string `env:"DATABASE"`
 }
 
 type GrpcServerConfig struct {
-	Port           string `mapstructure:"port"`
-	MaxSendMsgSize int    `mapstructure:"maxSendMsgSize"`
-	MaxRecvMsgSize int    `mapstructure:"maxRecvMsgSize"`
-	UseReflection  bool   `mapstructure:"useReflection"`
+	Port           string `env:"PORT"`
+	MaxSendMsgSize int    `env:"MAX_SEND_MSG_SIZE"`
+	MaxRecvMsgSize int    `env:"MAX_RECV_MSG_SIZE"`
+	UseReflection  bool   `env:"USE_REFLECTION"`
 }
 
 func NewConfig() *Config {
+	// Load environment variables from .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found or error loading it. Falling back to system environment variables.")
+	}
+
 	config := &Config{}
 
-	viper.SetConfigName("config.yaml")
-	viper.SetConfigFile("config.yaml")
-	viper.SetConfigType("yaml")
-
-	if err := viper.ReadInConfig(); err != nil {
-		log.Println("⚠️  .env file not found or cannot be read, using environment variables")
-
-		// Bind environment variables
-		envs := getMapstructureTags(config)
-		for _, env := range envs {
-			viper.MustBindEnv(env)
-		}
+	// Parse environment variables into the config struct
+	if err := env.Parse(config); err != nil {
+		log.Fatalln("Failed to parse environment variables into Config struct:", err)
 	}
 
-	if err := viper.Unmarshal(config); err != nil {
-		log.Fatalln("Unable to decode into struct", err)
-	}
-
+	log.Printf("Config: %+v\n", config)
 	return config
 }
 
-func getMapstructureTags(v interface{}) []string {
-	typ := reflect.TypeOf(v)
-
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-
-	var tags []string
-	for i := 0; i < typ.NumField(); i++ {
-		field := typ.Field(i)
-		if tag, ok := field.Tag.Lookup("mapstructure"); ok {
-			tags = append(tags, tag)
-		}
-	}
-	return tags
-}
-
-func ProvideGrpcClientConfig(config *Config) core_grpcclient.GrpcClientConfig {
+func ProvideGrpcClientConfig(config *Config) coreGrpcClient.GrpcClientConfig {
 	return config.GrpcClient
 }
