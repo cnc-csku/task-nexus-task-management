@@ -4,10 +4,12 @@ import (
 	"context"
 	"log"
 
+	"github.com/cnc-csku/task-nexus/go-lib/logging"
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/docs"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -35,10 +37,11 @@ func NewEchoAPI(
 	}
 }
 
-func (a *EchoAPI) Start() error {
+func (a *EchoAPI) Start(logger *logrus.Logger) error {
 	docs.SwaggerInfo.Title = "Task Nexus API"
 
 	e := echo.New()
+	e.Use(logging.LoggingMiddleware(logger))
 
 	a.router.RegisterAPIRouter(e)
 

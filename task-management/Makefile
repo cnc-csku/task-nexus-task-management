@@ -1,3 +1,6 @@
+start:
+	go run cmd/app/main.go
+
 wire-gen:
 	wire ./internal/...
 
