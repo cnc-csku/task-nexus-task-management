@@ -41,7 +41,7 @@ func (a *EchoAPI) Start(logger *logrus.Logger) error {
 	docs.SwaggerInfo.Title = "Task Nexus API"
 
 	e := echo.New()
-	e.Use(logging.LoggingMiddleware(logger))
+	e.Use(logging.EchoLoggingMiddleware(logger))
 
 	a.router.RegisterAPIRouter(e)
 
