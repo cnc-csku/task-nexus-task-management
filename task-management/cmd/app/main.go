@@ -9,11 +9,14 @@ import (
 	"syscall"
 
 	core_grpcclient "github.com/cnc-csku/task-nexus/go-lib/grpcclient"
+	"github.com/cnc-csku/task-nexus/go-lib/logger"
 	"github.com/cnc-csku/task-nexus/go-lib/utils/network"
 	"github.com/cnc-csku/task-nexus/task-management/internal/wire"
 )
 
 func main() {
+	logger := logger.NewLogrusLogger()
+
 	app := wire.InitializeApp()
 
 	grpcServer := wire.InitializeGrpcServer()
@@ -49,7 +52,7 @@ func main() {
 	go func() {
 		<-grpcReady // wait for grpc server to be ready
 
-		err = app.Start()
+		err = app.Start(logger)
 		if err != nil {
 			log.Fatalln(err)
 		}
