@@ -19,7 +19,7 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func LoggingMiddleware(logger *logrus.Logger) echo.MiddlewareFunc {
+func EchoLoggingMiddleware(logger *logrus.Logger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			req := c.Request()
