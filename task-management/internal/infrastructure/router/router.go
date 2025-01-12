@@ -1,21 +1,30 @@
 package router
 
-import "github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
+import (
+	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
+	"github.com/cnc-csku/task-nexus/task-management/middlewares"
+)
 
 type Router struct {
+	// Handlers
 	healthCheck rest.HealthCheckHandler
 	common      rest.CommonHandler
-	member      rest.MemberHandler
+	user        rest.UserHandler
+
+	// Middlewares
+	authMiddleware middlewares.AuthMiddleware
 }
 
 func NewRouter(
+	authMiddleware middlewares.AuthMiddleware,
 	healthCheck rest.HealthCheckHandler,
 	common rest.CommonHandler,
-	member rest.MemberHandler,
+	user rest.UserHandler,
 ) *Router {
 	return &Router{
+		authMiddleware: authMiddleware,
 		healthCheck: healthCheck,
 		common:      common,
-		member:      member,
+		user:        user,
 	}
 }

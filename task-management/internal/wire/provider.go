@@ -10,6 +10,7 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/database"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
+	"github.com/cnc-csku/task-nexus/task-management/middlewares"
 	"github.com/google/wire"
 )
 
@@ -28,22 +29,26 @@ var InfraSet = wire.NewSet(
 )
 
 var RepositorySet = wire.NewSet(
-	mongo.NewMemberRepository,
+	mongo.NewMongoUserRepo,
 )
 
 var ServiceSet = wire.NewSet(
 	services.NewCommonService,
-	services.NewMemberService,
+	services.NewUserService,
 )
 
 var RestHandlerSet = wire.NewSet(
 	rest.NewHealthCheckHandler,
 	rest.NewCommonHandler,
-	rest.NewMemberHandler,
+	rest.NewUserHandler,
 )
 
 var GrpcClientSet = wire.NewSet(
 	config.ProvideGrpcClientConfig,
 	core_grpcclient.NewGrpcClient,
 	grpcclient.NewGrpcClient,
+)
+
+var MiddlewareSet = wire.NewSet(
+	middlewares.NewAdminJWTMiddleware,
 )
