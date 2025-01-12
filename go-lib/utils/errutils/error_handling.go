@@ -7,9 +7,9 @@ type Error struct {
 	Message string
 }
 
-func NewError(err error, errStaus ErrorStatus) *Error {
+func NewError(err error, errStatus ErrorStatus) *Error {
 	return &Error{
-		Status:  errStaus,
+		Status:  errStatus,
 		Message: err.Error(),
 	}
 }
