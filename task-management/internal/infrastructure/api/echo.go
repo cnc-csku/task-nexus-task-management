@@ -4,12 +4,13 @@ import (
 	"context"
 	"log"
 
+	"github.com/cnc-csku/task-nexus/go-lib/jsonvalidator"
 	"github.com/cnc-csku/task-nexus/go-lib/logging"
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/docs"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
-	"github.com/cnc-csku/task-nexus/go-lib/jsonvalidator"
 	"github.com/labstack/echo/v4"
+	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -43,6 +44,23 @@ func (a *EchoAPI) Start(logger *logrus.Logger) error {
 
 	e := echo.New()
 	e.Use(logging.EchoLoggingMiddleware(logger))
+
+	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
+		AllowOrigins: a.config.AllowOrigins,
+		AllowHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+			echo.HeaderAuthorization,
+		},
+		AllowMethods: []string{
+			echo.GET,
+			echo.PUT,
+			echo.PATCH,
+			echo.POST,
+			echo.DELETE,
+		},
+	}))
 
 	// Set up JSON validator
 	e.Validator = jsonvalidator.NewValidator()
