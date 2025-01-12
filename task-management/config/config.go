@@ -10,11 +10,13 @@ import (
 
 type Config struct {
 	ServiceName  string                          `env:"SERVICE_NAME"`
+	AllowOrigins []string                        `env:"ALLOW_ORIGINS" envSeparator:","`
 	RestServer   RestServerConfig                `envPrefix:"REST_SERVER_"`
 	MongoDB      MongoDBConfig                   `envPrefix:"MONGO_"`
 	GrpcServer   GrpcServerConfig                `envPrefix:"GRPC_SERVER_"`
 	GrpcClient   coreGrpcClient.GrpcClientConfig `envPrefix:"GRPC_CLIENT_"`
 	OllamaClient OllamaClientConfig              `envPrefix:"OLLAMA_CLIENT_"`
+	JWT          JWT                             `envPrefix:"JWT_"`
 }
 
 type RestServerConfig struct {
@@ -43,6 +45,11 @@ type OllamaClientConfig struct {
 	HttpProxyPort string `env:"HTTP_PROXY_PORT"`
 }
 
+type JWT struct {
+	AccessTokenSecret  string `env:"ACCESS_TOKEN_SECRET"`
+	RefreshTokenSecret string `env:"REFRESH_TOKEN_SECRET"`
+}
+
 func NewConfig() *Config {
 	// Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
@@ -56,7 +63,6 @@ func NewConfig() *Config {
 		log.Fatalln("Failed to parse environment variables into Config struct:", err)
 	}
 
-	log.Printf("Config: %+v\n", config)
 	return config
 }
 

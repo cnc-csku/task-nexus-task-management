@@ -16,6 +16,7 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/api"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/database"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
+	"github.com/cnc-csku/task-nexus/task-management/middlewares"
 )
 
 // Injectors from wire.go:
@@ -24,29 +25,17 @@ func InitializeApp() *api.EchoAPI {
 	context := NewCtx()
 	configConfig := config.NewConfig()
 	client := database.NewMongoClient(configConfig, context)
+	authMiddleware := middlewares.NewAdminJWTMiddleware(configConfig)
 	healthCheckHandler := rest.NewHealthCheckHandler()
 	grpcClientConfig := config.ProvideGrpcClientConfig(configConfig)
 	grpcClient := grpcclient.NewGrpcClient(grpcClientConfig)
 	grpcclientGrpcClient := grpcclient2.NewGrpcClient(context, grpcClient)
 	commonService := services.NewCommonService(grpcclientGrpcClient)
 	commonHandler := rest.NewCommonHandler(commonService)
-	memberRepository := mongo.NewMemberRepository(client)
-	memberService := services.NewMemberService(memberRepository, grpcclientGrpcClient)
-	memberHandler := rest.NewMemberHandler(memberService)
-	routerRouter := router.NewRouter(healthCheckHandler, commonHandler, memberHandler)
+	userRepository := mongo.NewMongoUserRepo(configConfig, client)
+	userService := services.NewUserService(userRepository, configConfig)
+	userHandler := rest.NewUserHandler(userService)
+	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler)
 	echoAPI := api.NewEchoAPI(context, configConfig, client, routerRouter)
 	return echoAPI
-}
-
-func InitializeGrpcServer() *api.GrpcServer {
-	context := NewCtx()
-	configConfig := config.NewConfig()
-	client := database.NewMongoClient(configConfig, context)
-	memberRepository := mongo.NewMemberRepository(client)
-	grpcClientConfig := config.ProvideGrpcClientConfig(configConfig)
-	grpcClient := grpcclient.NewGrpcClient(grpcClientConfig)
-	grpcclientGrpcClient := grpcclient2.NewGrpcClient(context, grpcClient)
-	memberService := services.NewMemberService(memberRepository, grpcclientGrpcClient)
-	grpcServer := api.NewGrpcServer(context, configConfig, memberService)
-	return grpcServer
 }

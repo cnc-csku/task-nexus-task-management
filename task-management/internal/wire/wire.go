@@ -17,22 +17,23 @@ func InitializeApp() *api.EchoAPI {
 		RepositorySet,
 		ServiceSet,
 		RestHandlerSet,
+		MiddlewareSet,
 		api.NewEchoAPI,
 	)
 
 	return &api.EchoAPI{}
 }
 
-func InitializeGrpcServer() *api.GrpcServer {
-	wire.Build(
-		CtxSet,
-		ConfigSet,
-		GrpcClientSet,
-		InfraSet,
-		RepositorySet,
-		ServiceSet,
-		api.NewGrpcServer,
-	)
+// func InitializeGrpcServer() *api.GrpcServer {
+// 	wire.Build(
+// 		CtxSet,
+// 		ConfigSet,
+// 		GrpcClientSet,
+// 		InfraSet,
+// 		RepositorySet,
+// 		ServiceSet,
+// 		api.NewGrpcServer,
+// 	)
 
-	return &api.GrpcServer{}
-}
+// 	return &api.GrpcServer{}
+// }

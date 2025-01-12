@@ -8,6 +8,7 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/docs"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
+	"github.com/cnc-csku/task-nexus/go-lib/jsonvalidator"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	echoSwagger "github.com/swaggo/echo-swagger"
@@ -42,6 +43,9 @@ func (a *EchoAPI) Start(logger *logrus.Logger) error {
 
 	e := echo.New()
 	e.Use(logging.EchoLoggingMiddleware(logger))
+
+	// Set up JSON validator
+	e.Validator = jsonvalidator.NewValidator()
 
 	a.router.RegisterAPIRouter(e)
 
