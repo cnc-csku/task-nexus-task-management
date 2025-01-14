@@ -16,3 +16,8 @@ type UserWithTokenResponse struct {
 	Token         string    `json:"token"`
 	TokenExpireAt time.Time `json:"tokenExpireAt"`
 }
+
+type ListUserResponse struct {
+	Users              []UserResponse     `json:"users"`
+	PaginationResponse PaginationResponse `json:"pagination"`
+}

@@ -10,6 +10,7 @@ import (
 )
 
 func NewMongoClient(config *config.Config, ctx context.Context) *mongo.Client {
+	log.Println("🔌 Connecting to MongoDB...")
 	mongoClient, err := mongo.Connect(options.Client().ApplyURI(config.MongoDB.URI))
 	if err != nil {
 		log.Fatalf("❌ Error connecting to MongoDB: %v\n", err)

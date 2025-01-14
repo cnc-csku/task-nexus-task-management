@@ -36,7 +36,6 @@ func main() {
 	// 	close(grpcReady)
 
 	// 	if err := grpcServer.Server.Serve(lis); err != nil {
-	// 		fmt.Println("error", err)
 	// 		log.Fatalf("failed to serve: %v", err)
 	// 	}
 	// }()

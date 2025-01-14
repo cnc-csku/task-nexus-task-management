@@ -6,6 +6,7 @@ import (
 
 	"github.com/cnc-csku/task-nexus/go-lib/jsonvalidator"
 	"github.com/cnc-csku/task-nexus/go-lib/logging"
+	"github.com/cnc-csku/task-nexus/go-lib/utils/errutils"
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/docs"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
@@ -64,6 +65,9 @@ func (a *EchoAPI) Start(logger *logrus.Logger) error {
 
 	// Set up JSON validator
 	e.Validator = jsonvalidator.NewValidator()
+
+	// Custom error handler
+	e.HTTPErrorHandler = errutils.CustomHTTPErrorHandler
 
 	a.router.RegisterAPIRouter(e)
 

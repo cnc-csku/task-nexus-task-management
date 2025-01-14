@@ -10,6 +10,7 @@ type Router struct {
 	healthCheck rest.HealthCheckHandler
 	common      rest.CommonHandler
 	user        rest.UserHandler
+	project     rest.ProjectHandler
 
 	// Middlewares
 	authMiddleware middlewares.AuthMiddleware
@@ -20,11 +21,13 @@ func NewRouter(
 	healthCheck rest.HealthCheckHandler,
 	common rest.CommonHandler,
 	user rest.UserHandler,
+	project rest.ProjectHandler,
 ) *Router {
 	return &Router{
 		authMiddleware: authMiddleware,
-		healthCheck: healthCheck,
-		common:      common,
-		user:        user,
+		healthCheck:    healthCheck,
+		common:         common,
+		user:           user,
+		project:        project,
 	}
 }

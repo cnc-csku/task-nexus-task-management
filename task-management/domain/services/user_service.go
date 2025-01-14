@@ -2,10 +2,12 @@ package services
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/cnc-csku/task-nexus/go-lib/utils/errutils"
 	"github.com/cnc-csku/task-nexus/task-management/config"
+	"github.com/cnc-csku/task-nexus/task-management/domain/constant"
 	"github.com/cnc-csku/task-nexus/task-management/domain/exceptions"
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
@@ -19,6 +21,7 @@ type UserService interface {
 	Register(ctx context.Context, req *requests.RegisterRequest) (*responses.UserResponse, *errutils.Error)
 	Login(ctx context.Context, req *requests.LoginRequest) (*responses.UserWithTokenResponse, *errutils.Error)
 	FindUserByEmail(ctx context.Context, email string) (*responses.UserResponse, *errutils.Error)
+	Search(ctx context.Context, req *requests.SearchUserRequest, searcherUserId string) (*responses.ListUserResponse, *errutils.Error)
 }
 
 type userServiceImpl struct {
@@ -148,6 +151,74 @@ func (u *userServiceImpl) FindUserByEmail(ctx context.Context, email string) (*r
 		DisplayName: user.DisplayName,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
+	}
+
+	return res, nil
+}
+
+func validateSearchUserPaginationRequestSortBy(sortBy string) bool {
+	switch sortBy {
+	case constant.UserField_EMAIL, constant.UserField_FULL_NAME, constant.UserField_DISPLAY_NAME:
+		return true
+	}
+	return false
+}
+
+func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserRequest, searcherUserId string) (*responses.ListUserResponse, *errutils.Error) {
+	if req.PaginationRequest != nil {
+		if req.PaginationRequest.Page <= 0 {
+			req.PaginationRequest.Page = 1
+		}
+		if req.PaginationRequest.PageSize <= 0 {
+			req.PaginationRequest.PageSize = 100
+		}
+		if req.PaginationRequest.SortBy == "" || !validateSearchUserPaginationRequestSortBy(req.PaginationRequest.SortBy) {
+			req.PaginationRequest.SortBy = constant.UserField_EMAIL
+		}
+		if req.PaginationRequest.Order == "" {
+			req.PaginationRequest.Order = constant.ASC
+		}
+	} else {
+		req.PaginationRequest = &requests.PaginationRequest{
+			Page:     1,
+			PageSize: 100,
+			SortBy:   constant.UserField_EMAIL,
+			Order:    constant.ASC,
+		}
+	}
+
+	users, totalUser, err := u.userRepo.Search(ctx, &repositories.SearchUserRequest{
+		Keyword:           req.Keyword,
+		PaginationRequest: repositories.PaginationRequest{Page: req.PaginationRequest.Page, PageSize: req.PaginationRequest.PageSize, SortBy: req.PaginationRequest.SortBy, Order: req.PaginationRequest.Order},
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	res := &responses.ListUserResponse{
+		Users: make([]responses.UserResponse, 0),
+		PaginationResponse: responses.PaginationResponse{
+			Page:      req.PaginationRequest.Page,
+			PageSize:  req.PaginationRequest.PageSize,
+			TotalPage: int(math.Ceil(float64(totalUser) / float64(req.PaginationRequest.PageSize))),
+			TotalItem: int(totalUser),
+		},
+	}
+
+	for _, user := range users {
+		if user.ID.Hex() == searcherUserId {
+			res.PaginationResponse.TotalItem--
+			continue
+		}
+
+		res.Users = append(res.Users, responses.UserResponse{
+			ID:          user.ID.Hex(),
+			Email:       user.Email,
+			FullName:    user.FullName,
+			DisplayName: user.DisplayName,
+			CreatedAt:   user.CreatedAt,
+			UpdatedAt:   user.UpdatedAt,
+		})
 	}
 
 	return res, nil

@@ -35,7 +35,10 @@ func InitializeApp() *api.EchoAPI {
 	userRepository := mongo.NewMongoUserRepo(configConfig, client)
 	userService := services.NewUserService(userRepository, configConfig)
 	userHandler := rest.NewUserHandler(userService)
-	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler)
+	projectRepository := mongo.NewMongoProjectRepo(configConfig, client)
+	projectService := services.NewProjectService(userRepository, projectRepository, configConfig)
+	projectHandler := rest.NewProjectHandler(projectService)
+	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler, projectHandler)
 	echoAPI := api.NewEchoAPI(context, configConfig, client, routerRouter)
 	return echoAPI
 }

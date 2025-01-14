@@ -11,3 +11,7 @@ func NewUserFilter() userFilter {
 func (f userFilter) WithEmail(email string) {
 	f["email"] = email
 }
+
+func (f userFilter) WithUserIDs(userIDs []bson.ObjectID) {
+	f["_id"] = bson.M{"$in": userIDs}
+}
