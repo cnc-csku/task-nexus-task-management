@@ -11,3 +11,8 @@ type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
 }
+
+type SearchUserRequest struct {
+	Keyword           string             `json:"keyword"`
+	PaginationRequest *PaginationRequest `json:"pagination"`
+}

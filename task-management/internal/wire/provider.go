@@ -30,17 +30,20 @@ var InfraSet = wire.NewSet(
 
 var RepositorySet = wire.NewSet(
 	mongo.NewMongoUserRepo,
+	mongo.NewMongoProjectRepo,
 )
 
 var ServiceSet = wire.NewSet(
 	services.NewCommonService,
 	services.NewUserService,
+	services.NewProjectService,
 )
 
 var RestHandlerSet = wire.NewSet(
 	rest.NewHealthCheckHandler,
 	rest.NewCommonHandler,
 	rest.NewUserHandler,
+	rest.NewProjectHandler,
 )
 
 var GrpcClientSet = wire.NewSet(

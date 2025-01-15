@@ -17,6 +17,7 @@ type Config struct {
 	GrpcClient   coreGrpcClient.GrpcClientConfig `envPrefix:"GRPC_CLIENT_"`
 	OllamaClient OllamaClientConfig              `envPrefix:"OLLAMA_CLIENT_"`
 	JWT          JWT                             `envPrefix:"JWT_"`
+	LogFormat    string                          `env:"LOG_FORMAT"`
 }
 
 type RestServerConfig struct {

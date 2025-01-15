@@ -1,6 +1,6 @@
 package exceptions
 
-import "errors"
+import "github.com/pkg/errors"
 
 var (
 	ErrInternalError     = errors.New("internal server error")

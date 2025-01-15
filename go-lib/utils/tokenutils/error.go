@@ -1,6 +1,6 @@
 package tokenutils
 
-import "errors"
+import "github.com/pkg/errors"
 
 var (
 	ErrInvalidToken = errors.New("invalid token")

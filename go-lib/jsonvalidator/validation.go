@@ -1,12 +1,12 @@
 package jsonvalidator
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/cnc-csku/task-nexus/go-lib/utils/errutils"
 	valid "github.com/go-playground/validator/v10"
+	"github.com/pkg/errors"
 )
 
 type Validator struct {
