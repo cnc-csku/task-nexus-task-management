@@ -22,8 +22,8 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func EchoLoggingMiddleware(logger *logrus.Logger) echo.MiddlewareFunc {
-	logger.SetFormatter(&CustomFormatter{})
+func EchoLoggingMiddleware(logger *logrus.Logger, formatter logrus.Formatter) echo.MiddlewareFunc {
+	logger.SetFormatter(formatter)
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

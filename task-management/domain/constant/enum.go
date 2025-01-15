@@ -1,6 +1,11 @@
 package constant
 
 const (
+	LogFormat_JSON = "JSON"
+	LogFormat_TEXT = "TEXT"
+)
+
+const (
 	ASC  = "ASC"
 	DESC = "DESC"
 )
