@@ -21,7 +21,7 @@ type UserService interface {
 	Register(ctx context.Context, req *requests.RegisterRequest) (*responses.UserResponse, *errutils.Error)
 	Login(ctx context.Context, req *requests.LoginRequest) (*responses.UserWithTokenResponse, *errutils.Error)
 	FindUserByEmail(ctx context.Context, email string) (*responses.UserResponse, *errutils.Error)
-	Search(ctx context.Context, req *requests.SearchUserRequest, searcherUserId string) (*responses.ListUserResponse, *errutils.Error)
+	Search(ctx context.Context, req *requests.SearchUserParams, searcherUserId string) (*responses.ListUserResponse, *errutils.Error)
 }
 
 type userServiceImpl struct {
@@ -158,13 +158,13 @@ func (u *userServiceImpl) FindUserByEmail(ctx context.Context, email string) (*r
 
 func validateSearchUserPaginationRequestSortBy(sortBy string) bool {
 	switch sortBy {
-	case constant.UserField_EMAIL, constant.UserField_FULL_NAME, constant.UserField_DISPLAY_NAME:
+	case constant.UserFieldEmail, constant.UserFieldFullName, constant.UserFieldDisplayName:
 		return true
 	}
 	return false
 }
 
-func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserRequest, searcherUserId string) (*responses.ListUserResponse, *errutils.Error) {
+func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserParams, searcherUserId string) (*responses.ListUserResponse, *errutils.Error) {
 	if req.PaginationRequest != nil {
 		if req.PaginationRequest.Page <= 0 {
 			req.PaginationRequest.Page = 1
@@ -173,7 +173,7 @@ func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserRe
 			req.PaginationRequest.PageSize = 100
 		}
 		if req.PaginationRequest.SortBy == "" || !validateSearchUserPaginationRequestSortBy(req.PaginationRequest.SortBy) {
-			req.PaginationRequest.SortBy = constant.UserField_EMAIL
+			req.PaginationRequest.SortBy = constant.UserFieldEmail
 		}
 		if req.PaginationRequest.Order == "" {
 			req.PaginationRequest.Order = constant.ASC
@@ -182,7 +182,7 @@ func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserRe
 		req.PaginationRequest = &requests.PaginationRequest{
 			Page:     1,
 			PageSize: 100,
-			SortBy:   constant.UserField_EMAIL,
+			SortBy:   constant.UserFieldEmail,
 			Order:    constant.ASC,
 		}
 	}

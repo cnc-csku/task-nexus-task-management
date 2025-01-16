@@ -75,17 +75,17 @@ func (u *userHandlerImpl) GetUserProfile(c echo.Context) error {
 }
 
 func (u *userHandlerImpl) SearchUser(c echo.Context) error {
-	req := new(requests.SearchUserRequest)
-	if err := c.Bind(req); err != nil {
+	params := new(requests.SearchUserParams)
+	if err := c.Bind(params); err != nil {
 		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
 	}
 
-	if err := c.Validate(req); err != nil {
+	if err := c.Validate(params); err != nil {
 		return err
 	}
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
-	users, err := u.userService.Search(c.Request().Context(), req, userClaims.ID)
+	users, err := u.userService.Search(c.Request().Context(), params, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}
