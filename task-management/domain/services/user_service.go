@@ -97,7 +97,7 @@ func (u *userServiceImpl) Login(ctx context.Context, req *requests.LoginRequest)
 	}
 
 	// Generate JWT token
-	expireAt := time.Now().Add(time.Hour * 1)
+	expireAt := time.Now().Add(time.Hour * 120)
 
 	claims := models.UserCustomClaims{
 		ID:          user.ID.Hex(),

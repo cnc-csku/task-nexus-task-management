@@ -13,7 +13,7 @@ type Project struct {
 	ProjectPrefix      string              `bson:"project_prefix" json:"projectPrefix"`
 	Description        string              `bson:"description" json:"description"`
 	Status             ProjectStatus       `bson:"status" json:"status"`
-	Members            []Member            `bson:"members" json:"members"`
+	Members            []ProjectMember     `bson:"members" json:"members"`
 	Workflows          []Workflow          `bson:"workflows" json:"workflows"`
 	AttributeTemplates []AttributeTemplate `bson:"attributes_templates" json:"attributesTemplates"`
 	Roles              []string            `bson:"roles" json:"roles"`
@@ -23,7 +23,7 @@ type Project struct {
 	UpdatedBy          bson.ObjectID       `bson:"updated_by" json:"updatedBy"`
 }
 
-type Member struct {
+type ProjectMember struct {
 	UserID   bson.ObjectID `bson:"user_id" json:"userId"`
 	FullName string        `bson:"full_name" json:"fullName"`
 	Role     string        `bson:"role" json:"role"`

@@ -75,9 +75,9 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 		}
 	}
 
-	var members []models.Member
+	var members []models.ProjectMember
 	for _, user := range users {
-		members = append(members, models.Member{
+		members = append(members, models.ProjectMember{
 			UserID:   user.ID,
 			FullName: user.FullName,
 		})

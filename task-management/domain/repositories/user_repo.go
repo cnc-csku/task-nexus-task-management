@@ -12,6 +12,7 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
 	FindByIDs(ctx context.Context, userIDs []bson.ObjectID) ([]models.User, error)
 	Search(ctx context.Context, in *SearchUserRequest) ([]*models.User, int64, error)
+	FindByID(ctx context.Context, userID bson.ObjectID) (*models.User, error)
 }
 
 type CreateUserRequest struct {

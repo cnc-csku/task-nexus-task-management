@@ -11,6 +11,7 @@ type Router struct {
 	common      rest.CommonHandler
 	user        rest.UserHandler
 	project     rest.ProjectHandler
+	invitation  rest.InvitationHandler
 
 	// Middlewares
 	authMiddleware middlewares.AuthMiddleware
@@ -22,6 +23,7 @@ func NewRouter(
 	common rest.CommonHandler,
 	user rest.UserHandler,
 	project rest.ProjectHandler,
+	invitation rest.InvitationHandler,
 ) *Router {
 	return &Router{
 		authMiddleware: authMiddleware,
@@ -29,5 +31,6 @@ func NewRouter(
 		common:         common,
 		user:           user,
 		project:        project,
+		invitation:     invitation,
 	}
 }

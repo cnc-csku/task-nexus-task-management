@@ -19,6 +19,6 @@ type CreateProjectRequest struct {
 	ProjectPrefix string
 	Description   string
 	Status        models.ProjectStatus
-	Members       []models.Member
+	Members       []models.ProjectMember
 	CreatedBy     bson.ObjectID
 }

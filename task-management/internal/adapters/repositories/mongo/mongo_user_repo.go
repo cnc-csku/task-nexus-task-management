@@ -140,3 +140,20 @@ func (m *mongoUserRepo) Search(ctx context.Context, in *repositories.SearchUserR
 
 	return users, totalCount, nil
 }
+
+func (m *mongoUserRepo) FindByID(ctx context.Context, userID bson.ObjectID) (*models.User, error) {
+	user := new(models.User)
+
+	f := NewUserFilter()
+	f.WithUserID(userID)
+
+	err := m.collection.FindOne(ctx, f).Decode(user)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
