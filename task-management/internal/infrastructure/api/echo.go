@@ -51,7 +51,7 @@ func (a *EchoAPI) Start(logger *logrus.Logger) error {
 	if a.config.LogFormat == constant.LogFormatText {
 		formatter = &logrus.TextFormatter{}
 	} else {
-		formatter = &logrus.JSONFormatter{}
+		formatter = &logging.CustomFormatter{}
 	}
 
 	// Set up logging middleware

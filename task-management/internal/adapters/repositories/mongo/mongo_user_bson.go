@@ -8,6 +8,10 @@ func NewUserFilter() userFilter {
 	return userFilter{}
 }
 
+func (f userFilter) WithUserID(userID bson.ObjectID) {
+	f["_id"] = userID
+}
+
 func (f userFilter) WithEmail(email string) {
 	f["email"] = email
 }

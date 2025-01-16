@@ -17,6 +17,13 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		auth.GET("/search", r.user.SearchUser, r.authMiddleware.Middleware)
 	}
 
+	invitations := api.Group("/invitations/v1")
+	{
+		invitations.POST("", r.invitation.Create, r.authMiddleware.Middleware)
+		invitations.GET("/users", r.invitation.ListForUser, r.authMiddleware.Middleware)
+		invitations.PUT("/users", r.invitation.UserResponse, r.authMiddleware.Middleware)
+	}
+
 	projects := api.Group("/projects/v1")
 	{
 		projects.POST("/create", r.project.Create, r.authMiddleware.Middleware)
