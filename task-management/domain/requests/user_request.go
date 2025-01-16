@@ -12,7 +12,7 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type SearchUserRequest struct {
-	Keyword           string             `json:"keyword"`
+type SearchUserParams struct {
+	Keyword           string             `query:"keyword"`
 	PaginationRequest *PaginationRequest `json:"pagination"`
 }

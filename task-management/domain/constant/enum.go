@@ -1,8 +1,8 @@
 package constant
 
 const (
-	LogFormat_JSON = "JSON"
-	LogFormat_TEXT = "TEXT"
+	LogFormatJson = "JSON"
+	LogFormatText = "TEXT"
 )
 
 const (
@@ -11,7 +11,7 @@ const (
 )
 
 const (
-	UserField_EMAIL        = "email"
-	UserField_FULL_NAME    = "full_name"
-	UserField_DISPLAY_NAME = "display_name"
+	UserFieldEmail       = "email"
+	UserFieldFullName    = "full_name"
+	UserFieldDisplayName = "display_name"
 )

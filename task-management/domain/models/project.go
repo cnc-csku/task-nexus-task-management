@@ -12,7 +12,7 @@ type Project struct {
 	Name               string              `bson:"name" json:"name"`
 	ProjectPrefix      string              `bson:"project_prefix" json:"projectPrefix"`
 	Description        string              `bson:"description" json:"description"`
-	Status             string              `bson:"status" json:"status"`
+	Status             ProjectStatus       `bson:"status" json:"status"`
 	Members            []Member            `bson:"members" json:"members"`
 	Workflows          []Workflow          `bson:"workflows" json:"workflows"`
 	AttributeTemplates []AttributeTemplate `bson:"attributes_templates" json:"attributesTemplates"`
@@ -40,7 +40,21 @@ type AttributeTemplate struct {
 	Value interface{} `bson:"value" json:"value"`
 }
 
+type ProjectStatus string
+
 const (
-	ProjectStatus_ACTIVE   = "ACTIVE"
-	ProjectStatus_ARCHIVED = "ARCHIVED"
+	ProjectStatusActive   ProjectStatus = "ACTIVE"
+	ProjectStatusInactive ProjectStatus = "INACTIVE"
 )
+
+func (p ProjectStatus) String() string {
+	return string(p)
+}
+
+func (p ProjectStatus) IsValid() bool {
+	switch p {
+	case ProjectStatusActive, ProjectStatusInactive:
+		return true
+	}
+	return false
+}

@@ -88,7 +88,7 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 		Name:          req.Name,
 		ProjectPrefix: req.ProjectPrefix,
 		Description:   req.Description,
-		Status:        models.ProjectStatus_ACTIVE,
+		Status:        models.ProjectStatusActive,
 		Members:       members,
 		CreatedBy:     bsonUserId,
 	}
