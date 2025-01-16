@@ -33,7 +33,7 @@ func (i InvitationStatus) String() string {
 
 func (i InvitationStatus) IsValid() bool {
 	switch i {
-	case InvitationStatusPending, InvitationStatusAccepted, InvitationStatusDeclined:
+	case InvitationStatusPending, InvitationStatusAccepted, InvitationStatusDeclined, InvitationStatusExpired:
 		return true
 	}
 	return false
