@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"time"
 
@@ -86,6 +85,7 @@ func (i *invitationServiceImpl) Create(ctx context.Context, req *requests.Create
 	createInvitationReq := &repositories.CreateInvitationRequest{
 		WorkspaceID:   bsonWorkspaceID,
 		InviteeUserID: bsonInviteeUserID,
+		Role:          models.InvitationRole(req.Role),
 		Status:        models.InvitationStatusPending,
 		ExpiredAt:     time.Now().Add(constant.InvitationExpirationIn),
 		CustomMessage: req.CustomMessage,
@@ -112,9 +112,6 @@ func (i *invitationServiceImpl) ListForUser(ctx context.Context, userID string) 
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
-	for i, invitation := range invitations {
-		fmt.Println("\n", i, invitation)
-	}
 
 	invitationResponses := make([]responses.InvitationForUserResponse, 0)
 	for _, invitation := range invitations {
@@ -137,6 +134,7 @@ func (i *invitationServiceImpl) ListForUser(ctx context.Context, userID string) 
 			InvitationID:       invitation.ID.Hex(),
 			WorkspaceID:        invitation.WorkspaceID.Hex(),
 			WorkspaceName:      workspace.Name,
+			Role:               invitation.Role.String(),
 			Status:             status.String(),
 			CustomMessage:      invitation.CustomMessage,
 			InvitedAt:          invitation.CreatedAt.Format(constant.TimeFormat),
@@ -258,6 +256,7 @@ func (i *invitationServiceImpl) ListForWorkspaceOwner(ctx context.Context, req *
 			InvitationID:       invitation.ID.Hex(),
 			WorkspaceID:        invitation.WorkspaceID.Hex(),
 			WorkspaceName:      workspace.Name,
+			Role:               invitation.Role.String(),
 			Status:             status.String(),
 			CustomMessage:      invitation.CustomMessage,
 			InvitedAt:          invitation.CreatedAt.Format(constant.TimeFormat),
@@ -316,12 +315,19 @@ func (i *invitationServiceImpl) UserResponse(ctx context.Context, req *requests.
 	}
 
 	if req.Action == constant.InvitationActionAccept {
+		var role models.WorkspaceMemberRole
+		if invitation.Role == models.InvitationRoleModerator {
+			role = models.WorkspaceMemberRoleModerator
+		} else {
+			role = models.WorkspaceMemberRoleMember
+		}
+
 		// Add the invitee as a member of the workspace
 		createWorkspaceMemberReq := &repositories.CreateWorkspaceMemberRequest{
 			WorkspaceID: invitation.WorkspaceID,
 			UserID:      invitation.InviteeUserID,
 			Name:        user.FullName,
-			Role:        models.WorkspaceMemberRoleMember,
+			Role:        role,
 		}
 
 		err = i.workspaceRepo.CreateWorkspaceMember(ctx, createWorkspaceMemberReq)

@@ -13,6 +13,7 @@ import (
 
 type WorkspaceHandler interface {
 	SetupWorkspace(c echo.Context) error
+	ListOwnWorkspace(c echo.Context) error
 }
 
 type workspaceHandlerImpl struct {
@@ -43,4 +44,15 @@ func (w *workspaceHandlerImpl) SetupWorkspace(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, workspace)
+}
+
+func (w *workspaceHandlerImpl) ListOwnWorkspace(c echo.Context) error {
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+
+	workspaces, err := w.workspaceService.ListOwnWorkspace(c.Request().Context(), userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, workspaces)
 }
