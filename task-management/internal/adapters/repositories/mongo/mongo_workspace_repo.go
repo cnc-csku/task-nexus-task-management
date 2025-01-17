@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
@@ -81,4 +82,31 @@ func (m *mongoWorkspaceRepo) CreateWorkspaceMember(ctx context.Context, in *repo
 
 	_, err := m.collection.UpdateOne(ctx, f, update)
 	return err
+}
+
+func (m *mongoWorkspaceRepo) Create(ctx context.Context, workspace *repositories.CreateWorkspaceRequest) (*models.Workspace, error) {
+	workspaceModel := models.Workspace{
+		ID:   bson.NewObjectID(),
+		Name: workspace.Name,
+		Members: []models.WorkspaceMember{
+			{
+				UserID:    workspace.UserID,
+				Name:      workspace.UserName,
+				Role:      models.WorkspaceMemberRoleAdmin,
+				JoinedAt:  time.Now(),
+				RemovedAt: nil,
+			},
+		},
+		CreatedBy: workspace.UserID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	res, err := m.collection.InsertOne(ctx, workspaceModel)
+	if err != nil {
+		return nil, err
+	}
+
+	workspaceModel.ID = res.InsertedID.(bson.ObjectID)
+	return &workspaceModel, nil
 }

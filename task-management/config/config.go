@@ -17,6 +17,7 @@ type Config struct {
 	GrpcClient   coreGrpcClient.GrpcClientConfig `envPrefix:"GRPC_CLIENT_"`
 	OllamaClient OllamaClientConfig              `envPrefix:"OLLAMA_CLIENT_"`
 	JWT          JWT                             `envPrefix:"JWT_"`
+	Redis        RedisConfig                     `envPrefix:"REDIS_"`
 	LogFormat    string                          `env:"LOG_FORMAT"`
 }
 
@@ -26,9 +27,6 @@ type RestServerConfig struct {
 
 type MongoDBConfig struct {
 	URI      string `env:"URI"`
-	Port     string `env:"PORT"`
-	Username string `env:"USERNAME"`
-	Password string `env:"PASSWORD"`
 	Database string `env:"DATABASE"`
 }
 
@@ -49,6 +47,10 @@ type OllamaClientConfig struct {
 type JWT struct {
 	AccessTokenSecret  string `env:"ACCESS_TOKEN_SECRET"`
 	RefreshTokenSecret string `env:"REFRESH_TOKEN_SECRET"`
+}
+
+type RedisConfig struct {
+	URI string `env:"URI"`
 }
 
 func NewConfig() *Config {

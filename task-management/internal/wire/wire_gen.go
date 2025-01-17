@@ -7,10 +7,8 @@
 package wire
 
 import (
-	"github.com/cnc-csku/task-nexus/go-lib/grpcclient"
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
-	grpcclient2 "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/grpcclient"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/api"
@@ -27,13 +25,11 @@ func InitializeApp() *api.EchoAPI {
 	client := database.NewMongoClient(configConfig, context)
 	authMiddleware := middlewares.NewAdminJWTMiddleware(configConfig)
 	healthCheckHandler := rest.NewHealthCheckHandler()
-	grpcClientConfig := config.ProvideGrpcClientConfig(configConfig)
-	grpcClient := grpcclient.NewGrpcClient(grpcClientConfig)
-	grpcclientGrpcClient := grpcclient2.NewGrpcClient(context, grpcClient)
-	commonService := services.NewCommonService(grpcclientGrpcClient)
+	globalSettingRepository := mongo.NewMongoGlobalSettingRepo(configConfig, client)
+	commonService := services.NewCommonService(globalSettingRepository)
 	commonHandler := rest.NewCommonHandler(commonService)
 	userRepository := mongo.NewMongoUserRepo(configConfig, client)
-	userService := services.NewUserService(userRepository, configConfig)
+	userService := services.NewUserService(configConfig, userRepository, globalSettingRepository)
 	userHandler := rest.NewUserHandler(userService)
 	projectRepository := mongo.NewMongoProjectRepo(configConfig, client)
 	projectService := services.NewProjectService(userRepository, projectRepository, configConfig)
@@ -42,7 +38,9 @@ func InitializeApp() *api.EchoAPI {
 	invitationRepository := mongo.NewMongoInvitationRepo(configConfig, client)
 	invitationService := services.NewInvitationService(userRepository, workspaceRepository, invitationRepository, configConfig)
 	invitationHandler := rest.NewInvitationHandler(invitationService)
-	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler, projectHandler, invitationHandler)
+	workspaceService := services.NewWorkspaceService(workspaceRepository, globalSettingRepository, userRepository)
+	workspaceHandler := rest.NewWorkspaceHandler(workspaceService)
+	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler, projectHandler, invitationHandler, workspaceHandler)
 	echoAPI := api.NewEchoAPI(context, configConfig, client, routerRouter)
 	return echoAPI
 }

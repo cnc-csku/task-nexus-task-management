@@ -7,6 +7,7 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/grpcclient"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
+	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/cache"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/database"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
@@ -26,6 +27,7 @@ var InfraSet = wire.NewSet(
 	database.NewMongoClient,
 	router.NewRouter,
 	llm.NewOllamaClient,
+	cache.NewRedisClient,
 )
 
 var RepositorySet = wire.NewSet(
@@ -33,6 +35,7 @@ var RepositorySet = wire.NewSet(
 	mongo.NewMongoProjectRepo,
 	mongo.NewMongoWorkspaceRepo,
 	mongo.NewMongoInvitationRepo,
+	mongo.NewMongoGlobalSettingRepo,
 )
 
 var ServiceSet = wire.NewSet(
@@ -40,6 +43,7 @@ var ServiceSet = wire.NewSet(
 	services.NewUserService,
 	services.NewProjectService,
 	services.NewInvitationService,
+	services.NewWorkspaceService,
 )
 
 var RestHandlerSet = wire.NewSet(
@@ -48,6 +52,7 @@ var RestHandlerSet = wire.NewSet(
 	rest.NewUserHandler,
 	rest.NewProjectHandler,
 	rest.NewInvitationHandler,
+	rest.NewWorkspaceHandler,
 )
 
 var GrpcClientSet = wire.NewSet(

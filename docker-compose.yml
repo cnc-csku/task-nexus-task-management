@@ -1,18 +1,4 @@
 services:
-  api:
-    build:
-      context: ./docker/
-      dockerfile: go-air.Dockerfile
-    restart: on-failure
-    volumes:
-      - .:/app
-    working_dir: /app
-    ports:
-      - ${REST_SERVER_PORT}:${REST_SERVER_PORT}
-    depends_on:
-      - mongo
-    networks:
-      - task-nexus-network
   mongo:
     image: mongo:8.0.3-noble
     restart: on-failure
@@ -26,9 +12,29 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+
+  redis:
+    image: redis:7.4.2-alpine
+    restart: on-failure
+    ports:
+      - ${REDIS_PORT}:6379
+    networks:
+      - task-nexus-network
+    volumes:
+      - task-nexus-redis-vol:/data
+      - task-nexus-redis-config-vol:/usr/local/etc/redis
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+
 volumes:
   task-nexus-mongo-vol-db:
     driver: local
+  task-nexus-redis-vol:
+    driver: local
+  task-nexus-redis-config-vol:
+    driver: local
+
 networks:
   task-nexus-network:
     driver: bridge

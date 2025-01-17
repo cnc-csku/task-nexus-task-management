@@ -19,13 +19,20 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 
 	invitations := api.Group("/invitations/v1")
 	{
-		invitations.POST("/", r.invitation.Create, r.authMiddleware.Middleware)
+		invitations.POST("", r.invitation.Create, r.authMiddleware.Middleware)
 		invitations.GET("/users", r.invitation.ListForUser, r.authMiddleware.Middleware)
 		invitations.PUT("/users", r.invitation.UserResponse, r.authMiddleware.Middleware)
 	}
 
 	projects := api.Group("/projects/v1")
 	{
-		projects.POST("/", r.project.Create, r.authMiddleware.Middleware)
+		projects.POST("", r.project.Create, r.authMiddleware.Middleware)
+	}
+
+	setup := api.Group("/setup/v1")
+	{
+		setup.GET("", r.common.GetSetupStatus)
+		setup.POST("/workspace", r.workspace.SetupWorkspace, r.authMiddleware.Middleware)
+		setup.POST("/user", r.user.SetupUser)
 	}
 }
