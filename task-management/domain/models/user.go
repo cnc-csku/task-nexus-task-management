@@ -13,6 +13,7 @@ type User struct {
 	PasswordHash string        `bson:"password_hash" json:"passwordHash"`
 	FullName     string        `bson:"full_name" json:"fullName"`
 	DisplayName  string        `bson:"display_name" json:"displayName"`
+	ProfileUrl   string        `bson:"profile_url" json:"profileUrl"`
 	CreatedAt    time.Time     `bson:"created_at" json:"createdAt"`
 	UpdatedAt    time.Time     `bson:"updated_at" json:"updatedAt"`
 }
@@ -22,5 +23,6 @@ type UserCustomClaims struct {
 	FullName    string `json:"fullName"`
 	DisplayName string `json:"displayName"`
 	Email       string `json:"email"`
+	ProfileUrl  string `json:"profileUrl"`
 	jwt.RegisteredClaims
 }

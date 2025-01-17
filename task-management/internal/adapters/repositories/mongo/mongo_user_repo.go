@@ -35,6 +35,7 @@ func (m *mongoUserRepo) Create(ctx context.Context, user *repositories.CreateUse
 		PasswordHash: user.PasswordHash,
 		FullName:     user.FullName,
 		DisplayName:  user.DisplayName,
+		ProfileUrl:   user.ProfileUrl,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}
