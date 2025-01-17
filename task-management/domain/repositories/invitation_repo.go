@@ -14,6 +14,7 @@ type InvitationRepository interface {
 	Create(ctx context.Context, invitation *CreateInvitationRequest) error
 	FindByInviteeUserID(ctx context.Context, inviteeUserID bson.ObjectID, sortBy string, order string) ([]models.Invitation, error)
 	UpdateStatus(ctx context.Context, id bson.ObjectID, status models.InvitationStatus) error
+	SearchInvitationForEachWorkspaceRequest(ctx context.Context, in *SearchInvitationForEachWorkspaceRequest) ([]models.Invitation, int64, error)
 }
 
 type CreateInvitationRequest struct {
@@ -23,4 +24,11 @@ type CreateInvitationRequest struct {
 	ExpiredAt     time.Time
 	CustomMessage string
 	CreatedBy     bson.ObjectID
+}
+
+type SearchInvitationForEachWorkspaceRequest struct {
+	WorkspaceID       bson.ObjectID
+	Keyword           string
+	SearchBy          string
+	PaginationRequest PaginationRequest
 }

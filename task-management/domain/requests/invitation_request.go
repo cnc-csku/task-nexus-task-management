@@ -6,6 +6,13 @@ type CreateInvitationRequest struct {
 	CustomMessage string `json:"customMessage"`
 }
 
+type ListInvitationForAdminQueryParams struct {
+	WorkspaceID       string            `param:"workspaceId" validate:"required"`
+	Keyword           string            `query:"keyword"`
+	SearchBy          string            `query:"searchBy"`
+	PaginationRequest *PaginationRequest `query:"paginationRequest"`
+}
+
 type UserResponseInvitationRequest struct {
 	InvitationID string `json:"invitationId" validate:"required"`
 	Action       string `json:"action" validate:"required"`

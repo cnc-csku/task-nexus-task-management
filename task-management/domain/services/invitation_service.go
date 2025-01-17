@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/cnc-csku/task-nexus/go-lib/utils/errutils"
@@ -19,6 +20,7 @@ import (
 type InvitationService interface {
 	Create(ctx context.Context, req *requests.CreateInvitationRequest, inviterUserID string) (*responses.CreateInvitationResponse, *errutils.Error)
 	ListForUser(ctx context.Context, userID string) (*responses.ListInvitationForUserResponse, *errutils.Error)
+	ListForAdmin(ctx context.Context, req *requests.ListInvitationForAdminQueryParams, userID string) (*responses.ListInvitationForAdminResponse, *errutils.Error)
 	UserResponse(ctx context.Context, req *requests.UserResponseInvitationRequest, userID string) (*responses.UserResponseInvitationResponse, *errutils.Error)
 }
 
@@ -149,6 +151,136 @@ func (i *invitationServiceImpl) ListForUser(ctx context.Context, userID string) 
 
 	return &responses.ListInvitationForUserResponse{
 		Invitations: invitationResponses,
+	}, nil
+}
+
+func validateListForAdminPaginationRequestSortBy(sortBy string) bool {
+	switch sortBy {
+	case constant.InvitationFieldCreatedAt, constant.InvitationFieldStatus:
+		return true
+	}
+	return false
+}
+
+func validateListForAdminSearchBy(searchBy string) bool {
+	switch searchBy {
+	case constant.InvitationFieldStatus:
+		return true
+	}
+	return false
+}
+
+func (i *invitationServiceImpl) ListForAdmin(ctx context.Context, req *requests.ListInvitationForAdminQueryParams, userID string) (*responses.ListInvitationForAdminResponse, *errutils.Error) {
+	if req.SearchBy != "" || !validateListForAdminSearchBy(req.SearchBy) {
+		req.SearchBy = ""
+	}
+
+	if req.PaginationRequest != nil {
+		if req.PaginationRequest.Page <= 0 {
+			req.PaginationRequest.Page = 1
+		}
+		if req.PaginationRequest.PageSize <= 0 {
+			req.PaginationRequest.PageSize = 100
+		}
+		if req.PaginationRequest.SortBy == "" || !validateListForAdminPaginationRequestSortBy(req.PaginationRequest.SortBy) {
+			req.PaginationRequest.SortBy = constant.InvitationFieldCreatedAt
+		}
+		if req.PaginationRequest.Order == "" {
+			req.PaginationRequest.Order = constant.DESC
+		}
+	} else {
+		req.PaginationRequest = &requests.PaginationRequest{
+			Page:     1,
+			PageSize: 100,
+			SortBy:   constant.InvitationFieldCreatedAt,
+			Order:    constant.DESC,
+		}
+	}
+
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonWorkspaceID, err := bson.ObjectIDFromHex(req.WorkspaceID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	// Check if the user is the admin of the workspace
+	member, err := i.workspaceRepo.FindWorkspaceMemberByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrMemberNotFoundInWorkspace, errutils.BadRequest).WithDebugMessage("User not found in workspace")
+	} else if member.Role != models.WorkspaceMemberRoleAdmin {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not an admin")
+	}
+
+	invitations, totalInvitation, err := i.invitationRepo.SearchInvitationForEachWorkspaceRequest(ctx, &repositories.SearchInvitationForEachWorkspaceRequest{
+		WorkspaceID: bsonWorkspaceID,
+		Keyword:     req.Keyword,
+		SearchBy:    req.SearchBy,
+		PaginationRequest: repositories.PaginationRequest{
+			Page:     req.PaginationRequest.Page,
+			PageSize: req.PaginationRequest.PageSize,
+			SortBy:   req.PaginationRequest.SortBy,
+			Order:    req.PaginationRequest.Order,
+		},
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	invitationResponses := make([]responses.InvitationForAdminResponse, 0)
+	for _, invitation := range invitations {
+		workspace, err := i.workspaceRepo.FindByID(ctx, invitation.WorkspaceID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+
+		inviter, err := i.userRepo.FindByID(ctx, invitation.CreatedBy)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+
+		invitee, err := i.userRepo.FindByID(ctx, invitation.InviteeUserID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+
+		var status = invitation.Status
+		if invitation.ExpiredAt.Before(time.Now()) {
+			status = models.InvitationStatusExpired
+		}
+
+		invitationResponses = append(invitationResponses, responses.InvitationForAdminResponse{
+			InvitationID:       invitation.ID.Hex(),
+			WorkspaceID:        invitation.WorkspaceID.Hex(),
+			WorkspaceName:      workspace.Name,
+			Status:             status.String(),
+			CustomMessage:      invitation.CustomMessage,
+			InvitedAt:          invitation.CreatedAt.Format(constant.TimeFormat),
+			InviteeDisplayName: invitee.DisplayName,
+			InviteeFullName:    invitee.FullName,
+			InviteeUserID:      invitation.InviteeUserID.Hex(),
+			InviterDisplayName: inviter.DisplayName,
+			InviterFullName:    inviter.FullName,
+			InviterUserID:      invitation.CreatedBy.Hex(),
+			ExpiredAt:          invitation.ExpiredAt.Format(constant.TimeFormat),
+			IsExpired:          time.Now().After(invitation.ExpiredAt),
+			RespondedAt:        invitation.RespondedAt,
+		})
+	}
+
+	return &responses.ListInvitationForAdminResponse{
+		Invitations: invitationResponses,
+		PaginationResponse: responses.PaginationResponse{
+			Page:      req.PaginationRequest.Page,
+			PageSize:  req.PaginationRequest.PageSize,
+			TotalPage: int(math.Ceil(float64(totalInvitation) / float64(req.PaginationRequest.PageSize))),
+			TotalItem: int(totalInvitation),
+		},
 	}, nil
 }
 

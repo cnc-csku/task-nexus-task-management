@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -122,4 +123,52 @@ func (m *mongoInvitationRepo) UpdateStatus(ctx context.Context, id bson.ObjectID
 	}
 
 	return nil
+}
+
+func (m *mongoInvitationRepo) SearchInvitationForEachWorkspaceRequest(ctx context.Context, in *repositories.SearchInvitationForEachWorkspaceRequest) ([]models.Invitation, int64, error) {
+	fmt.Println("in", in.Keyword, in.SearchBy)
+	filter := bson.M{"workspace_id": in.WorkspaceID}
+
+	if in.Keyword != "" {
+		if in.SearchBy != "" {
+			filter[in.SearchBy] = bson.M{"$regex": in.Keyword, "$options": "i"}
+		} else {
+			filter["$or"] = []bson.M{
+				{"status": bson.M{"$regex": in.Keyword, "$options": "i"}},
+				{"custom_message": bson.M{"$regex": in.Keyword, "$options": "i"}},
+			}
+		}
+	} 
+
+	findOptions := options.Find()
+	findOptions.SetSkip(int64((in.PaginationRequest.Page - 1) * in.PaginationRequest.PageSize))
+	findOptions.SetLimit(int64(in.PaginationRequest.PageSize))
+
+	sortOrder := 1
+	if strings.ToUpper(in.PaginationRequest.Order) == constant.DESC {
+		sortOrder = -1
+	}
+	findOptions.SetSort(bson.D{{Key: in.PaginationRequest.SortBy, Value: sortOrder}})
+
+	cursor, err := m.collection.Find(ctx, filter, findOptions)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	var invitations []models.Invitation
+	for cursor.Next(ctx) {
+		var invitation models.Invitation
+		if err := cursor.Decode(&invitation); err != nil {
+			return nil, 0, err
+		}
+		invitations = append(invitations, invitation)
+	}
+
+	total, err := m.collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return invitations, total, nil
 }
