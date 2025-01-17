@@ -161,7 +161,7 @@ func (u *userServiceImpl) Login(ctx context.Context, req *requests.LoginRequest)
 			ID:          user.ID.Hex(),
 			Email:       user.Email,
 			FullName:    user.FullName,
-			ProfileUrl: user.ProfileUrl,
+			ProfileUrl:  user.ProfileUrl,
 			DisplayName: user.DisplayName,
 			CreatedAt:   user.CreatedAt,
 			UpdatedAt:   user.UpdatedAt,
@@ -263,7 +263,7 @@ func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserPa
 }
 
 func (u *userServiceImpl) SetupFirstUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error) {
-	// Check is setup 
+	// Check is setup
 	isSetupOwner, err := u.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupOwner)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError)
