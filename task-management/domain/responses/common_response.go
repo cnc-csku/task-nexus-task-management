@@ -10,3 +10,8 @@ type PaginationResponse struct {
 	TotalPage int `json:"totalPage"`
 	TotalItem int `json:"totalItem"`
 }
+
+type SetupStatusResponse struct {
+	IsSetupAdmin     bool `json:"isSetupAdmin"`
+	IsSetupWorkspace bool `json:"isSetupWorkspace"`
+}

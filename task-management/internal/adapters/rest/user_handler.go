@@ -16,6 +16,7 @@ type UserHandler interface {
 	Login(c echo.Context) error
 	GetUserProfile(c echo.Context) error
 	SearchUser(c echo.Context) error
+	SetupUser(c echo.Context) error
 }
 
 type userHandlerImpl struct {
@@ -91,4 +92,22 @@ func (u *userHandlerImpl) SearchUser(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, users)
+}
+
+func (u *userHandlerImpl) SetupUser(c echo.Context) error {
+	req := new(requests.RegisterRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	user, err := u.userService.SetupUser(c.Request().Context(), req)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, user)
 }

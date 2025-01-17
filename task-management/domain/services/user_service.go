@@ -18,25 +18,56 @@ import (
 )
 
 type UserService interface {
-	Register(ctx context.Context, req *requests.RegisterRequest) (*responses.UserResponse, *errutils.Error)
+	Register(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error)
 	Login(ctx context.Context, req *requests.LoginRequest) (*responses.UserWithTokenResponse, *errutils.Error)
 	FindUserByEmail(ctx context.Context, email string) (*responses.UserResponse, *errutils.Error)
 	Search(ctx context.Context, req *requests.SearchUserParams, searcherUserId string) (*responses.ListUserResponse, *errutils.Error)
+	SetupUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error)
 }
 
 type userServiceImpl struct {
-	userRepo repositories.UserRepository
-	config   *config.Config
+	config            *config.Config
+	userRepo          repositories.UserRepository
+	globalSettingRepo repositories.GlobalSettingRepository
 }
 
-func NewUserService(userRepo repositories.UserRepository, config *config.Config) UserService {
+func NewUserService(
+	config *config.Config,
+	userRepo repositories.UserRepository,
+	globalSettingRepo repositories.GlobalSettingRepository,
+) UserService {
 	return &userServiceImpl{
-		userRepo: userRepo,
-		config:   config,
+		config:            config,
+		userRepo:          userRepo,
+		globalSettingRepo: globalSettingRepo,
 	}
 }
 
-func (u *userServiceImpl) Register(ctx context.Context, req *requests.RegisterRequest) (*responses.UserResponse, *errutils.Error) {
+func (u *userServiceImpl) generateJWT(user *models.User, expireAt time.Time) (string, *errutils.Error) {
+	claims := models.UserCustomClaims{
+		ID:          user.ID.Hex(),
+		FullName:    user.FullName,
+		DisplayName: user.DisplayName,
+		Email:       user.Email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   user.ID.Hex(),
+			ExpiresAt: jwt.NewNumericDate(expireAt),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Sign the token with the secret
+	tokenString, err := token.SignedString([]byte(u.config.JWT.AccessTokenSecret))
+	if err != nil {
+		return "", errutils.NewError(exceptions.ErrInternalError, errutils.InternalError)
+	}
+
+	return tokenString, nil
+}
+
+func (u *userServiceImpl) Register(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error) {
 	// Check if email already exists
 	existsUser, err := u.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
@@ -67,15 +98,26 @@ func (u *userServiceImpl) Register(ctx context.Context, req *requests.RegisterRe
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError)
 	}
 
-	res := &responses.UserResponse{
-		ID:          createdUser.ID.Hex(),
-		Email:       createdUser.Email,
-		FullName:    createdUser.FullName,
-		DisplayName: createdUser.DisplayName,
-		CreatedAt:   createdUser.CreatedAt,
-		UpdatedAt:   createdUser.UpdatedAt,
+	// Generate JWT token
+	expireAt := time.Now().Add(time.Hour * 120)
+
+	token, tokenErr := u.generateJWT(createdUser, expireAt)
+	if tokenErr != nil {
+		return nil, tokenErr
 	}
 
+	res := &responses.UserWithTokenResponse{
+		UserResponse: responses.UserResponse{
+			ID:          createdUser.ID.Hex(),
+			Email:       createdUser.Email,
+			FullName:    createdUser.FullName,
+			DisplayName: createdUser.DisplayName,
+			CreatedAt:   createdUser.CreatedAt,
+			UpdatedAt:   createdUser.UpdatedAt,
+		},
+		Token:         token,
+		TokenExpireAt: expireAt,
+	}
 	return res, nil
 }
 
@@ -99,24 +141,9 @@ func (u *userServiceImpl) Login(ctx context.Context, req *requests.LoginRequest)
 	// Generate JWT token
 	expireAt := time.Now().Add(time.Hour * 120)
 
-	claims := models.UserCustomClaims{
-		ID:          user.ID.Hex(),
-		FullName:    user.FullName,
-		DisplayName: user.DisplayName,
-		Email:       user.Email,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   user.ID.Hex(),
-			ExpiresAt: jwt.NewNumericDate(expireAt),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Sign the token with the secret
-	tokenString, err := token.SignedString([]byte(u.config.JWT.AccessTokenSecret))
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError)
+	token, tokenErr := u.generateJWT(user, expireAt)
+	if tokenErr != nil {
+		return nil, tokenErr
 	}
 
 	res := &responses.UserWithTokenResponse{
@@ -128,7 +155,7 @@ func (u *userServiceImpl) Login(ctx context.Context, req *requests.LoginRequest)
 			CreatedAt:   user.CreatedAt,
 			UpdatedAt:   user.UpdatedAt,
 		},
-		Token:         tokenString,
+		Token:         token,
 		TokenExpireAt: expireAt,
 	}
 	return res, nil
@@ -222,4 +249,46 @@ func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserPa
 	}
 
 	return res, nil
+}
+
+func (u *userServiceImpl) SetupUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error) {
+	// Check is setup admin
+	isSetupAdmin, err := u.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupAdmin)
+	if err != nil {
+		return nil, errutils.NewError(err, errutils.InternalServerError)
+	}
+
+	if isSetupAdmin == nil {
+		err := u.globalSettingRepo.Set(ctx, &models.GlobalSetting{
+			Key:   constant.GlobalSettingKeyIsSetupAdmin,
+			Type:  models.GlobalSettingTypeBool,
+			Value: false,
+		})
+
+		if err != nil {
+			return nil, errutils.NewError(err, errutils.InternalServerError)
+		}
+	}
+
+	if isSetupAdmin.Value.(bool) {
+		return nil, errutils.NewError(exceptions.ErrAdminAlreadySetup, errutils.BadRequest)
+	}
+
+	newUser, regErr := u.Register(ctx, req)
+	if regErr != nil {
+		return nil, regErr
+	}
+
+	// Set is setup admin
+	err = u.globalSettingRepo.Set(ctx, &models.GlobalSetting{
+		Key:   constant.GlobalSettingKeyIsSetupAdmin,
+		Type:  models.GlobalSettingTypeBool,
+		Value: true,
+	})
+
+	if err != nil {
+		return nil, errutils.NewError(err, errutils.InternalServerError)
+	}
+
+	return newUser, nil
 }
