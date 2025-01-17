@@ -86,7 +86,8 @@ func (u *userServiceImpl) Register(ctx context.Context, req *requests.RegisterRe
 	req.Password = string(hashedPassword)
 
 	// Generate profile url
-	nameParts := strings.Split(req.FullName, " ")
+	fullName := strings.Trim(req.FullName, " ")
+	nameParts := strings.Split(fullName, " ")
 	var profileUrl = "https://ui-avatars.com/api/?name="
 	if len(nameParts) == 1 {
 		profileUrl += nameParts[0]
@@ -97,8 +98,8 @@ func (u *userServiceImpl) Register(ctx context.Context, req *requests.RegisterRe
 	user := &repositories.CreateUserRequest{
 		Email:        req.Email,
 		PasswordHash: string(hashedPassword),
-		FullName:     req.FullName,
-		DisplayName:  req.FullName,
+		FullName:     fullName,
+		DisplayName:  fullName,
 		ProfileUrl:   profileUrl,
 	}
 	createdUser, err := u.userRepo.Create(ctx, user)
