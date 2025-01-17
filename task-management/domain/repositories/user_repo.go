@@ -20,6 +20,7 @@ type CreateUserRequest struct {
 	PasswordHash string
 	FullName     string
 	DisplayName  string
+	ProfileUrl   string
 }
 
 type SearchUserRequest struct {

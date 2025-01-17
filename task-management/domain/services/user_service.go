@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/cnc-csku/task-nexus/go-lib/utils/errutils"
@@ -73,7 +74,6 @@ func (u *userServiceImpl) Register(ctx context.Context, req *requests.RegisterRe
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError)
 	}
-
 	if existsUser != nil {
 		return nil, errutils.NewError(exceptions.ErrUserAlreadyExists, errutils.BadRequest)
 	}
@@ -83,16 +83,25 @@ func (u *userServiceImpl) Register(ctx context.Context, req *requests.RegisterRe
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError)
 	}
-
 	req.Password = string(hashedPassword)
+
+	// Generate profile url
+	fullName := strings.Trim(req.FullName, " ")
+	nameParts := strings.Split(fullName, " ")
+	var profileUrl = "https://ui-avatars.com/api/?name="
+	if len(nameParts) == 1 {
+		profileUrl += nameParts[0]
+	} else {
+		profileUrl += nameParts[0] + "+" + nameParts[1]
+	}
 
 	user := &repositories.CreateUserRequest{
 		Email:        req.Email,
 		PasswordHash: string(hashedPassword),
-		FullName:     req.FullName,
-		DisplayName:  req.DisplayName,
+		FullName:     fullName,
+		DisplayName:  fullName,
+		ProfileUrl:   profileUrl,
 	}
-
 	createdUser, err := u.userRepo.Create(ctx, user)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError)
@@ -112,6 +121,7 @@ func (u *userServiceImpl) Register(ctx context.Context, req *requests.RegisterRe
 			Email:       createdUser.Email,
 			FullName:    createdUser.FullName,
 			DisplayName: createdUser.DisplayName,
+			ProfileUrl:  createdUser.ProfileUrl,
 			CreatedAt:   createdUser.CreatedAt,
 			UpdatedAt:   createdUser.UpdatedAt,
 		},

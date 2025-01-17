@@ -7,6 +7,7 @@ type UserResponse struct {
 	Email       string    `json:"email"`
 	FullName    string    `json:"fullName"`
 	DisplayName string    `json:"displayName"`
+	ProfileUrl  string    `json:"profileUrl"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
