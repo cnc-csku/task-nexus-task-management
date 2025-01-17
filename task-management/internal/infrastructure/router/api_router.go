@@ -28,6 +28,9 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	projects := api.Group("/projects/v1")
 	{
 		projects.POST("", r.project.Create, r.authMiddleware.Middleware)
+		projects.GET("/:workspaceId/my-projects", r.project.ListMyProjects, r.authMiddleware.Middleware)
+		projects.GET("/:projectId", r.project.GetProjectDetail, r.authMiddleware.Middleware)
+		projects.POST("/:projectId/positions", r.project.AddPosition, r.authMiddleware.Middleware)
 	}
 
 	setup := api.Group("/setup/v1")

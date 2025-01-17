@@ -94,9 +94,10 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 
 	// Create workspace with user as owner
 	workspace, err := w.workspaceRepo.Create(ctx, &repositories.CreateWorkspaceRequest{
-		Name:     req.Name,
-		UserID:   userObjID,
-		UserName: user.DisplayName,
+		Name:            req.Name,
+		UserID:          userObjID,
+		UserDisplayName: user.DisplayName,
+		ProfileUrl:      user.ProfileUrl,
 	})
 
 	if err != nil {

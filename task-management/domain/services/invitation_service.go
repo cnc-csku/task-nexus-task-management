@@ -318,10 +318,11 @@ func (i *invitationServiceImpl) UserResponse(ctx context.Context, req *requests.
 	if req.Action == constant.InvitationActionAccept {
 		// Add the invitee as a member of the workspace
 		createWorkspaceMemberReq := &repositories.CreateWorkspaceMemberRequest{
-			WorkspaceID: invitation.WorkspaceID,
-			UserID:      invitation.InviteeUserID,
-			Name:        user.FullName,
-			Role:        models.WorkspaceMemberRoleMember,
+			WorkspaceID:     invitation.WorkspaceID,
+			UserID:          invitation.InviteeUserID,
+			UserDisplayName: user.FullName,
+			ProfileUrl:      user.ProfileUrl,
+			Role:            models.WorkspaceMemberRoleMember,
 		}
 
 		err = i.workspaceRepo.CreateWorkspaceMember(ctx, createWorkspaceMemberReq)

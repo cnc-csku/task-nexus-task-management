@@ -16,7 +16,7 @@ type Project struct {
 	Members            []ProjectMember     `bson:"members" json:"members"`
 	Workflows          []Workflow          `bson:"workflows" json:"workflows"`
 	AttributeTemplates []AttributeTemplate `bson:"attributes_templates" json:"attributesTemplates"`
-	Roles              []string            `bson:"roles" json:"roles"`
+	Positions          []string            `bson:"positions" json:"positions"`
 	CreatedAt          time.Time           `bson:"created_at" json:"createdAt"`
 	CreatedBy          bson.ObjectID       `bson:"created_by" json:"createdBy"`
 	UpdatedAt          time.Time           `bson:"updated_at" json:"updatedAt"`
@@ -24,9 +24,30 @@ type Project struct {
 }
 
 type ProjectMember struct {
-	UserID   bson.ObjectID `bson:"user_id" json:"userId"`
-	FullName string        `bson:"full_name" json:"fullName"`
-	Role     string        `bson:"role" json:"role"`
+	UserID      bson.ObjectID     `bson:"user_id" json:"userId"`
+	DisplayName string            `bson:"display_name" json:"displayName"`
+	ProfileUrl  string            `bson:"profile_url" json:"profileUrl"`
+	Role        ProjectMemberRole `bson:"role" json:"role"`
+}
+
+type ProjectMemberRole string
+
+const (
+	ProjectMemberRoleOwner     ProjectMemberRole = "OWNER"
+	ProjectMemberRoleModerator ProjectMemberRole = "MODERATOR"
+	ProjectMemberRoleMember    ProjectMemberRole = "MEMBER"
+)
+
+func (p ProjectMemberRole) String() string {
+	return string(p)
+}
+
+func (p ProjectMemberRole) IsValid() bool {
+	switch p {
+	case ProjectMemberRoleOwner, ProjectMemberRoleModerator, ProjectMemberRoleMember:
+		return true
+	}
+	return false
 }
 
 type Workflow struct {
