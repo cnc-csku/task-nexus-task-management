@@ -14,7 +14,7 @@ import (
 type InvitationHandler interface {
 	Create(c echo.Context) error
 	ListForUser(c echo.Context) error
-	ListForAdmin(c echo.Context) error
+	ListForWorkspaceOwner(c echo.Context) error
 	UserResponse(c echo.Context) error
 }
 
@@ -57,14 +57,14 @@ func (u *invitationHandlerImpl) ListForUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func (u *invitationHandlerImpl) ListForAdmin(c echo.Context) error {
-	queryParams := new(requests.ListInvitationForAdminQueryParams)
+func (u *invitationHandlerImpl) ListForWorkspaceOwner(c echo.Context) error {
+	queryParams := new(requests.ListInvitationForWorkspaceOwnerQueryParams)
 	if err := c.Bind(queryParams); err != nil {
 		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
 	}
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
-	res, err := u.invitationService.ListForAdmin(c.Request().Context(), queryParams, userClaims.ID)
+	res, err := u.invitationService.ListForWorkspaceOwner(c.Request().Context(), queryParams, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}

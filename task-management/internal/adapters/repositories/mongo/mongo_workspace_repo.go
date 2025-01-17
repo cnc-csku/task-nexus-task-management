@@ -92,7 +92,7 @@ func (m *mongoWorkspaceRepo) Create(ctx context.Context, workspace *repositories
 			{
 				UserID:    workspace.UserID,
 				Name:      workspace.UserName,
-				Role:      models.WorkspaceMemberRoleAdmin,
+				Role:      models.WorkspaceMemberRoleOwner,
 				JoinedAt:  time.Now(),
 				RemovedAt: nil,
 			},

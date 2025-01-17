@@ -55,15 +55,15 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 		return nil, errutils.NewError(exceptions.ErrWorkspaceAlreadySetup, errutils.BadRequest)
 	}
 
-	// Check is setup admin
-	isSetupAdmin, err := w.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupAdmin)
+	// Check is setup owner
+	isSetupOwner, err := w.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupOwner)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError)
 	}
 
-	if isSetupAdmin == nil {
+	if isSetupOwner == nil {
 		err := w.globalSettingRepo.Set(ctx, &models.GlobalSetting{
-			Key:   constant.GlobalSettingKeyIsSetupAdmin,
+			Key:   constant.GlobalSettingKeyIsSetupOwner,
 			Type:  models.GlobalSettingTypeBool,
 			Value: false,
 		})
@@ -73,8 +73,8 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 		}
 	}
 
-	if !isSetupAdmin.Value.(bool) {
-		return nil, errutils.NewError(exceptions.ErrAdminNotSetup, errutils.BadRequest)
+	if !isSetupOwner.Value.(bool) {
+		return nil, errutils.NewError(exceptions.ErrOwnerNotSetup, errutils.BadRequest)
 	}
 
 	userObjID, err := bson.ObjectIDFromHex(userID)

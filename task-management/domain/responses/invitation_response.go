@@ -25,12 +25,12 @@ type InvitationForUserResponse struct {
 	RespondedAt        *time.Time `json:"respondedAt"`
 }
 
-type ListInvitationForAdminResponse struct {
-	Invitations        []InvitationForAdminResponse `json:"invitations"`
+type ListInvitationForWorkspaceOwnerResponse struct {
+	Invitations        []InvitationForWorkspaceOwnerResponse `json:"invitations"`
 	PaginationResponse PaginationResponse           `json:"paginationResponse"`
 }
 
-type InvitationForAdminResponse struct {
+type InvitationForWorkspaceOwnerResponse struct {
 	InvitationID       string     `json:"invitationId"`
 	WorkspaceID        string     `json:"workspaceId"`
 	WorkspaceName      string     `json:"workspaceName"`

@@ -104,7 +104,7 @@ func (u *userHandlerImpl) SetupUser(c echo.Context) error {
 		return err
 	}
 
-	user, err := u.userService.SetupUser(c.Request().Context(), req)
+	user, err := u.userService.SetupFirstUser(c.Request().Context(), req)
 	if err != nil {
 		return err.ToEchoError()
 	}

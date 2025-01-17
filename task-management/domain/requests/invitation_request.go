@@ -6,7 +6,7 @@ type CreateInvitationRequest struct {
 	CustomMessage string `json:"customMessage"`
 }
 
-type ListInvitationForAdminQueryParams struct {
+type ListInvitationForWorkspaceOwnerQueryParams struct {
 	WorkspaceID       string            `param:"workspaceId" validate:"required"`
 	Keyword           string            `query:"keyword"`
 	SearchBy          string            `query:"searchBy"`

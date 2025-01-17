@@ -23,7 +23,7 @@ type UserService interface {
 	Login(ctx context.Context, req *requests.LoginRequest) (*responses.UserWithTokenResponse, *errutils.Error)
 	FindUserByEmail(ctx context.Context, email string) (*responses.UserResponse, *errutils.Error)
 	Search(ctx context.Context, req *requests.SearchUserParams, searcherUserId string) (*responses.ListUserResponse, *errutils.Error)
-	SetupUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error)
+	SetupFirstUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error)
 }
 
 type userServiceImpl struct {
@@ -261,16 +261,16 @@ func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserPa
 	return res, nil
 }
 
-func (u *userServiceImpl) SetupUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error) {
-	// Check is setup admin
-	isSetupAdmin, err := u.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupAdmin)
+func (u *userServiceImpl) SetupFirstUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error) {
+	// Check is setup 
+	isSetupOwner, err := u.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupOwner)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError)
 	}
 
-	if isSetupAdmin == nil {
+	if isSetupOwner == nil {
 		err := u.globalSettingRepo.Set(ctx, &models.GlobalSetting{
-			Key:   constant.GlobalSettingKeyIsSetupAdmin,
+			Key:   constant.GlobalSettingKeyIsSetupOwner,
 			Type:  models.GlobalSettingTypeBool,
 			Value: false,
 		})
@@ -280,8 +280,8 @@ func (u *userServiceImpl) SetupUser(ctx context.Context, req *requests.RegisterR
 		}
 	}
 
-	if isSetupAdmin.Value.(bool) {
-		return nil, errutils.NewError(exceptions.ErrAdminAlreadySetup, errutils.BadRequest)
+	if isSetupOwner.Value.(bool) {
+		return nil, errutils.NewError(exceptions.ErrOwnerAlreadySetup, errutils.BadRequest)
 	}
 
 	newUser, regErr := u.Register(ctx, req)
@@ -289,9 +289,9 @@ func (u *userServiceImpl) SetupUser(ctx context.Context, req *requests.RegisterR
 		return nil, regErr
 	}
 
-	// Set is setup admin
+	// Set is setup owner
 	err = u.globalSettingRepo.Set(ctx, &models.GlobalSetting{
-		Key:   constant.GlobalSettingKeyIsSetupAdmin,
+		Key:   constant.GlobalSettingKeyIsSetupOwner,
 		Type:  models.GlobalSettingTypeBool,
 		Value: true,
 	})
