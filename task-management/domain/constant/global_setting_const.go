@@ -1,6 +1,6 @@
 package constant
 
 const (
-	GlobalSettingKeyIsSetupAdmin     = "IS_SETUP_ADMIN"
+	GlobalSettingKeyIsSetupOwner     = "IS_SETUP_OWNER"
 	GlobalSettingKeyIsSetupWorkspace = "IS_SETUP_WORKSPACE"
 )

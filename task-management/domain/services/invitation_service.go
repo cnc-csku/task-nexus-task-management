@@ -20,7 +20,7 @@ import (
 type InvitationService interface {
 	Create(ctx context.Context, req *requests.CreateInvitationRequest, inviterUserID string) (*responses.CreateInvitationResponse, *errutils.Error)
 	ListForUser(ctx context.Context, userID string) (*responses.ListInvitationForUserResponse, *errutils.Error)
-	ListForAdmin(ctx context.Context, req *requests.ListInvitationForAdminQueryParams, userID string) (*responses.ListInvitationForAdminResponse, *errutils.Error)
+	ListForWorkspaceOwner(ctx context.Context, req *requests.ListInvitationForWorkspaceOwnerQueryParams, userID string) (*responses.ListInvitationForWorkspaceOwnerResponse, *errutils.Error)
 	UserResponse(ctx context.Context, req *requests.UserResponseInvitationRequest, userID string) (*responses.UserResponseInvitationResponse, *errutils.Error)
 }
 
@@ -56,14 +56,14 @@ func (i *invitationServiceImpl) Create(ctx context.Context, req *requests.Create
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
-	// Check if the inviter is the admin of the workspace
+	// Check if the inviter is the owner of the workspace
 	inviter, err := i.workspaceRepo.FindWorkspaceMemberByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonInviterUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if inviter == nil {
 		return nil, errutils.NewError(exceptions.ErrMemberNotFoundInWorkspace, errutils.BadRequest).WithDebugMessage("Inviter not found in workspace")
-	} else if inviter.Role != models.WorkspaceMemberRoleAdmin {
-		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("Inviter is not an admin")
+	} else if inviter.Role != models.WorkspaceMemberRoleOwner {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("Inviter is not an owner")
 	}
 
 	// Check if the invitee is already a member of the workspace
@@ -154,7 +154,7 @@ func (i *invitationServiceImpl) ListForUser(ctx context.Context, userID string) 
 	}, nil
 }
 
-func validateListForAdminPaginationRequestSortBy(sortBy string) bool {
+func validateListForWorkspaceOwnerPaginationRequestSortBy(sortBy string) bool {
 	switch sortBy {
 	case constant.InvitationFieldCreatedAt, constant.InvitationFieldStatus:
 		return true
@@ -162,7 +162,7 @@ func validateListForAdminPaginationRequestSortBy(sortBy string) bool {
 	return false
 }
 
-func validateListForAdminSearchBy(searchBy string) bool {
+func validateListForWorkspaceOwnerSearchBy(searchBy string) bool {
 	switch searchBy {
 	case constant.InvitationFieldStatus:
 		return true
@@ -170,8 +170,8 @@ func validateListForAdminSearchBy(searchBy string) bool {
 	return false
 }
 
-func (i *invitationServiceImpl) ListForAdmin(ctx context.Context, req *requests.ListInvitationForAdminQueryParams, userID string) (*responses.ListInvitationForAdminResponse, *errutils.Error) {
-	if req.SearchBy != "" || !validateListForAdminSearchBy(req.SearchBy) {
+func (i *invitationServiceImpl) ListForWorkspaceOwner(ctx context.Context, req *requests.ListInvitationForWorkspaceOwnerQueryParams, userID string) (*responses.ListInvitationForWorkspaceOwnerResponse, *errutils.Error) {
+	if req.SearchBy != "" || !validateListForWorkspaceOwnerSearchBy(req.SearchBy) {
 		req.SearchBy = ""
 	}
 
@@ -182,7 +182,7 @@ func (i *invitationServiceImpl) ListForAdmin(ctx context.Context, req *requests.
 		if req.PaginationRequest.PageSize <= 0 {
 			req.PaginationRequest.PageSize = 100
 		}
-		if req.PaginationRequest.SortBy == "" || !validateListForAdminPaginationRequestSortBy(req.PaginationRequest.SortBy) {
+		if req.PaginationRequest.SortBy == "" || !validateListForWorkspaceOwnerPaginationRequestSortBy(req.PaginationRequest.SortBy) {
 			req.PaginationRequest.SortBy = constant.InvitationFieldCreatedAt
 		}
 		if req.PaginationRequest.Order == "" {
@@ -207,14 +207,14 @@ func (i *invitationServiceImpl) ListForAdmin(ctx context.Context, req *requests.
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
-	// Check if the user is the admin of the workspace
+	// Check if the user is the owner of the workspace
 	member, err := i.workspaceRepo.FindWorkspaceMemberByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if member == nil {
 		return nil, errutils.NewError(exceptions.ErrMemberNotFoundInWorkspace, errutils.BadRequest).WithDebugMessage("User not found in workspace")
-	} else if member.Role != models.WorkspaceMemberRoleAdmin {
-		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not an admin")
+	} else if member.Role != models.WorkspaceMemberRoleOwner {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not an owner")
 	}
 
 	invitations, totalInvitation, err := i.invitationRepo.SearchInvitationForEachWorkspaceRequest(ctx, &repositories.SearchInvitationForEachWorkspaceRequest{
@@ -232,7 +232,7 @@ func (i *invitationServiceImpl) ListForAdmin(ctx context.Context, req *requests.
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
-	invitationResponses := make([]responses.InvitationForAdminResponse, 0)
+	invitationResponses := make([]responses.InvitationForWorkspaceOwnerResponse, 0)
 	for _, invitation := range invitations {
 		workspace, err := i.workspaceRepo.FindByID(ctx, invitation.WorkspaceID)
 		if err != nil {
@@ -254,7 +254,7 @@ func (i *invitationServiceImpl) ListForAdmin(ctx context.Context, req *requests.
 			status = models.InvitationStatusExpired
 		}
 
-		invitationResponses = append(invitationResponses, responses.InvitationForAdminResponse{
+		invitationResponses = append(invitationResponses, responses.InvitationForWorkspaceOwnerResponse{
 			InvitationID:       invitation.ID.Hex(),
 			WorkspaceID:        invitation.WorkspaceID.Hex(),
 			WorkspaceName:      workspace.Name,
@@ -273,7 +273,7 @@ func (i *invitationServiceImpl) ListForAdmin(ctx context.Context, req *requests.
 		})
 	}
 
-	return &responses.ListInvitationForAdminResponse{
+	return &responses.ListInvitationForWorkspaceOwnerResponse{
 		Invitations: invitationResponses,
 		PaginationResponse: responses.PaginationResponse{
 			Page:      req.PaginationRequest.Page,
@@ -321,7 +321,7 @@ func (i *invitationServiceImpl) UserResponse(ctx context.Context, req *requests.
 			WorkspaceID: invitation.WorkspaceID,
 			UserID:      invitation.InviteeUserID,
 			Name:        user.FullName,
-			Role:        models.WorkspaceMemberRoleUser,
+			Role:        models.WorkspaceMemberRoleMember,
 		}
 
 		err = i.workspaceRepo.CreateWorkspaceMember(ctx, createWorkspaceMemberReq)

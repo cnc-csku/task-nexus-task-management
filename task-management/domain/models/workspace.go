@@ -26,8 +26,9 @@ type WorkspaceMember struct {
 type WorkspaceMemberRole string
 
 const (
-	WorkspaceMemberRoleAdmin WorkspaceMemberRole = "ADMIN"
-	WorkspaceMemberRoleUser  WorkspaceMemberRole = "MEMBER"
+	WorkspaceMemberRoleOwner     WorkspaceMemberRole = "OWNER"
+	WorkspaceMemberRoleModerator WorkspaceMemberRole = "MODERATOR"
+	WorkspaceMemberRoleMember    WorkspaceMemberRole = "MEMBER"
 )
 
 func (w WorkspaceMemberRole) String() string {
@@ -36,7 +37,7 @@ func (w WorkspaceMemberRole) String() string {
 
 func (w WorkspaceMemberRole) IsValid() bool {
 	switch w {
-	case WorkspaceMemberRoleAdmin, WorkspaceMemberRoleUser:
+	case WorkspaceMemberRoleOwner, WorkspaceMemberRoleModerator, WorkspaceMemberRoleMember:
 		return true
 	}
 	return false

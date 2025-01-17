@@ -31,13 +31,13 @@ func (c *commonService) GetSetupStatus(ctx context.Context) (*responses.SetupSta
 		return nil, errutils.NewError(err, errutils.InternalServerError)
 	}
 
-	isSetupAdmin, err := c.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupAdmin)
+	isSetupOwner, err := c.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupOwner)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError)
 	}
 
 	return &responses.SetupStatusResponse{
 		IsSetupWorkspace: isSetupWorkspace.Value.(bool),
-		IsSetupAdmin:     isSetupAdmin.Value.(bool),
+		IsSetupOwner:     isSetupOwner.Value.(bool),
 	}, nil
 }

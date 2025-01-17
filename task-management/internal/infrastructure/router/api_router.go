@@ -21,7 +21,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	{
 		invitations.POST("", r.invitation.Create, r.authMiddleware.Middleware)
 		invitations.GET("/users", r.invitation.ListForUser, r.authMiddleware.Middleware)
-		invitations.GET("/:workspaceId/workspaces/admin", r.invitation.ListForAdmin, r.authMiddleware.Middleware)
+		invitations.GET("/:workspaceId/workspaces/owner", r.invitation.ListForWorkspaceOwner, r.authMiddleware.Middleware)
 		invitations.PUT("/users", r.invitation.UserResponse, r.authMiddleware.Middleware)
 	}
 

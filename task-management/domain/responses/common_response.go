@@ -12,6 +12,6 @@ type PaginationResponse struct {
 }
 
 type SetupStatusResponse struct {
-	IsSetupAdmin     bool `json:"isSetupAdmin"`
+	IsSetupOwner     bool `json:"isSetupOwner"`
 	IsSetupWorkspace bool `json:"isSetupWorkspace"`
 }
