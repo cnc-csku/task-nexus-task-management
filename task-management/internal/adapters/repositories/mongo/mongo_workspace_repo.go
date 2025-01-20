@@ -73,10 +73,10 @@ func (m *mongoWorkspaceRepo) CreateWorkspaceMember(ctx context.Context, in *repo
 	update := bson.M{
 		"$push": bson.M{
 			"members": models.WorkspaceMember{
-				UserID:   in.UserID,
-				Name:     in.Name,
-				Role:     in.Role,
-				JoinedAt: time.Now(),
+				UserID:      in.UserID,
+				DisplayName: in.UserDisplayName,
+				Role:        in.Role,
+				JoinedAt:    time.Now(),
 			},
 		},
 	}
@@ -91,11 +91,11 @@ func (m *mongoWorkspaceRepo) Create(ctx context.Context, workspace *repositories
 		Name: workspace.Name,
 		Members: []models.WorkspaceMember{
 			{
-				UserID:    workspace.UserID,
-				Name:      workspace.UserName,
-				Role:      models.WorkspaceMemberRoleOwner,
-				JoinedAt:  time.Now(),
-				RemovedAt: nil,
+				UserID:      workspace.UserID,
+				DisplayName: workspace.UserDisplayName,
+				Role:        models.WorkspaceMemberRoleOwner,
+				JoinedAt:    time.Now(),
+				RemovedAt:   nil,
 			},
 		},
 		CreatedBy: workspace.UserID,
