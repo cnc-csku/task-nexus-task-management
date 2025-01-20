@@ -67,6 +67,7 @@ func (m *mongoInvitationRepo) Create(ctx context.Context, invitation *repositori
 		ID:            bson.NewObjectID(),
 		WorkspaceID:   invitation.WorkspaceID,
 		InviteeUserID: invitation.InviteeUserID,
+		Role:          invitation.Role,
 		Status:        invitation.Status,
 		ExpiredAt:     invitation.ExpiredAt,
 		CustomMessage: &invitation.CustomMessage,
@@ -138,7 +139,7 @@ func (m *mongoInvitationRepo) SearchInvitationForEachWorkspaceRequest(ctx contex
 				{"custom_message": bson.M{"$regex": in.Keyword, "$options": "i"}},
 			}
 		}
-	} 
+	}
 
 	findOptions := options.Find()
 	findOptions.SetSkip(int64((in.PaginationRequest.Page - 1) * in.PaginationRequest.PageSize))

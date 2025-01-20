@@ -17,6 +17,11 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		auth.GET("/search", r.user.SearchUser, r.authMiddleware.Middleware)
 	}
 
+	workspaces := api.Group("/workspaces/v1")
+	{
+		workspaces.GET("/own-workspaces", r.workspace.ListOwnWorkspace, r.authMiddleware.Middleware)
+	}
+
 	invitations := api.Group("/invitations/v1")
 	{
 		invitations.POST("", r.invitation.Create, r.authMiddleware.Middleware)
