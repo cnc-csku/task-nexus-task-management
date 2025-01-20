@@ -14,6 +14,7 @@ import (
 
 type WorkspaceService interface {
 	SetupWorkspace(ctx context.Context, req *requests.CreateWorkspaceRequest, userID string) (*models.Workspace, *errutils.Error)
+	ListOwnWorkspace(ctx context.Context, userId string) ([]*models.Workspace, *errutils.Error)
 }
 
 type workspaceServiceImpl struct {
@@ -109,5 +110,23 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 		Type:  models.GlobalSettingTypeBool,
 		Value: true,
 	})
+	if err != nil {
+		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
 	return workspace, nil
+}
+
+func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId string) ([]*models.Workspace, *errutils.Error) {
+	userObjID, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	workspaces, err := s.workspaceRepo.FindByUserID(ctx, userObjID)
+	if err != nil {
+		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	return workspaces, nil
 }

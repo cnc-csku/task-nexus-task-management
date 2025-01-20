@@ -20,6 +20,7 @@ type InvitationRepository interface {
 type CreateInvitationRequest struct {
 	WorkspaceID   bson.ObjectID
 	InviteeUserID bson.ObjectID
+	Role          models.InvitationRole
 	Status        models.InvitationStatus
 	ExpiredAt     time.Time
 	CustomMessage string

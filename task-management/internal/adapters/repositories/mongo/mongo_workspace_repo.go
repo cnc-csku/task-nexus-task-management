@@ -73,9 +73,10 @@ func (m *mongoWorkspaceRepo) CreateWorkspaceMember(ctx context.Context, in *repo
 	update := bson.M{
 		"$push": bson.M{
 			"members": models.WorkspaceMember{
-				UserID: in.UserID,
-				Name:   in.Name,
-				Role:   in.Role,
+				UserID:   in.UserID,
+				Name:     in.Name,
+				Role:     in.Role,
+				JoinedAt: time.Now(),
 			},
 		},
 	}
@@ -109,4 +110,25 @@ func (m *mongoWorkspaceRepo) Create(ctx context.Context, workspace *repositories
 
 	workspaceModel.ID = res.InsertedID.(bson.ObjectID)
 	return &workspaceModel, nil
+}
+
+func (m *mongoWorkspaceRepo) FindByUserID(ctx context.Context, userID bson.ObjectID) ([]*models.Workspace, error) {
+	f := NewWorkspaceFilter()
+	f.WithMemberUserID(userID)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	var workspaces []*models.Workspace
+	for cursor.Next(ctx) {
+		var workspace models.Workspace
+		if err := cursor.Decode(&workspace); err != nil {
+			return nil, err
+		}
+		workspaces = append(workspaces, &workspace)
+	}
+
+	return workspaces, nil
 }

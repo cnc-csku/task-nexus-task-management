@@ -14,6 +14,7 @@ type InvitationForUserResponse struct {
 	InvitationID       string     `json:"invitationId"`
 	WorkspaceID        string     `json:"workspaceId"`
 	WorkspaceName      string     `json:"workspaceName"`
+	Role               string     `json:"role"`
 	Status             string     `json:"status"`
 	CustomMessage      *string    `json:"customMessage"`
 	InvitedAt          string     `json:"invitedAt"`
@@ -27,13 +28,14 @@ type InvitationForUserResponse struct {
 
 type ListInvitationForWorkspaceOwnerResponse struct {
 	Invitations        []InvitationForWorkspaceOwnerResponse `json:"invitations"`
-	PaginationResponse PaginationResponse           `json:"paginationResponse"`
+	PaginationResponse PaginationResponse                    `json:"paginationResponse"`
 }
 
 type InvitationForWorkspaceOwnerResponse struct {
 	InvitationID       string     `json:"invitationId"`
 	WorkspaceID        string     `json:"workspaceId"`
 	WorkspaceName      string     `json:"workspaceName"`
+	Role               string     `json:"role"`
 	Status             string     `json:"status"`
 	CustomMessage      *string    `json:"customMessage"`
 	InvitedAt          string     `json:"invitedAt"`
