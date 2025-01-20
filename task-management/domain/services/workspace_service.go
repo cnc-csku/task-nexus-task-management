@@ -129,5 +129,9 @@ func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId stri
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
+	if workspaces == nil {
+		return []*models.Workspace{}, nil
+	}
+
 	return workspaces, nil
 }
