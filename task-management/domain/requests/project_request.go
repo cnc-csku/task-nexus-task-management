@@ -5,7 +5,6 @@ type CreateProjectRequest struct {
 	WorkspaceID   string `json:"workspaceId" validate:"required"`
 	ProjectPrefix string `json:"projectPrefix" validate:"required"`
 	Description   string `json:"description"`
-	// UserIDs       []string `json:"userIds"`
 }
 
 type ListMyProjectsPathParams struct {
@@ -16,7 +15,42 @@ type GetProjectsDetailPathParams struct {
 	ProjectID string `param:"projectId" validate:"required"`
 }
 
-type AddPositionRequest struct {
+type AddPositionsRequest struct {
 	ProjectID string   `param:"projectId" validate:"required"`
 	Title     []string `json:"title" validate:"required"`
+}
+
+type ListPositionsPathParams struct {
+	ProjectID string `param:"projectId" validate:"required"`
+}
+
+type AddProjectMembersRequest struct {
+	ProjectID string                           `param:"projectId" validate:"required"`
+	Members   []AddProjectMembersRequestMember `json:"members" validate:"required,dive"`
+}
+
+type AddProjectMembersRequestMember struct {
+	UserID   string `json:"userId" validate:"required"`
+	Role     string `json:"role" validate:"required,oneof=MEMBER MODERATOR"`
+	Position string `json:"position" validate:"required"`
+}
+
+type ListProjectMembersRequest struct {
+	ProjectID string `param:"projectId" validate:"required"`
+	Keyword   string `query:"keyword"`
+	PaginationRequest
+}
+
+type AddWorkflowsRequest struct {
+	ProjectID string                        `param:"projectId" validate:"required"`
+	Workflows []AddWorkflowsRequestWorkflow `json:"workflows" validate:"required,dive"`
+}
+
+type AddWorkflowsRequestWorkflow struct {
+	PreviousStatuses []string `json:"previousStatuses"`
+	Status           string   `json:"status" validate:"required"`
+}
+
+type ListWorkflowsPathParams struct {
+	ProjectID string `param:"projectId" validate:"required"`
 }

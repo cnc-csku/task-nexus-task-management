@@ -19,7 +19,7 @@ import (
 type InvitationService interface {
 	Create(ctx context.Context, req *requests.CreateInvitationRequest, inviterUserID string) (*responses.CreateInvitationResponse, *errutils.Error)
 	ListForUser(ctx context.Context, userID string) (*responses.ListInvitationForUserResponse, *errutils.Error)
-	ListForWorkspaceOwner(ctx context.Context, req *requests.ListInvitationForWorkspaceOwnerQueryParams, userID string) (*responses.ListInvitationForWorkspaceOwnerResponse, *errutils.Error)
+	ListForWorkspaceOwner(ctx context.Context, req *requests.ListInvitationForWorkspaceOwnerParams, userID string) (*responses.ListInvitationForWorkspaceOwnerResponse, *errutils.Error)
 	UserResponse(ctx context.Context, req *requests.UserResponseInvitationRequest, userID string) (*responses.UserResponseInvitationResponse, *errutils.Error)
 }
 
@@ -168,32 +168,27 @@ func validateListForWorkspaceOwnerSearchBy(searchBy string) bool {
 	return false
 }
 
-func (i *invitationServiceImpl) ListForWorkspaceOwner(ctx context.Context, req *requests.ListInvitationForWorkspaceOwnerQueryParams, userID string) (*responses.ListInvitationForWorkspaceOwnerResponse, *errutils.Error) {
+func validateListForWorkspaceOwnerPaginationRequest(req *requests.ListInvitationForWorkspaceOwnerParams) {
+	if req.PaginationRequest.Page <= 0 {
+		req.PaginationRequest.Page = 1
+	}
+	if req.PaginationRequest.PageSize <= 0 {
+		req.PaginationRequest.PageSize = 100
+	}
+	if req.PaginationRequest.SortBy == "" || !validateListForWorkspaceOwnerPaginationRequestSortBy(req.PaginationRequest.SortBy) {
+		req.PaginationRequest.SortBy = constant.InvitationFieldCreatedAt
+	}
+	if req.PaginationRequest.Order == "" {
+		req.PaginationRequest.Order = constant.DESC
+	}
+}
+
+func (i *invitationServiceImpl) ListForWorkspaceOwner(ctx context.Context, req *requests.ListInvitationForWorkspaceOwnerParams, userID string) (*responses.ListInvitationForWorkspaceOwnerResponse, *errutils.Error) {
 	if req.SearchBy != "" || !validateListForWorkspaceOwnerSearchBy(req.SearchBy) {
 		req.SearchBy = ""
 	}
 
-	if req.PaginationRequest != nil {
-		if req.PaginationRequest.Page <= 0 {
-			req.PaginationRequest.Page = 1
-		}
-		if req.PaginationRequest.PageSize <= 0 {
-			req.PaginationRequest.PageSize = 100
-		}
-		if req.PaginationRequest.SortBy == "" || !validateListForWorkspaceOwnerPaginationRequestSortBy(req.PaginationRequest.SortBy) {
-			req.PaginationRequest.SortBy = constant.InvitationFieldCreatedAt
-		}
-		if req.PaginationRequest.Order == "" {
-			req.PaginationRequest.Order = constant.DESC
-		}
-	} else {
-		req.PaginationRequest = &requests.PaginationRequest{
-			Page:     1,
-			PageSize: 100,
-			SortBy:   constant.InvitationFieldCreatedAt,
-			Order:    constant.DESC,
-		}
-	}
+	validateListForWorkspaceOwnerPaginationRequest(req)
 
 	bsonUserID, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
@@ -215,7 +210,7 @@ func (i *invitationServiceImpl) ListForWorkspaceOwner(ctx context.Context, req *
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not an owner")
 	}
 
-	invitations, totalInvitation, err := i.invitationRepo.SearchInvitationForEachWorkspaceRequest(ctx, &repositories.SearchInvitationForEachWorkspaceRequest{
+	invitations, totalInvitation, err := i.invitationRepo.SearchInvitationForEachWorkspace(ctx, &repositories.SearchInvitationForEachWorkspaceRequest{
 		WorkspaceID: bsonWorkspaceID,
 		Keyword:     req.Keyword,
 		SearchBy:    req.SearchBy,

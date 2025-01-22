@@ -20,6 +20,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	workspaces := api.Group("/workspaces/v1")
 	{
 		workspaces.GET("/own-workspaces", r.workspace.ListOwnWorkspace, r.authMiddleware.Middleware)
+		workspaces.GET("/:workspaceId/members", r.workspace.ListWorkspaceMembers, r.authMiddleware.Middleware)
 	}
 
 	invitations := api.Group("/invitations/v1")
@@ -35,7 +36,18 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.POST("", r.project.Create, r.authMiddleware.Middleware)
 		projects.GET("/:workspaceId/my-projects", r.project.ListMyProjects, r.authMiddleware.Middleware)
 		projects.GET("/:projectId", r.project.GetProjectDetail, r.authMiddleware.Middleware)
-		projects.POST("/:projectId/positions", r.project.AddPosition, r.authMiddleware.Middleware)
+
+		// Positions
+		projects.POST("/:projectId/positions", r.project.AddPositions, r.authMiddleware.Middleware)
+		projects.GET("/:projectId/positions", r.project.ListPositions, r.authMiddleware.Middleware)
+
+		// Members
+		projects.POST("/:projectId/members", r.project.AddMembers, r.authMiddleware.Middleware)
+		projects.GET("/:projectId/members", r.project.ListMembers, r.authMiddleware.Middleware)
+
+		// Workflow
+		projects.POST("/:projectId/workflows", r.project.AddWorkflows, r.authMiddleware.Middleware)
+		projects.GET("/:projectId/workflows", r.project.ListWorkflows, r.authMiddleware.Middleware)
 	}
 
 	setup := api.Group("/setup/v1")

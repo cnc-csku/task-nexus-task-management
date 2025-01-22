@@ -14,6 +14,7 @@ import (
 type WorkspaceHandler interface {
 	SetupWorkspace(c echo.Context) error
 	ListOwnWorkspace(c echo.Context) error
+	ListWorkspaceMembers(c echo.Context) error
 }
 
 type workspaceHandlerImpl struct {
@@ -55,4 +56,15 @@ func (w *workspaceHandlerImpl) ListOwnWorkspace(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, workspaces)
+}
+
+func (w *workspaceHandlerImpl) ListWorkspaceMembers(c echo.Context) error {
+	workspaceID := c.Param("workspaceId")
+
+	members, err := w.workspaceService.ListWorkspaceMembers(c.Request().Context(), workspaceID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, members)
 }

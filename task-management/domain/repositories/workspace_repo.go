@@ -13,6 +13,7 @@ type WorkspaceRepository interface {
 	CreateWorkspaceMember(ctx context.Context, req *CreateWorkspaceMemberRequest) error
 	Create(ctx context.Context, workspace *CreateWorkspaceRequest) (*models.Workspace, error)
 	FindByUserID(ctx context.Context, userID bson.ObjectID) ([]*models.Workspace, error)
+	FindWorkspaceMemberByWorkspaceID(ctx context.Context, workspaceID bson.ObjectID) ([]models.WorkspaceMember, error)
 }
 
 type CreateWorkspaceMemberRequest struct {

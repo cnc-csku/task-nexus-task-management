@@ -2,7 +2,6 @@ package mongo
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -126,8 +125,7 @@ func (m *mongoInvitationRepo) UpdateStatus(ctx context.Context, id bson.ObjectID
 	return nil
 }
 
-func (m *mongoInvitationRepo) SearchInvitationForEachWorkspaceRequest(ctx context.Context, in *repositories.SearchInvitationForEachWorkspaceRequest) ([]models.Invitation, int64, error) {
-	fmt.Println("in", in.Keyword, in.SearchBy)
+func (m *mongoInvitationRepo) SearchInvitationForEachWorkspace(ctx context.Context, in *repositories.SearchInvitationForEachWorkspaceRequest) ([]models.Invitation, int64, error) {
 	filter := bson.M{"workspace_id": in.WorkspaceID}
 
 	if in.Keyword != "" {

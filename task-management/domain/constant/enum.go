@@ -37,3 +37,8 @@ const (
 	InvitationFieldStatus    = "status"
 	InvitationFieldCreatedAt = "created_at"
 )
+
+const (
+	ProjectMemberFieldDisplayName = "display_name"
+	ProjectMemberFieldJoinedAt    = "joined_at"
+)

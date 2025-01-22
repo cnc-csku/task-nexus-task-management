@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"math"
 
 	"github.com/cnc-csku/task-nexus/go-lib/utils/errutils"
 	"github.com/cnc-csku/task-nexus/task-management/config"
+	"github.com/cnc-csku/task-nexus/task-management/domain/constant"
 	"github.com/cnc-csku/task-nexus/task-management/domain/exceptions"
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
@@ -17,7 +19,12 @@ type ProjectService interface {
 	Create(ctx context.Context, req *requests.CreateProjectRequest, userId string) (*responses.CreateProjectResponse, *errutils.Error)
 	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]*models.Project, *errutils.Error)
 	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*models.Project, *errutils.Error)
-	AddPosition(ctx context.Context, req *requests.AddPositionRequest, userID string) (*responses.AddPositionResponse, *errutils.Error)
+	AddPositions(ctx context.Context, req *requests.AddPositionsRequest, userID string) (*responses.AddPositionsResponse, *errutils.Error)
+	ListPositions(ctx context.Context, req *requests.ListPositionsPathParams) ([]string, *errutils.Error)
+	AddMembers(ctx context.Context, req *requests.AddProjectMembersRequest, userID string) (*responses.AddProjectMembersResponse, *errutils.Error)
+	ListMembers(ctx context.Context, req *requests.ListProjectMembersRequest) (*responses.ListProjectMembersResponse, *errutils.Error)
+	AddWorkflows(ctx context.Context, req *requests.AddWorkflowsRequest, userID string) (*responses.AddWorkflowsResponse, *errutils.Error)
+	ListWorkflows(ctx context.Context, req *requests.ListWorkflowsPathParams) ([]models.Workflow, *errutils.Error)
 }
 
 type projectServiceImpl struct {
@@ -74,31 +81,7 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 		return nil, errutils.NewError(exceptions.ErrProjectPrefixAlreadyExists, errutils.BadRequest)
 	}
 
-	// var users []models.User
-	// if req.UserIDs != nil {
-	// 	var bsonUserIds []bson.ObjectID
-	// 	for _, id := range req.UserIDs {
-	// 		bsonUserId, err := bson.ObjectIDFromHex(id)
-	// 		if err != nil {
-	// 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
-	// 		}
-	// 		bsonUserIds = append(bsonUserIds, bsonUserId)
-	// 	}
-	// 	users, err = p.userRepo.FindByIDs(ctx, bsonUserIds)
-	// 	if err != nil {
-	// 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
-	// 	}
-	// }
-
-	// var members []models.ProjectMember
-	// for _, user := range users {
-	// 	members = append(members, models.ProjectMember{
-	// 		UserID:      user.ID,
-	// 		DisplayName: user.FullName,
-	// 		ProfileUrl:  user.ProfileUrl,
-	// 	})
-	// }
-
+	// Create owner member
 	owner := &models.ProjectMember{
 		UserID:      member.UserID,
 		DisplayName: member.DisplayName,
@@ -113,8 +96,8 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 		Description:   req.Description,
 		Status:        models.ProjectStatusActive,
 		Owner:         owner,
-		// Members:       members,
-		CreatedBy: bsonUserId,
+		Workflows:     models.GetDefaultWorkflows(),
+		CreatedBy:     bsonUserId,
 	}
 
 	createdProject, err := p.projectRepo.Create(ctx, project)
@@ -181,7 +164,7 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 	return project, nil
 }
 
-func (p *projectServiceImpl) AddPosition(ctx context.Context, req *requests.AddPositionRequest, userID string) (*responses.AddPositionResponse, *errutils.Error) {
+func (p *projectServiceImpl) AddPositions(ctx context.Context, req *requests.AddPositionsRequest, userID string) (*responses.AddPositionsResponse, *errutils.Error) {
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -221,17 +204,240 @@ func (p *projectServiceImpl) AddPosition(ctx context.Context, req *requests.AddP
 	}
 
 	if len(newPositions) == 0 {
-		return &responses.AddPositionResponse{
+		return &responses.AddPositionsResponse{
 			Message: "No new position added",
 		}, nil
 	}
 
-	err = p.projectRepo.AddPosition(ctx, bsonProjectID, newPositions)
+	err = p.projectRepo.AddPositions(ctx, bsonProjectID, newPositions)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
-	return &responses.AddPositionResponse{
+	return &responses.AddPositionsResponse{
 		Message: "Position added successfully",
 	}, nil
+}
+
+func (p *projectServiceImpl) ListPositions(ctx context.Context, req *requests.ListPositionsPathParams) ([]string, *errutils.Error) {
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	positions, err := p.projectRepo.FindPositionByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	return positions, nil
+}
+
+func (p *projectServiceImpl) AddMembers(ctx context.Context, req *requests.AddProjectMembersRequest, userID string) (*responses.AddProjectMembersResponse, *errutils.Error) {
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	if len(req.Members) == 0 {
+		return &responses.AddProjectMembersResponse{
+			Message: "No member added",
+		}, nil
+	}
+
+	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound)
+	}
+
+	// Check if the user is owner or moderator of the project
+	member, err := p.projectRepo.FindMemberByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.BadRequest)
+	} else if member.Role != models.ProjectMemberRoleOwner && member.Role != models.ProjectMemberRoleModerator {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
+	}
+
+	createProjMemberReq := make([]repositories.CreateProjectMemberRequest, 0)
+	for _, member := range req.Members {
+		bsonMemberID, err := bson.ObjectIDFromHex(member.UserID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		}
+
+		// Check if the member already exists
+		existingMember, err := p.projectRepo.FindMemberByProjectIDAndUserID(ctx, bsonProjectID, bsonMemberID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+		} else if existingMember != nil {
+			continue
+		}
+
+		// Check if the member is a member of the workspace
+		workspaceMember, err := p.workspaceRepo.FindWorkspaceMemberByWorkspaceIDAndUserID(ctx, project.WorkspaceID, bsonMemberID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+		} else if workspaceMember == nil {
+			return nil, errutils.NewError(exceptions.ErrMemberNotFoundInWorkspace, errutils.BadRequest)
+		}
+
+		createProjMemberReq = append(createProjMemberReq, repositories.CreateProjectMemberRequest{
+			UserID:      bsonMemberID,
+			DisplayName: workspaceMember.DisplayName,
+			ProfileUrl:  workspaceMember.ProfileUrl,
+			Position:    member.Position,
+			Role:        models.ProjectMemberRole(member.Role),
+		})
+	}
+
+	err = p.projectRepo.AddMembers(ctx, bsonProjectID, createProjMemberReq)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	return nil, nil
+}
+
+func validateListMembersPaginationRequestSortBy(sortBy string) bool {
+	switch sortBy {
+	case constant.ProjectMemberFieldDisplayName, constant.ProjectMemberFieldJoinedAt:
+		return true
+	}
+	return false
+}
+
+func validateListMembersPaginationRequest(req *requests.ListProjectMembersRequest) {
+	if req.PaginationRequest.Page <= 0 {
+		req.PaginationRequest.Page = 1
+	}
+	if req.PaginationRequest.PageSize <= 0 {
+		req.PaginationRequest.PageSize = 100
+	}
+	if req.PaginationRequest.SortBy == "" || !validateListMembersPaginationRequestSortBy(req.PaginationRequest.SortBy) {
+		req.PaginationRequest.SortBy = constant.ProjectMemberFieldDisplayName
+	}
+	if req.PaginationRequest.Order == "" {
+		req.PaginationRequest.Order = constant.ASC
+	}
+}
+
+func (p *projectServiceImpl) ListMembers(ctx context.Context, req *requests.ListProjectMembersRequest) (*responses.ListProjectMembersResponse, *errutils.Error) {
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	validateListMembersPaginationRequest(req)
+
+	members, totalMember, err := p.projectRepo.SearchProjectMember(ctx, &repositories.SearchProjectMemberRequest{
+		ProjectID: bsonProjectID,
+		Keyword:   req.Keyword,
+		PaginationRequest: repositories.PaginationRequest{
+			Page:     req.PaginationRequest.Page,
+			PageSize: req.PaginationRequest.PageSize,
+			Order:    req.PaginationRequest.Order,
+			SortBy:   req.PaginationRequest.SortBy,
+		},
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	return &responses.ListProjectMembersResponse{
+		Members: members,
+		PaginationResponse: &responses.PaginationResponse{
+			Page:      req.PaginationRequest.Page,
+			PageSize:  req.PaginationRequest.PageSize,
+			TotalPage: int(math.Ceil(float64(totalMember) / float64(req.PaginationRequest.PageSize))),
+			TotalItem: int(totalMember),
+		},
+	}, nil
+}
+
+func (p *projectServiceImpl) AddWorkflows(ctx context.Context, req *requests.AddWorkflowsRequest, userID string) (*responses.AddWorkflowsResponse, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound)
+	}
+
+	// Check if the user is owner or moderator of the project
+	member, err := p.projectRepo.FindMemberByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
+	} else if member.Role != models.ProjectMemberRoleOwner && member.Role != models.ProjectMemberRoleModerator {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
+	}
+
+	// Check if the workflow already exists
+	existingWorkflows, err := p.projectRepo.FindWorkflowByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	workflowMap := make(map[string]struct{})
+	for _, workflow := range existingWorkflows {
+		workflowMap[workflow.Status] = struct{}{}
+	}
+
+	var newWorkflows []models.Workflow
+	for _, workflow := range req.Workflows {
+		if _, ok := workflowMap[workflow.Status]; !ok {
+			newWorkflows = append(newWorkflows, models.Workflow{
+				Status:           workflow.Status,
+				PreviousStatuses: workflow.PreviousStatuses,
+			})
+		}
+	}
+
+	if len(newWorkflows) == 0 {
+		return &responses.AddWorkflowsResponse{
+			Message: "No new workflow added",
+		}, nil
+	}
+
+	err = p.projectRepo.AddWorkflows(ctx, bsonProjectID, newWorkflows)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	return &responses.AddWorkflowsResponse{
+		Message: "Workflow added successfully",
+	}, nil
+}
+
+func (p *projectServiceImpl) ListWorkflows(ctx context.Context, req *requests.ListWorkflowsPathParams) ([]models.Workflow, *errutils.Error) {
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	workflows, err := p.projectRepo.FindWorkflowByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	return workflows, nil
 }

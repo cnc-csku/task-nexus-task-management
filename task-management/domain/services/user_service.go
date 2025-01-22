@@ -201,28 +201,23 @@ func validateSearchUserPaginationRequestSortBy(sortBy string) bool {
 	return false
 }
 
-func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserParams, searcherUserId string) (*responses.ListUserResponse, *errutils.Error) {
-	if req.PaginationRequest != nil {
-		if req.PaginationRequest.Page <= 0 {
-			req.PaginationRequest.Page = 1
-		}
-		if req.PaginationRequest.PageSize <= 0 {
-			req.PaginationRequest.PageSize = 100
-		}
-		if req.PaginationRequest.SortBy == "" || !validateSearchUserPaginationRequestSortBy(req.PaginationRequest.SortBy) {
-			req.PaginationRequest.SortBy = constant.UserFieldEmail
-		}
-		if req.PaginationRequest.Order == "" {
-			req.PaginationRequest.Order = constant.ASC
-		}
-	} else {
-		req.PaginationRequest = &requests.PaginationRequest{
-			Page:     1,
-			PageSize: 100,
-			SortBy:   constant.UserFieldEmail,
-			Order:    constant.ASC,
-		}
+func validateSearchMemberPaginationRequest(req *requests.SearchUserParams) {
+	if req.PaginationRequest.Page <= 0 {
+		req.PaginationRequest.Page = 1
 	}
+	if req.PaginationRequest.PageSize <= 0 {
+		req.PaginationRequest.PageSize = 100
+	}
+	if req.PaginationRequest.SortBy == "" || !validateSearchUserPaginationRequestSortBy(req.PaginationRequest.SortBy) {
+		req.PaginationRequest.SortBy = constant.UserFieldEmail
+	}
+	if req.PaginationRequest.Order == "" {
+		req.PaginationRequest.Order = constant.ASC
+	}
+}
+
+func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserParams, searcherUserId string) (*responses.ListUserResponse, *errutils.Error) {
+	validateSearchMemberPaginationRequest(req)
 
 	users, totalUser, err := u.userRepo.Search(ctx, &repositories.SearchUserRequest{
 		Keyword:           req.Keyword,
@@ -262,7 +257,7 @@ func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserPa
 }
 
 func (u *userServiceImpl) SetupFirstUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error) {
-	// Check is setup 
+	// Check is setup
 	isSetupOwner, err := u.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupOwner)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError)

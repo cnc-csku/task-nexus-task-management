@@ -55,6 +55,14 @@ type Workflow struct {
 	Status           string   `bson:"status" json:"status"`
 }
 
+func GetDefaultWorkflows() []Workflow {
+	return []Workflow{
+		{Status: "TODO"},
+		{Status: "IN_PROGRESS", PreviousStatuses: []string{"TODO"}},
+		{Status: "DONE", PreviousStatuses: []string{"IN_PROGRESS"}},
+	}
+}
+
 type AttributeTemplate struct {
 	Name  string      `bson:"name" json:"name"`
 	Type  string      `bson:"type" json:"type"`
