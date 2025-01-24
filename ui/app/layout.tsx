@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Montserrat, Noto_Sans_Thai } from "next/font/google";
-import ToastContainer from "@/lib/react-toastify/ToastContainer";
 import NextUIProvider from "@/lib/next-ui/NextUIProvider";
 import QueryClientProvider from "@/lib/react-query/QueryClientProvider";
+import NextAuthProvider from "@/lib/next-auth/NextAuthProvider";
+import { getServerSession } from "next-auth";
+import { Toaster } from "sonner";
+import { authOptions } from "@/lib/next-auth/auth";
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 const notoSansThai = Noto_Sans_Thai({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -24,18 +28,27 @@ export const metadata: Metadata = {
   description: "An agile task management for everyone.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions);
+
   return (
-    <html lang="th">
-      <body className={monserat.className}>
+    <html lang="en">
+      <body className={monserat.className + " " + notoSansThai.className}>
         <NextUIProvider>
           <QueryClientProvider>
-            <ToastContainer />
-            {children}
+            <NextAuthProvider session={session}>
+              {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+              <Toaster
+                position="top-right"
+                closeButton
+                richColors
+              />
+              {children}
+            </NextAuthProvider>
           </QueryClientProvider>
         </NextUIProvider>
       </body>

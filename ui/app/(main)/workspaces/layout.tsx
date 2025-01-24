@@ -1,4 +1,4 @@
-export default function AuthLayout({
+export default function WorkspaceLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

@@ -34,6 +34,11 @@ func (e *Error) WithDebugMessage(debugMessage string) *Error {
 	return e
 }
 
+func (e *Error) WithMessage(message string) *Error {
+	e.Message = message
+	return e
+}
+
 type RestErrorResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
