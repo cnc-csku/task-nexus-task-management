@@ -54,7 +54,8 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 			return nil, errutils.NewError(err, errutils.InternalServerError)
 		}
 	} else if isSetupWorkspace.Value.(bool) {
-		return nil, errutils.NewError(exceptions.ErrWorkspaceAlreadySetup, errutils.BadRequest)
+		return nil, errutils.NewError(exceptions.ErrWorkspaceAlreadySetup, errutils.BadRequest).
+			WithMessage("Workspace already setup")
 	}
 
 	// Check is setup owner

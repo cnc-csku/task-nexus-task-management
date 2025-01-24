@@ -161,6 +161,7 @@ func (u *userServiceImpl) Login(ctx context.Context, req *requests.LoginRequest)
 			ID:          user.ID.Hex(),
 			Email:       user.Email,
 			FullName:    user.FullName,
+			ProfileUrl:  user.ProfileUrl,
 			DisplayName: user.DisplayName,
 			CreatedAt:   user.CreatedAt,
 			UpdatedAt:   user.UpdatedAt,

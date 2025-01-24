@@ -1,3 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.lets-start-btn:hover .lets-start-icon{
+    margin-left: 15px;
+}
