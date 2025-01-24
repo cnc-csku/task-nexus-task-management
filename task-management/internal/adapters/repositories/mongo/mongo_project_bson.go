@@ -38,10 +38,26 @@ func NewProjectUpdate() projectUpdate {
 	return projectUpdate{}
 }
 
-func (u projectUpdate) AddPosition(member []string) {
+func (u projectUpdate) AddPositions(position []string) {
 	u["$push"] = bson.M{
 		"positions": bson.M{
+			"$each": position,
+		},
+	}
+}
+
+func (u projectUpdate) AddMembers(member []bson.M) {
+	u["$push"] = bson.M{
+		"members": bson.M{
 			"$each": member,
+		},
+	}
+}
+
+func (u projectUpdate) AddWorkflows(workflow []bson.M) {
+	u["$push"] = bson.M{
+		"workflows": bson.M{
+			"$each": workflow,
 		},
 	}
 }

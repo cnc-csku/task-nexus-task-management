@@ -7,11 +7,11 @@ type CreateInvitationRequest struct {
 	CustomMessage string `json:"customMessage"`
 }
 
-type ListInvitationForWorkspaceOwnerQueryParams struct {
-	WorkspaceID       string             `param:"workspaceId" validate:"required"`
-	Keyword           string             `query:"keyword"`
-	SearchBy          string             `query:"searchBy"`
-	PaginationRequest *PaginationRequest `query:"paginationRequest"`
+type ListInvitationForWorkspaceOwnerParams struct {
+	WorkspaceID string `param:"workspaceId" validate:"required"`
+	Keyword     string `query:"keyword"`
+	SearchBy    string `query:"searchBy"`
+	PaginationRequest
 }
 
 type UserResponseInvitationRequest struct {

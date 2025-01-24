@@ -58,7 +58,7 @@ func (u *invitationHandlerImpl) ListForUser(c echo.Context) error {
 }
 
 func (u *invitationHandlerImpl) ListForWorkspaceOwner(c echo.Context) error {
-	queryParams := new(requests.ListInvitationForWorkspaceOwnerQueryParams)
+	queryParams := new(requests.ListInvitationForWorkspaceOwnerParams)
 	if err := c.Bind(queryParams); err != nil {
 		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
 	}

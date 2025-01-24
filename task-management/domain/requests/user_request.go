@@ -13,5 +13,5 @@ type LoginRequest struct {
 
 type SearchUserParams struct {
 	Keyword           string             `query:"keyword"`
-	PaginationRequest *PaginationRequest `query:"paginationRequest"`
+	PaginationRequest 
 }

@@ -132,3 +132,19 @@ func (m *mongoWorkspaceRepo) FindByUserID(ctx context.Context, userID bson.Objec
 
 	return workspaces, nil
 }
+
+func (m *mongoWorkspaceRepo) FindWorkspaceMemberByWorkspaceID(ctx context.Context, workspaceID bson.ObjectID) ([]models.WorkspaceMember, error) {
+	f := NewWorkspaceFilter()
+	f.WithWorkspaceID(workspaceID)
+
+	var result struct {
+		Members []models.WorkspaceMember `bson:"members"`
+	}
+
+	err := m.collection.FindOne(ctx, f).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Members, nil
+}

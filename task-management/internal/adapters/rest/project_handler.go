@@ -15,7 +15,12 @@ type ProjectHandler interface {
 	Create(c echo.Context) error
 	ListMyProjects(c echo.Context) error
 	GetProjectDetail(c echo.Context) error
-	AddPosition(c echo.Context) error
+	AddPositions(c echo.Context) error
+	ListPositions(c echo.Context) error
+	AddMembers(c echo.Context) error
+	ListMembers(c echo.Context) error
+	AddWorkflows(c echo.Context) error
+	ListWorkflows(c echo.Context) error
 }
 
 type projectHandlerImpl struct {
@@ -85,8 +90,8 @@ func (u *projectHandlerImpl) GetProjectDetail(c echo.Context) error {
 	return c.JSON(http.StatusOK, project)
 }
 
-func (u *projectHandlerImpl) AddPosition(c echo.Context) error {
-	req := new(requests.AddPositionRequest)
+func (u *projectHandlerImpl) AddPositions(c echo.Context) error {
+	req := new(requests.AddPositionsRequest)
 	if err := c.Bind(req); err != nil {
 		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
 	}
@@ -96,10 +101,102 @@ func (u *projectHandlerImpl) AddPosition(c echo.Context) error {
 	}
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
-	res, err := u.projectService.AddPosition(c.Request().Context(), req, userClaims.ID)
+	res, err := u.projectService.AddPositions(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}
 
 	return c.JSON(http.StatusOK, res)
+}
+
+func (u *projectHandlerImpl) ListPositions(c echo.Context) error {
+	req := new(requests.ListPositionsPathParams)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	positions, err := u.projectService.ListPositions(c.Request().Context(), req)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, positions)
+}
+
+func (u *projectHandlerImpl) AddMembers(c echo.Context) error {
+	req := new(requests.AddProjectMembersRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	res, err := u.projectService.AddMembers(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, res)
+}
+
+func (u *projectHandlerImpl) ListMembers(c echo.Context) error {
+	req := new(requests.ListProjectMembersRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	members, err := u.projectService.ListMembers(c.Request().Context(), req)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, members)
+}
+
+func (u *projectHandlerImpl) AddWorkflows(c echo.Context) error {
+	req := new(requests.AddWorkflowsRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	res, err := u.projectService.AddWorkflows(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, res)
+}
+
+func (u *projectHandlerImpl) ListWorkflows(c echo.Context) error {
+	req := new(requests.ListWorkflowsPathParams)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	workflows, err := u.projectService.ListWorkflows(c.Request().Context(), req)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, workflows)
 }
