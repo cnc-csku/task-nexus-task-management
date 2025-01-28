@@ -114,6 +114,7 @@ func (m *mongoInvitationRepo) UpdateStatus(ctx context.Context, id bson.ObjectID
 	update := bson.D{
 		{Key: "$set", Value: bson.D{
 			{Key: "status", Value: status},
+			{Key: "responded_at", Value: time.Now()},
 		}},
 	}
 

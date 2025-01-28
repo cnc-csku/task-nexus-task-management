@@ -11,7 +11,7 @@ type Project struct {
 	WorkspaceID        bson.ObjectID       `bson:"workspace_id" json:"workspaceId"`
 	Name               string              `bson:"name" json:"name"`
 	ProjectPrefix      string              `bson:"project_prefix" json:"projectPrefix"`
-	Description        string              `bson:"description" json:"description"`
+	Description        *string             `bson:"description" json:"description"`
 	Status             ProjectStatus       `bson:"status" json:"status"`
 	Members            []ProjectMember     `bson:"members" json:"members"`
 	Workflows          []Workflow          `bson:"workflows" json:"workflows"`
@@ -24,10 +24,11 @@ type Project struct {
 }
 
 type ProjectMember struct {
-	UserID      bson.ObjectID     `bson:"user_id" json:"userId"`
-	DisplayName string            `bson:"display_name" json:"displayName"`
-	ProfileUrl  string            `bson:"profile_url" json:"profileUrl"`
-	Role        ProjectMemberRole `bson:"role" json:"role"`
+	UserID    bson.ObjectID     `bson:"user_id" json:"userId"`
+	Role      ProjectMemberRole `bson:"role" json:"role"`
+	Position  string            `bson:"position" json:"position"`
+	JoinedAt  time.Time         `bson:"joined_at" json:"joinedAt"`
+	RemovedAt *time.Time        `bson:"removed_at" json:"removedAt"`
 }
 
 type ProjectMemberRole string

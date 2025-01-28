@@ -191,12 +191,10 @@ func (m *mongoProjectRepo) AddMembers(ctx context.Context, projectID bson.Object
 	bsonMembers := make([]bson.M, len(member))
 	for i, m := range member {
 		bsonMembers[i] = bson.M{
-			"user_id":      m.UserID,
-			"display_name": m.DisplayName,
-			"profile_url":  m.ProfileUrl,
-			"position":     m.Position,
-			"role":         m.Role,
-			"joined_at":    time.Now(),
+			"user_id":   m.UserID,
+			"position":  m.Position,
+			"role":      m.Role,
+			"joined_at": time.Now(),
 		}
 	}
 	update.AddMembers(bsonMembers)

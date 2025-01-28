@@ -17,11 +17,9 @@ type WorkspaceRepository interface {
 }
 
 type CreateWorkspaceMemberRequest struct {
-	WorkspaceID     bson.ObjectID
-	UserID          bson.ObjectID
-	UserDisplayName string
-	ProfileUrl      string
-	Role            models.WorkspaceMemberRole
+	WorkspaceID bson.ObjectID
+	UserID      bson.ObjectID
+	Role        models.WorkspaceMemberRole
 }
 
 type CreateWorkspaceRequest struct {

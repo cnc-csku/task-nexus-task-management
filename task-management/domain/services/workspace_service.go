@@ -9,12 +9,13 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
 	"github.com/cnc-csku/task-nexus/task-management/domain/requests"
+	"github.com/cnc-csku/task-nexus/task-management/domain/responses"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type WorkspaceService interface {
 	SetupWorkspace(ctx context.Context, req *requests.CreateWorkspaceRequest, userID string) (*models.Workspace, *errutils.Error)
-	ListOwnWorkspace(ctx context.Context, userId string) ([]*models.Workspace, *errutils.Error)
+	ListOwnWorkspace(ctx context.Context, userId string) (*responses.ListOwnWorkspaceResponse, *errutils.Error)
 	ListWorkspaceMembers(ctx context.Context, workspaceID string) ([]models.WorkspaceMember, *errutils.Error)
 }
 
@@ -120,7 +121,7 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 	return workspace, nil
 }
 
-func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId string) ([]*models.Workspace, *errutils.Error) {
+func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId string) (*responses.ListOwnWorkspaceResponse, *errutils.Error) {
 	userObjID, err := bson.ObjectIDFromHex(userId)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
@@ -132,10 +133,25 @@ func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId stri
 	}
 
 	if workspaces == nil {
-		return []*models.Workspace{}, nil
+		return &responses.ListOwnWorkspaceResponse{
+			Workspaces: []responses.ListOwnWorkspaceResponseWorkspace{},
+		}, nil
 	}
 
-	return workspaces, nil
+	workspaceResponses := make([]responses.ListOwnWorkspaceResponseWorkspace, 0)
+	for _, workspace := range workspaces {
+		workspaceResponses = append(workspaceResponses, responses.ListOwnWorkspaceResponseWorkspace{
+			ID:        workspace.ID.Hex(),
+			Name:      workspace.Name,
+			CreatedBy: workspace.CreatedBy.Hex(),
+			CreatedAt: workspace.CreatedAt,
+			UpdatedAt: workspace.UpdatedAt,
+		})
+	}
+
+	return &responses.ListOwnWorkspaceResponse{
+		Workspaces: workspaceResponses,
+	}, nil
 }
 
 func (s *workspaceServiceImpl) ListWorkspaceMembers(ctx context.Context, workspaceID string) ([]models.WorkspaceMember, *errutils.Error) {

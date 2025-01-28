@@ -26,7 +26,7 @@ type CreateProjectRequest struct {
 	WorkspaceID   bson.ObjectID
 	Name          string
 	ProjectPrefix string
-	Description   string
+	Description   *string
 	Status        models.ProjectStatus
 	Owner         *models.ProjectMember
 	Workflows     []models.Workflow
@@ -34,11 +34,9 @@ type CreateProjectRequest struct {
 }
 
 type CreateProjectMemberRequest struct {
-	UserID      bson.ObjectID
-	DisplayName string
-	ProfileUrl  string
-	Position    string
-	Role        models.ProjectMemberRole
+	UserID   bson.ObjectID
+	Position string
+	Role     models.ProjectMemberRole
 }
 
 type SearchProjectMemberRequest struct {

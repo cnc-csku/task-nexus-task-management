@@ -83,10 +83,8 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 
 	// Create owner member
 	owner := &models.ProjectMember{
-		UserID:      member.UserID,
-		DisplayName: member.DisplayName,
-		ProfileUrl:  member.ProfileUrl,
-		Role:        models.ProjectMemberRoleOwner,
+		UserID: member.UserID,
+		Role:   models.ProjectMemberRoleOwner,
 	}
 
 	project := &repositories.CreateProjectRequest{
@@ -282,20 +280,10 @@ func (p *projectServiceImpl) AddMembers(ctx context.Context, req *requests.AddPr
 			continue
 		}
 
-		// Check if the member is a member of the workspace
-		workspaceMember, err := p.workspaceRepo.FindWorkspaceMemberByWorkspaceIDAndUserID(ctx, project.WorkspaceID, bsonMemberID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
-		} else if workspaceMember == nil {
-			return nil, errutils.NewError(exceptions.ErrMemberNotFoundInWorkspace, errutils.BadRequest)
-		}
-
 		createProjMemberReq = append(createProjMemberReq, repositories.CreateProjectMemberRequest{
-			UserID:      bsonMemberID,
-			DisplayName: workspaceMember.DisplayName,
-			ProfileUrl:  workspaceMember.ProfileUrl,
-			Position:    member.Position,
-			Role:        models.ProjectMemberRole(member.Role),
+			UserID:   bsonMemberID,
+			Position: member.Position,
+			Role:     models.ProjectMemberRole(member.Role),
 		})
 	}
 
@@ -338,7 +326,7 @@ func (p *projectServiceImpl) ListMembers(ctx context.Context, req *requests.List
 
 	validateListMembersPaginationRequest(req)
 
-	members, totalMember, err := p.projectRepo.SearchProjectMember(ctx, &repositories.SearchProjectMemberRequest{
+	projectMembers, totalMember, err := p.projectRepo.SearchProjectMember(ctx, &repositories.SearchProjectMemberRequest{
 		ProjectID: bsonProjectID,
 		Keyword:   req.Keyword,
 		PaginationRequest: repositories.PaginationRequest{
@@ -352,8 +340,39 @@ func (p *projectServiceImpl) ListMembers(ctx context.Context, req *requests.List
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
+	// Get all project members' user ID
+	memberIDs := make([]bson.ObjectID, 0)
+	for _, member := range projectMembers {
+		memberIDs = append(memberIDs, member.UserID)
+	}
+
+	// Get all project members' user
+	members, err := p.userRepo.FindByIDs(ctx, memberIDs)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	// Map projectMembers and members data to response
+	userMap := make(map[bson.ObjectID]models.User)
+	for _, user := range members {
+		userMap[user.ID] = user
+	}
+	memberResp := make([]responses.ListProjectMembersResponseMember, 0)
+	for _, member := range projectMembers {
+		if user, exists := userMap[member.UserID]; exists {
+			memberResp = append(memberResp, responses.ListProjectMembersResponseMember{
+				UserID:      user.ID.Hex(),
+				DisplayName: user.DisplayName,
+				ProfileUrl:  user.ProfileUrl,
+				Role:        member.Role,
+				Position:    member.Position,
+				JoinedAt:    member.JoinedAt,
+			})
+		}
+	}
+
 	return &responses.ListProjectMembersResponse{
-		Members: members,
+		Members: memberResp,
 		PaginationResponse: &responses.PaginationResponse{
 			Page:      req.PaginationRequest.Page,
 			PageSize:  req.PaginationRequest.PageSize,

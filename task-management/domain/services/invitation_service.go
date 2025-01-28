@@ -126,7 +126,7 @@ func (i *invitationServiceImpl) ListForUser(ctx context.Context, userID string) 
 		}
 
 		var status = invitation.Status
-		if invitation.ExpiredAt.Before(time.Now()) {
+		if status == models.InvitationStatusPending && invitation.ExpiredAt.Before(time.Now()) {
 			status = models.InvitationStatusExpired
 		}
 
@@ -304,11 +304,6 @@ func (i *invitationServiceImpl) UserResponse(ctx context.Context, req *requests.
 		return nil, errutils.NewError(exceptions.ErrInvalidInvitationStatus, errutils.BadRequest).WithDebugMessage("Invalid invitation status")
 	}
 
-	user, err := i.userRepo.FindByID(ctx, bsonUserID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	}
-
 	if req.Action == constant.InvitationActionAccept {
 		var role models.WorkspaceMemberRole
 		if invitation.Role == models.InvitationRoleModerator {
@@ -319,11 +314,9 @@ func (i *invitationServiceImpl) UserResponse(ctx context.Context, req *requests.
 
 		// Add the invitee as a member of the workspace
 		createWorkspaceMemberReq := &repositories.CreateWorkspaceMemberRequest{
-			WorkspaceID:     invitation.WorkspaceID,
-			UserID:          invitation.InviteeUserID,
-			UserDisplayName: user.FullName,
-			ProfileUrl:      user.ProfileUrl,
-			Role:            role,
+			WorkspaceID: invitation.WorkspaceID,
+			UserID:      invitation.InviteeUserID,
+			Role:        role,
 		}
 
 		err = i.workspaceRepo.CreateWorkspaceMember(ctx, createWorkspaceMemberReq)

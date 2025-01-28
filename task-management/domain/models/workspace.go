@@ -16,12 +16,10 @@ type Workspace struct {
 }
 
 type WorkspaceMember struct {
-	UserID      bson.ObjectID       `bson:"user_id" json:"userId"`
-	DisplayName string              `bson:"display_name" json:"displayName"`
-	ProfileUrl  string              `bson:"profile_url" json:"profileUrl"`
-	Role        WorkspaceMemberRole `bson:"role" json:"role"`
-	JoinedAt    time.Time           `bson:"joined_at" json:"joinedAt"`
-	RemovedAt   *time.Time          `bson:"removed_at,omitempty" json:"removedAt,omitempty"`
+	UserID    bson.ObjectID       `bson:"user_id" json:"userId"`
+	Role      WorkspaceMemberRole `bson:"role" json:"role"`
+	JoinedAt  time.Time           `bson:"joined_at" json:"joinedAt"`
+	RemovedAt *time.Time          `bson:"removed_at,omitempty" json:"removedAt,omitempty"`
 }
 
 type WorkspaceMemberRole string
