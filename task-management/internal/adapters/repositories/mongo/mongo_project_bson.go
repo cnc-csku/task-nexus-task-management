@@ -67,3 +67,9 @@ func (u projectUpdate) AddWorkflows(workflow []bson.M) {
 		},
 	}
 }
+
+func (u projectUpdate) IncrementSprintRunningNumber() {
+	u["$inc"] = bson.M{
+		"sprint_running_number": 1,
+	}
+}

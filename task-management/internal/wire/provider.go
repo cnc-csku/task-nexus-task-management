@@ -38,6 +38,7 @@ var RepositorySet = wire.NewSet(
 	mongo.NewMongoWorkspaceMemberRepo,
 	mongo.NewMongoInvitationRepo,
 	mongo.NewMongoGlobalSettingRepo,
+	mongo.NewMongoSprintRepo,
 )
 
 var ServiceSet = wire.NewSet(
@@ -46,6 +47,7 @@ var ServiceSet = wire.NewSet(
 	services.NewProjectService,
 	services.NewInvitationService,
 	services.NewWorkspaceService,
+	services.NewSprintService,
 )
 
 var RestHandlerSet = wire.NewSet(
@@ -55,6 +57,7 @@ var RestHandlerSet = wire.NewSet(
 	rest.NewProjectHandler,
 	rest.NewInvitationHandler,
 	rest.NewWorkspaceHandler,
+	rest.NewSprintHandler,
 )
 
 var GrpcClientSet = wire.NewSet(

@@ -93,17 +93,19 @@ func (m *mongoProjectRepo) Create(ctx context.Context, project *repositories.Cre
 	// 	ctx,
 	// 	func(ctx context.Context) (interface{}, error) {
 	newProject = models.Project{
-		ID:            bson.NewObjectID(),
-		WorkspaceID:   project.WorkspaceID,
-		Name:          project.Name,
-		ProjectPrefix: project.ProjectPrefix,
-		Description:   project.Description,
-		Status:        project.Status,
-		Workflows:     project.Workflows,
-		CreatedAt:     time.Now(),
-		CreatedBy:     project.CreatedBy,
-		UpdatedAt:     time.Now(),
-		UpdatedBy:     project.CreatedBy,
+		ID:                  bson.NewObjectID(),
+		WorkspaceID:         project.WorkspaceID,
+		Name:                project.Name,
+		ProjectPrefix:       project.ProjectPrefix,
+		Description:         project.Description,
+		Status:              project.Status,
+		SprintRunningNumber: 0,
+		TaskRunningNumber:   0,
+		Workflows:           project.Workflows,
+		CreatedAt:           time.Now(),
+		CreatedBy:           project.CreatedBy,
+		UpdatedAt:           time.Now(),
+		UpdatedBy:           project.CreatedBy,
 	}
 
 	_, err := m.collection.InsertOne(ctx, newProject)
@@ -351,4 +353,19 @@ func (m *mongoProjectRepo) FindWorkflowByProjectID(ctx context.Context, projectI
 	}
 
 	return result.Workflows, nil
+}
+
+func (m *mongoProjectRepo) IncrementSprintRunningNumber(ctx context.Context, projectID bson.ObjectID) error {
+	f := NewProjectFilter()
+	f.WithID(projectID)
+
+	u := NewProjectUpdate()
+	u.IncrementSprintRunningNumber()
+
+	_, err := m.collection.UpdateOne(ctx, f, u)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

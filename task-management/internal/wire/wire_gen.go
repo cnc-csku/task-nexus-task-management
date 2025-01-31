@@ -42,7 +42,10 @@ func InitializeApp() *api.EchoAPI {
 	invitationHandler := rest.NewInvitationHandler(invitationService)
 	workspaceService := services.NewWorkspaceService(workspaceRepository, globalSettingRepository, userRepository, workspaceMemberRepository)
 	workspaceHandler := rest.NewWorkspaceHandler(workspaceService)
-	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler, projectHandler, invitationHandler, workspaceHandler)
+	sprintRepository := mongo.NewMongoSprintRepo(configConfig, client)
+	sprintService := services.NewSprintService(sprintRepository, projectRepository)
+	sprintHandler := rest.NewSprintHandler(sprintService)
+	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler, projectHandler, invitationHandler, workspaceHandler, sprintHandler)
 	echoAPI := api.NewEchoAPI(context, configConfig, client, routerRouter)
 	return echoAPI
 }
