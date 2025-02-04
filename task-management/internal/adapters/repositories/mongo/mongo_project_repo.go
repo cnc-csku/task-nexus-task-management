@@ -15,12 +15,14 @@ import (
 )
 
 type mongoProjectRepo struct {
+	config     *config.Config
 	client     *mongo.Client
 	collection *mongo.Collection
 }
 
 func NewMongoProjectRepo(config *config.Config, mongoClient *mongo.Client) repositories.ProjectRepository {
 	return &mongoProjectRepo{
+		config:     config,
 		client:     mongoClient,
 		collection: mongoClient.Database(config.MongoDB.Database).Collection("projects"),
 	}
@@ -80,14 +82,23 @@ func (m *mongoProjectRepo) FindByWorkspaceIDAndProjectPrefix(ctx context.Context
 }
 
 func (m *mongoProjectRepo) Create(ctx context.Context, project *repositories.CreateProjectRequest) (*models.Project, error) {
-	newProject := models.Project{
+	// session, err := m.client.StartSession()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer session.EndSession(ctx)
+
+	var newProject models.Project
+	// _, err = session.WithTransaction(
+	// 	ctx,
+	// 	func(ctx context.Context) (interface{}, error) {
+	newProject = models.Project{
 		ID:            bson.NewObjectID(),
 		WorkspaceID:   project.WorkspaceID,
 		Name:          project.Name,
 		ProjectPrefix: project.ProjectPrefix,
 		Description:   project.Description,
 		Status:        project.Status,
-		Members:       []models.ProjectMember{*project.Owner},
 		Workflows:     project.Workflows,
 		CreatedAt:     time.Now(),
 		CreatedBy:     project.CreatedBy,
@@ -100,23 +111,43 @@ func (m *mongoProjectRepo) Create(ctx context.Context, project *repositories.Cre
 		return nil, err
 	}
 
+	projectMemberCollection := m.client.Database(m.config.MongoDB.Database).Collection("project_members")
+
+	newProjectMember := models.ProjectMember{
+		ID:        bson.NewObjectID(),
+		UserID:    project.Owner.UserID,
+		ProjectID: newProject.ID,
+		Role:      project.Owner.Role,
+		JoinedAt:  time.Now(),
+	}
+
+	_, err = projectMemberCollection.InsertOne(ctx, newProjectMember)
+	if err != nil {
+		return nil, err
+	}
+
+	// return nil, nil
+	// 	},
+	// )
+	// if err != nil {
+	// 	return nil, err
+	// }
+
 	return &newProject, nil
 }
 
-func (m *mongoProjectRepo) FindByWorkspaceIDAndUserID(ctx context.Context, workspaceID bson.ObjectID, userID bson.ObjectID) ([]*models.Project, error) {
-	var projects []*models.Project
-
+func (m *mongoProjectRepo) FindByProjectIDsAndWorkspaceID(ctx context.Context, projectIDs []bson.ObjectID, workspaceID bson.ObjectID) ([]*models.Project, error) {
 	f := NewProjectFilter()
 	f.WithWorkspaceID(workspaceID)
-	f.WithUserID(userID)
+	f.WithIDs(projectIDs)
 
 	cursor, err := m.collection.Find(ctx, f)
 	if err != nil {
 		return nil, err
 	}
 
-	err = cursor.All(ctx, &projects)
-	if err != nil {
+	var projects []*models.Project
+	if err := cursor.All(ctx, &projects); err != nil {
 		return nil, err
 	}
 
@@ -174,30 +205,6 @@ func (m *mongoProjectRepo) AddPositions(ctx context.Context, projectID bson.Obje
 
 	update := NewProjectUpdate()
 	update.AddPositions(position)
-
-	_, err := m.collection.UpdateOne(ctx, f, update)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *mongoProjectRepo) AddMembers(ctx context.Context, projectID bson.ObjectID, member []repositories.CreateProjectMemberRequest) error {
-	f := NewProjectFilter()
-	f.WithID(projectID)
-
-	update := NewProjectUpdate()
-	bsonMembers := make([]bson.M, len(member))
-	for i, m := range member {
-		bsonMembers[i] = bson.M{
-			"user_id":   m.UserID,
-			"position":  m.Position,
-			"role":      m.Role,
-			"joined_at": time.Now(),
-		}
-	}
-	update.AddMembers(bsonMembers)
 
 	_, err := m.collection.UpdateOne(ctx, f, update)
 	if err != nil {

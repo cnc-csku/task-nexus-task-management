@@ -9,9 +9,8 @@ type ListOwnWorkspaceResponse struct {
 }
 
 type ListOwnWorkspaceResponseWorkspace struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	CreatedBy string    `json:"createdBy"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID       string    `json:"id"`
+	Name     string    `json:"name"`
+	Role     string    `json:"role"`
+	JoinedAt time.Time `json:"joinedAt"`
 }
