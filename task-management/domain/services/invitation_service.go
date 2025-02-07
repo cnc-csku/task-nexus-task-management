@@ -327,7 +327,7 @@ func (i *invitationServiceImpl) UserResponse(ctx context.Context, req *requests.
 			Role:        role,
 		}
 
-		err = i.workspaceMemberRepo.Create(ctx, createWorkspaceMemberReq)
+		_, err = i.workspaceMemberRepo.Create(ctx, createWorkspaceMemberReq)
 		if err != nil {
 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 		}

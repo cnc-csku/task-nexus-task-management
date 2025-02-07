@@ -24,6 +24,59 @@ func NewMongoWorkspaceMemberRepo(config *config.Config, mongoClient *mongo.Clien
 	}
 }
 
+func (m *mongoWorkspaceMemberRepo) FindByWorkspaceID(ctx context.Context, workspaceID bson.ObjectID) ([]models.WorkspaceMember, error) {
+	f := NewWorkspaceMemberFilter()
+	f.WithWorkspaceID(workspaceID)
+
+	workspaaceMembers := []models.WorkspaceMember{}
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &workspaaceMembers)
+	if err != nil {
+		return nil, err
+	}
+
+	return workspaaceMembers, nil
+}
+
+func (m *mongoWorkspaceMemberRepo) Create(ctx context.Context, req *repositories.CreateWorkspaceMemberRequest) (*models.WorkspaceMember, error) {
+	workspaceMemberModel := models.WorkspaceMember{
+		ID:          bson.NewObjectID(),
+		WorkspaceID: req.WorkspaceID,
+		UserID:      req.UserID,
+		Role:        req.Role,
+		JoinedAt:    time.Now(),
+	}
+
+	_, err := m.collection.InsertOne(ctx, workspaceMemberModel)
+	if err != nil {
+		return nil, err
+	}
+
+	return &workspaceMemberModel, nil
+}
+
+func (m *mongoWorkspaceMemberRepo) FindByUserID(ctx context.Context, userID bson.ObjectID) ([]models.WorkspaceMember, error) {
+	f := NewWorkspaceMemberFilter()
+	f.WithUserID(userID)
+
+	workspaaceMembers := []models.WorkspaceMember{}
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &workspaaceMembers)
+	if err != nil {
+		return nil, err
+	}
+
+	return workspaaceMembers, nil
+}
+
 func (m *mongoWorkspaceMemberRepo) FindByWorkspaceIDAndUserID(ctx context.Context, workspaceID bson.ObjectID, userID bson.ObjectID) (*models.WorkspaceMember, error) {
 	f := NewWorkspaceMemberFilter()
 	f.WithWorkspaceID(workspaceID)
@@ -40,55 +93,4 @@ func (m *mongoWorkspaceMemberRepo) FindByWorkspaceIDAndUserID(ctx context.Contex
 	}
 
 	return &workspaceMember, nil
-}
-
-func (m *mongoWorkspaceMemberRepo) Create(ctx context.Context, in *repositories.CreateWorkspaceMemberRequest) error {
-	workspaceMember := models.WorkspaceMember{
-		ID:          bson.NewObjectID(),
-		UserID:      in.UserID,
-		WorkspaceID: in.WorkspaceID,
-		Role:        in.Role,
-		JoinedAt:    time.Now(),
-	}
-
-	_, err := m.collection.InsertOne(ctx, workspaceMember)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *mongoWorkspaceMemberRepo) FindByUserID(ctx context.Context, userID bson.ObjectID) ([]models.WorkspaceMember, error) {
-	f := NewWorkspaceMemberFilter()
-	f.WithUserID(userID)
-
-	cursor, err := m.collection.Find(ctx, f)
-	if err != nil {
-		return nil, err
-	}
-
-	var workspaceMembers []models.WorkspaceMember
-	if err = cursor.All(ctx, &workspaceMembers); err != nil {
-		return nil, err
-	}
-
-	return workspaceMembers, nil
-}
-
-func (m *mongoWorkspaceMemberRepo) FindByWorkspaceID(ctx context.Context, workspaceID bson.ObjectID) ([]models.WorkspaceMember, error) {
-	f := NewWorkspaceMemberFilter()
-	f.WithWorkspaceID(workspaceID)
-
-	cursor, err := m.collection.Find(ctx, f)
-	if err != nil {
-		return nil, err
-	}
-
-	var workspaceMembers []models.WorkspaceMember
-	if err = cursor.All(ctx, &workspaceMembers); err != nil {
-		return nil, err
-	}
-
-	return workspaceMembers, nil
 }

@@ -9,7 +9,7 @@ import (
 
 type ProjectMemberRepository interface {
 	Create(ctx context.Context, projectMember *CreateProjectMemberRequest) error
-	BulkCreate(ctx context.Context, projectMembers []CreateProjectMemberRequest) error
+	CreateMany(ctx context.Context, projectMembers []CreateProjectMemberRequest) error
 	FindByUserID(ctx context.Context, userID bson.ObjectID) ([]*models.ProjectMember, error)
 	FindByProjectID(ctx context.Context, projectID bson.ObjectID) ([]*models.ProjectMember, error)
 	FindByProjectIDAndUserID(ctx context.Context, projectID bson.ObjectID, userID bson.ObjectID) (*models.ProjectMember, error)

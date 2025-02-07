@@ -62,12 +62,12 @@ func (m *mongoWorkspaceRepo) FindByWorkspaceIDs(ctx context.Context, workspaceID
 	f := NewWorkspaceFilter()
 	f.WithWorkspaceIDs(workspaceIDs)
 
+	workspaces := []models.Workspace{}
 	cursor, err := m.collection.Find(ctx, f)
 	if err != nil {
 		return nil, err
 	}
 
-	var workspaces []models.Workspace
 	err = cursor.All(ctx, &workspaces)
 	if err != nil {
 		return nil, err

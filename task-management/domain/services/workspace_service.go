@@ -102,13 +102,22 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 	// Create workspace with user as owner
 	workspace, err := w.workspaceRepo.Create(ctx, &repositories.CreateWorkspaceRequest{
 		Name:            req.Name,
-		UserID:          userObjID,
 		UserDisplayName: user.DisplayName,
 		ProfileUrl:      user.ProfileUrl,
 	})
 
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError)
+	}
+
+	_, err = w.workspaceMemberRepo.Create(ctx, &repositories.CreateWorkspaceMemberRequest{
+		WorkspaceID: workspace.ID,
+		UserID:      userObjID,
+		Role:        models.WorkspaceMemberRoleOwner,
+	})
+
+	if err != nil {
+		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
 	// Set is setup complete

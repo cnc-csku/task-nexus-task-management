@@ -309,7 +309,7 @@ func (p *projectServiceImpl) AddMembers(ctx context.Context, req *requests.AddPr
 		})
 	}
 
-	err = p.projectMemberRepo.BulkCreate(ctx, createProjMemberReq)
+	err = p.projectMemberRepo.CreateMany(ctx, createProjMemberReq)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}

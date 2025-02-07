@@ -34,3 +34,9 @@ func (w WorkspaceMemberRole) IsValid() bool {
 	}
 	return false
 }
+
+type WorkspaceMemberDetail struct {
+	WorkspaceMember `bson:",inline"`
+	DisplayName     string `bson:"display_name" json:"displayName"`
+	ProfileUrl      string `bson:"profile_url" json:"profileUrl"`
+}

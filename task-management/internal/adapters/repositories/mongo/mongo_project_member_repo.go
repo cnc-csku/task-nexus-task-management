@@ -41,7 +41,7 @@ func (m *mongoProjectMemberRepo) Create(ctx context.Context, in *repositories.Cr
 	return nil
 }
 
-func (m *mongoProjectMemberRepo) BulkCreate(ctx context.Context, projectMembers []repositories.CreateProjectMemberRequest) error {
+func (m *mongoProjectMemberRepo) CreateMany(ctx context.Context, projectMembers []repositories.CreateProjectMemberRequest) error {
 	var projectMembersModel []models.ProjectMember
 	for _, pm := range projectMembers {
 		projectMember := models.ProjectMember{
