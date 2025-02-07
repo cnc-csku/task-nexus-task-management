@@ -7,19 +7,21 @@ import (
 )
 
 type Project struct {
-	ID                 bson.ObjectID       `bson:"_id" json:"id"`
-	WorkspaceID        bson.ObjectID       `bson:"workspace_id" json:"workspaceId"`
-	Name               string              `bson:"name" json:"name"`
-	ProjectPrefix      string              `bson:"project_prefix" json:"projectPrefix"`
-	Description        *string             `bson:"description" json:"description"`
-	Status             ProjectStatus       `bson:"status" json:"status"`
-	Workflows          []Workflow          `bson:"workflows" json:"workflows"`
-	AttributeTemplates []AttributeTemplate `bson:"attributes_templates" json:"attributesTemplates"`
-	Positions          []string            `bson:"positions" json:"positions"`
-	CreatedAt          time.Time           `bson:"created_at" json:"createdAt"`
-	CreatedBy          bson.ObjectID       `bson:"created_by" json:"createdBy"`
-	UpdatedAt          time.Time           `bson:"updated_at" json:"updatedAt"`
-	UpdatedBy          bson.ObjectID       `bson:"updated_by" json:"updatedBy"`
+	ID                  bson.ObjectID       `bson:"_id" json:"id"`
+	WorkspaceID         bson.ObjectID       `bson:"workspace_id" json:"workspaceId"`
+	Name                string              `bson:"name" json:"name"`
+	ProjectPrefix       string              `bson:"project_prefix" json:"projectPrefix"`
+	Description         *string             `bson:"description" json:"description"`
+	Status              ProjectStatus       `bson:"status" json:"status"`
+	SprintRunningNumber int                 `bson:"sprint_running_number" json:"sprintRunningNumber"`
+	TaskRunningNumber   int                 `bson:"task_running_number" json:"taskRunningNumber"`
+	Workflows           []Workflow          `bson:"workflows" json:"workflows"`
+	AttributeTemplates  []AttributeTemplate `bson:"attributes_templates" json:"attributesTemplates"`
+	Positions           []string            `bson:"positions" json:"positions"`
+	CreatedAt           time.Time           `bson:"created_at" json:"createdAt"`
+	CreatedBy           bson.ObjectID       `bson:"created_by" json:"createdBy"`
+	UpdatedAt           time.Time           `bson:"updated_at" json:"updatedAt"`
+	UpdatedBy           bson.ObjectID       `bson:"updated_by" json:"updatedBy"`
 }
 
 type Workflow struct {

@@ -17,6 +17,7 @@ type ProjectRepository interface {
 	FindPositionByProjectID(ctx context.Context, projectID bson.ObjectID) ([]string, error)
 	AddWorkflows(ctx context.Context, projectID bson.ObjectID, workflows []models.Workflow) error
 	FindWorkflowByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.Workflow, error)
+	IncrementSprintRunningNumber(ctx context.Context, projectID bson.ObjectID) error
 }
 
 type CreateProjectRequest struct {

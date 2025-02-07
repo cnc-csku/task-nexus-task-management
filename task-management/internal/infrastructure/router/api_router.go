@@ -48,6 +48,11 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		// Workflow
 		projects.POST("/:projectId/workflows", r.project.AddWorkflows, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/workflows", r.project.ListWorkflows, r.authMiddleware.Middleware)
+
+		// Sprint
+		projects.POST("/:projectId/sprints", r.sprint.Create, r.authMiddleware.Middleware)
+		projects.GET("/:projectId/sprints/:sprintId", r.sprint.GetByID, r.authMiddleware.Middleware)
+		projects.PUT("/:projectId/sprints/:sprintId", r.sprint.Edit, r.authMiddleware.Middleware)
 	}
 
 	setup := api.Group("/setup/v1")
