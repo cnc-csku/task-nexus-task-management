@@ -28,18 +28,29 @@ type ProjectService interface {
 }
 
 type projectServiceImpl struct {
-	userRepo      repositories.UserRepository
-	workspaceRepo repositories.WorkspaceRepository
-	projectRepo   repositories.ProjectRepository
-	config        *config.Config
+	userRepo            repositories.UserRepository
+	workspaceRepo       repositories.WorkspaceRepository
+	workspaceMemberRepo repositories.WorkspaceMemberRepository
+	projectRepo         repositories.ProjectRepository
+	projectMemberRepo   repositories.ProjectMemberRepository
+	config              *config.Config
 }
 
-func NewProjectService(userRepo repositories.UserRepository, workspaceRepo repositories.WorkspaceRepository, projectRepo repositories.ProjectRepository, config *config.Config) ProjectService {
+func NewProjectService(
+	userRepo repositories.UserRepository,
+	workspaceRepo repositories.WorkspaceRepository,
+	workspaceMemberRepo repositories.WorkspaceMemberRepository,
+	projectRepo repositories.ProjectRepository,
+	projectMemberRepo repositories.ProjectMemberRepository,
+	config *config.Config,
+) ProjectService {
 	return &projectServiceImpl{
-		userRepo:      userRepo,
-		workspaceRepo: workspaceRepo,
-		projectRepo:   projectRepo,
-		config:        config,
+		userRepo:            userRepo,
+		workspaceRepo:       workspaceRepo,
+		workspaceMemberRepo: workspaceMemberRepo,
+		projectRepo:         projectRepo,
+		projectMemberRepo:   projectMemberRepo,
+		config:              config,
 	}
 }
 
@@ -54,7 +65,7 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 	}
 
 	// Check if the creator is owner or moderator of the workspace
-	member, err := p.workspaceRepo.FindWorkspaceMemberByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonUserId)
+	member, err := p.workspaceMemberRepo.FindByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonUserId)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	} else if member == nil {
@@ -83,10 +94,8 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 
 	// Create owner member
 	owner := &models.ProjectMember{
-		UserID:      member.UserID,
-		DisplayName: member.DisplayName,
-		ProfileUrl:  member.ProfileUrl,
-		Role:        models.ProjectMemberRoleOwner,
+		UserID: member.UserID,
+		Role:   models.ProjectMemberRoleOwner,
 	}
 
 	project := &repositories.CreateProjectRequest{
@@ -127,7 +136,17 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
-	projects, err := p.projectRepo.FindByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonUserID)
+	projectMembers, err := p.projectMemberRepo.FindByUserID(ctx, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	var projectIDs []bson.ObjectID
+	for _, projectMember := range projectMembers {
+		projectIDs = append(projectIDs, projectMember.ProjectID)
+	}
+
+	projects, err := p.projectRepo.FindByProjectIDsAndWorkspaceID(ctx, projectIDs, bsonWorkspaceID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
@@ -147,7 +166,7 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 	}
 
 	// Check if the user is a member of the project
-	member, err := p.projectRepo.FindMemberByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	member, err := p.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	} else if member == nil {
@@ -176,7 +195,7 @@ func (p *projectServiceImpl) AddPositions(ctx context.Context, req *requests.Add
 	}
 
 	// Check if the user is owner or moderator of the project
-	member, err := p.projectRepo.FindMemberByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	member, err := p.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	} else if member == nil {
@@ -250,21 +269,21 @@ func (p *projectServiceImpl) AddMembers(ctx context.Context, req *requests.AddPr
 		}, nil
 	}
 
-	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
-	} else if project == nil {
-		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound)
-	}
-
 	// Check if the user is owner or moderator of the project
-	member, err := p.projectRepo.FindMemberByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	member, err := p.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	} else if member == nil {
 		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.BadRequest)
 	} else if member.Role != models.ProjectMemberRoleOwner && member.Role != models.ProjectMemberRoleModerator {
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
+	}
+
+	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound)
 	}
 
 	createProjMemberReq := make([]repositories.CreateProjectMemberRequest, 0)
@@ -275,31 +294,22 @@ func (p *projectServiceImpl) AddMembers(ctx context.Context, req *requests.AddPr
 		}
 
 		// Check if the member already exists
-		existingMember, err := p.projectRepo.FindMemberByProjectIDAndUserID(ctx, bsonProjectID, bsonMemberID)
+		existingMember, err := p.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonMemberID)
 		if err != nil {
 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 		} else if existingMember != nil {
 			continue
 		}
 
-		// Check if the member is a member of the workspace
-		workspaceMember, err := p.workspaceRepo.FindWorkspaceMemberByWorkspaceIDAndUserID(ctx, project.WorkspaceID, bsonMemberID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
-		} else if workspaceMember == nil {
-			return nil, errutils.NewError(exceptions.ErrMemberNotFoundInWorkspace, errutils.BadRequest)
-		}
-
 		createProjMemberReq = append(createProjMemberReq, repositories.CreateProjectMemberRequest{
-			UserID:      bsonMemberID,
-			DisplayName: workspaceMember.DisplayName,
-			ProfileUrl:  workspaceMember.ProfileUrl,
-			Position:    member.Position,
-			Role:        models.ProjectMemberRole(member.Role),
+			UserID:    bsonMemberID,
+			ProjectID: bsonProjectID,
+			Role:      models.ProjectMemberRole(member.Role),
+			Position:  member.Position,
 		})
 	}
 
-	err = p.projectRepo.AddMembers(ctx, bsonProjectID, createProjMemberReq)
+	err = p.projectMemberRepo.BulkCreate(ctx, createProjMemberReq)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
@@ -315,7 +325,7 @@ func validateListMembersPaginationRequestSortBy(sortBy string) bool {
 	return false
 }
 
-func validateListMembersPaginationRequest(req *requests.ListProjectMembersRequest) {
+func normalizeListMembersPaginationRequest(req *requests.ListProjectMembersRequest) {
 	if req.PaginationRequest.Page <= 0 {
 		req.PaginationRequest.Page = 1
 	}
@@ -336,11 +346,21 @@ func (p *projectServiceImpl) ListMembers(ctx context.Context, req *requests.List
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
-	validateListMembersPaginationRequest(req)
+	normalizeListMembersPaginationRequest(req)
 
-	members, totalMember, err := p.projectRepo.SearchProjectMember(ctx, &repositories.SearchProjectMemberRequest{
-		ProjectID: bsonProjectID,
-		Keyword:   req.Keyword,
+	projectMembers, err := p.projectMemberRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	var userIDs []bson.ObjectID
+	for _, member := range projectMembers {
+		userIDs = append(userIDs, member.UserID)
+	}
+
+	users, totalUser, err := p.userRepo.SearchWithUserIDs(ctx, &repositories.SearchUserWithUserIDsRequest{
+		UserIDs: userIDs,
+		Keyword: req.Keyword,
 		PaginationRequest: repositories.PaginationRequest{
 			Page:     req.PaginationRequest.Page,
 			PageSize: req.PaginationRequest.PageSize,
@@ -352,13 +372,34 @@ func (p *projectServiceImpl) ListMembers(ctx context.Context, req *requests.List
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
+	// Map projectMembers and members data to response
+	userMap := make(map[bson.ObjectID]*models.User)
+	for _, user := range users {
+		userMap[user.ID] = user
+	}
+	memberResp := make([]responses.ListProjectMembersResponseMember, 0)
+	for _, member := range projectMembers {
+		if user, exists := userMap[member.UserID]; exists {
+			memberResp = append(memberResp, responses.ListProjectMembersResponseMember{
+				UserID:      user.ID.Hex(),
+				Email:       user.Email,
+				FullName:    user.FullName,
+				DisplayName: user.DisplayName,
+				ProfileUrl:  user.ProfileUrl,
+				Role:        member.Role.String(),
+				Position:    member.Position,
+				JoinedAt:    member.JoinedAt,
+			})
+		}
+	}
+
 	return &responses.ListProjectMembersResponse{
-		Members: members,
+		Members: memberResp,
 		PaginationResponse: &responses.PaginationResponse{
 			Page:      req.PaginationRequest.Page,
 			PageSize:  req.PaginationRequest.PageSize,
-			TotalPage: int(math.Ceil(float64(totalMember) / float64(req.PaginationRequest.PageSize))),
-			TotalItem: int(totalMember),
+			TotalPage: int(math.Ceil(float64(totalUser) / float64(req.PaginationRequest.PageSize))),
+			TotalItem: int(totalUser),
 		},
 	}, nil
 }
@@ -382,7 +423,7 @@ func (p *projectServiceImpl) AddWorkflows(ctx context.Context, req *requests.Add
 	}
 
 	// Check if the user is owner or moderator of the project
-	member, err := p.projectRepo.FindMemberByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	member, err := p.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	} else if member == nil {

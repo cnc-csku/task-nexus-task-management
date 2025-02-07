@@ -11,9 +11,8 @@ type Project struct {
 	WorkspaceID        bson.ObjectID       `bson:"workspace_id" json:"workspaceId"`
 	Name               string              `bson:"name" json:"name"`
 	ProjectPrefix      string              `bson:"project_prefix" json:"projectPrefix"`
-	Description        string              `bson:"description" json:"description"`
+	Description        *string             `bson:"description" json:"description"`
 	Status             ProjectStatus       `bson:"status" json:"status"`
-	Members            []ProjectMember     `bson:"members" json:"members"`
 	Workflows          []Workflow          `bson:"workflows" json:"workflows"`
 	AttributeTemplates []AttributeTemplate `bson:"attributes_templates" json:"attributesTemplates"`
 	Positions          []string            `bson:"positions" json:"positions"`
@@ -21,33 +20,6 @@ type Project struct {
 	CreatedBy          bson.ObjectID       `bson:"created_by" json:"createdBy"`
 	UpdatedAt          time.Time           `bson:"updated_at" json:"updatedAt"`
 	UpdatedBy          bson.ObjectID       `bson:"updated_by" json:"updatedBy"`
-}
-
-type ProjectMember struct {
-	UserID      bson.ObjectID     `bson:"user_id" json:"userId"`
-	DisplayName string            `bson:"display_name" json:"displayName"`
-	ProfileUrl  string            `bson:"profile_url" json:"profileUrl"`
-	Role        ProjectMemberRole `bson:"role" json:"role"`
-}
-
-type ProjectMemberRole string
-
-const (
-	ProjectMemberRoleOwner     ProjectMemberRole = "OWNER"
-	ProjectMemberRoleModerator ProjectMemberRole = "MODERATOR"
-	ProjectMemberRoleMember    ProjectMemberRole = "MEMBER"
-)
-
-func (p ProjectMemberRole) String() string {
-	return string(p)
-}
-
-func (p ProjectMemberRole) IsValid() bool {
-	switch p {
-	case ProjectMemberRoleOwner, ProjectMemberRoleModerator, ProjectMemberRoleMember:
-		return true
-	}
-	return false
 }
 
 type Workflow struct {

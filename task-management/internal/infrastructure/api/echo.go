@@ -54,6 +54,8 @@ func (a *EchoAPI) Start(logger *logrus.Logger) error {
 		formatter = &logging.CustomFormatter{}
 	}
 
+	e.Use(echoMiddleware.Recover())
+
 	// Set up logging middleware
 	e.Use(logging.EchoLoggingMiddleware(logger, formatter))
 

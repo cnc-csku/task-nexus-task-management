@@ -9,30 +9,34 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
 	"github.com/cnc-csku/task-nexus/task-management/domain/requests"
+	"github.com/cnc-csku/task-nexus/task-management/domain/responses"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type WorkspaceService interface {
 	SetupWorkspace(ctx context.Context, req *requests.CreateWorkspaceRequest, userID string) (*models.Workspace, *errutils.Error)
-	ListOwnWorkspace(ctx context.Context, userId string) ([]*models.Workspace, *errutils.Error)
+	ListOwnWorkspace(ctx context.Context, userId string) (*responses.ListOwnWorkspaceResponse, *errutils.Error)
 	ListWorkspaceMembers(ctx context.Context, workspaceID string) ([]models.WorkspaceMember, *errutils.Error)
 }
 
 type workspaceServiceImpl struct {
-	workspaceRepo     repositories.WorkspaceRepository
-	globalSettingRepo repositories.GlobalSettingRepository
-	userRepo          repositories.UserRepository
+	workspaceRepo       repositories.WorkspaceRepository
+	globalSettingRepo   repositories.GlobalSettingRepository
+	userRepo            repositories.UserRepository
+	workspaceMemberRepo repositories.WorkspaceMemberRepository
 }
 
 func NewWorkspaceService(
 	workspaceRepo repositories.WorkspaceRepository,
 	globalSettingRepo repositories.GlobalSettingRepository,
 	userRepo repositories.UserRepository,
+	workspaceMemberRepo repositories.WorkspaceMemberRepository,
 ) WorkspaceService {
 	return &workspaceServiceImpl{
-		workspaceRepo:     workspaceRepo,
-		globalSettingRepo: globalSettingRepo,
-		userRepo:          userRepo,
+		workspaceRepo:       workspaceRepo,
+		globalSettingRepo:   globalSettingRepo,
+		userRepo:            userRepo,
+		workspaceMemberRepo: workspaceMemberRepo,
 	}
 }
 
@@ -120,22 +124,51 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 	return workspace, nil
 }
 
-func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId string) ([]*models.Workspace, *errutils.Error) {
+func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId string) (*responses.ListOwnWorkspaceResponse, *errutils.Error) {
 	userObjID, err := bson.ObjectIDFromHex(userId)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
-	workspaces, err := s.workspaceRepo.FindByUserID(ctx, userObjID)
+	workspaceMembers, err := s.workspaceMemberRepo.FindByUserID(ctx, userObjID)
+	if err != nil {
+		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if workspaceMembers == nil {
+		return &responses.ListOwnWorkspaceResponse{
+			Workspaces: []responses.ListOwnWorkspaceResponseWorkspace{},
+		}, nil
+	}
+
+	workspaceIDs := make([]bson.ObjectID, 0)
+	for _, workspaceMember := range workspaceMembers {
+		workspaceIDs = append(workspaceIDs, workspaceMember.WorkspaceID)
+	}
+
+	workspaces, err := s.workspaceRepo.FindByWorkspaceIDs(ctx, workspaceIDs)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
-	if workspaces == nil {
-		return []*models.Workspace{}, nil
+	workspaceMap := make(map[bson.ObjectID]models.Workspace)
+	for _, workspace := range workspaces {
+		workspaceMap[workspace.ID] = workspace
 	}
 
-	return workspaces, nil
+	workspaceResponses := make([]responses.ListOwnWorkspaceResponseWorkspace, 0)
+	for _, workspaceMember := range workspaceMembers {
+		if workspace, exists := workspaceMap[workspaceMember.WorkspaceID]; exists {
+			workspaceResponses = append(workspaceResponses, responses.ListOwnWorkspaceResponseWorkspace{
+				ID:       workspace.ID.Hex(),
+				Name:     workspace.Name,
+				Role:     workspaceMember.Role.String(),
+				JoinedAt: workspaceMember.JoinedAt,
+			})
+		}
+	}
+
+	return &responses.ListOwnWorkspaceResponse{
+		Workspaces: workspaceResponses,
+	}, nil
 }
 
 func (s *workspaceServiceImpl) ListWorkspaceMembers(ctx context.Context, workspaceID string) ([]models.WorkspaceMember, *errutils.Error) {
@@ -144,9 +177,11 @@ func (s *workspaceServiceImpl) ListWorkspaceMembers(ctx context.Context, workspa
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
-	members, err := s.workspaceRepo.FindWorkspaceMemberByWorkspaceID(ctx, workspaceObjID)
+	members, err := s.workspaceMemberRepo.FindByWorkspaceID(ctx, workspaceObjID)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if members == nil {
+		return []models.WorkspaceMember{}, nil
 	}
 
 	return members, nil

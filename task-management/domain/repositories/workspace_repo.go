@@ -8,20 +8,9 @@ import (
 )
 
 type WorkspaceRepository interface {
-	FindWorkspaceMemberByWorkspaceIDAndUserID(ctx context.Context, workspaceID bson.ObjectID, userID bson.ObjectID) (*models.WorkspaceMember, error)
 	FindByID(ctx context.Context, workspaceID bson.ObjectID) (*models.Workspace, error)
-	CreateWorkspaceMember(ctx context.Context, req *CreateWorkspaceMemberRequest) error
 	Create(ctx context.Context, workspace *CreateWorkspaceRequest) (*models.Workspace, error)
-	FindByUserID(ctx context.Context, userID bson.ObjectID) ([]*models.Workspace, error)
-	FindWorkspaceMemberByWorkspaceID(ctx context.Context, workspaceID bson.ObjectID) ([]models.WorkspaceMember, error)
-}
-
-type CreateWorkspaceMemberRequest struct {
-	WorkspaceID     bson.ObjectID
-	UserID          bson.ObjectID
-	UserDisplayName string
-	ProfileUrl      string
-	Role            models.WorkspaceMemberRole
+	FindByWorkspaceIDs(ctx context.Context, workspaceIDs []bson.ObjectID) ([]models.Workspace, error)
 }
 
 type CreateWorkspaceRequest struct {

@@ -33,7 +33,9 @@ var InfraSet = wire.NewSet(
 var RepositorySet = wire.NewSet(
 	mongo.NewMongoUserRepo,
 	mongo.NewMongoProjectRepo,
+	mongo.NewMongoProjectMemberRepo,
 	mongo.NewMongoWorkspaceRepo,
+	mongo.NewMongoWorkspaceMemberRepo,
 	mongo.NewMongoInvitationRepo,
 	mongo.NewMongoGlobalSettingRepo,
 )

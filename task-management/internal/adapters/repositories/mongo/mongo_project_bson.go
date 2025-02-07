@@ -12,6 +12,12 @@ func (f projectFilter) WithID(id bson.ObjectID) {
 	f["_id"] = id
 }
 
+func (f projectFilter) WithIDs(ids []bson.ObjectID) {
+	f["_id"] = bson.M{
+		"$in": ids,
+	}
+}
+
 func (f projectFilter) WithWorkspaceID(workspaceID bson.ObjectID) {
 	f["workspace_id"] = workspaceID
 }

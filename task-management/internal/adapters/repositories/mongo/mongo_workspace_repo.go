@@ -24,32 +24,6 @@ func NewMongoWorkspaceRepo(config *config.Config, mongoClient *mongo.Client) rep
 	}
 }
 
-func (m *mongoWorkspaceRepo) FindWorkspaceMemberByWorkspaceIDAndUserID(ctx context.Context, workspaceID bson.ObjectID, userID bson.ObjectID) (*models.WorkspaceMember, error) {
-	f := NewWorkspaceFilter()
-	f.WithWorkspaceID(workspaceID)
-	f.WithMemberUserID(userID)
-
-	var result struct {
-		Members []models.WorkspaceMember `bson:"members"`
-	}
-
-	err := m.collection.FindOne(ctx, f).Decode(&result)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	for _, member := range result.Members {
-		if member.UserID == userID {
-			return &member, nil
-		}
-	}
-
-	return nil, nil
-}
-
 func (m *mongoWorkspaceRepo) FindByID(ctx context.Context, workspaceID bson.ObjectID) (*models.Workspace, error) {
 	f := NewWorkspaceFilter()
 	f.WithWorkspaceID(workspaceID)
@@ -66,38 +40,10 @@ func (m *mongoWorkspaceRepo) FindByID(ctx context.Context, workspaceID bson.Obje
 	return &workspace, nil
 }
 
-func (m *mongoWorkspaceRepo) CreateWorkspaceMember(ctx context.Context, in *repositories.CreateWorkspaceMemberRequest) error {
-	f := NewWorkspaceFilter()
-	f.WithWorkspaceID(in.WorkspaceID)
-
-	update := bson.M{
-		"$push": bson.M{
-			"members": models.WorkspaceMember{
-				UserID:      in.UserID,
-				DisplayName: in.UserDisplayName,
-				Role:        in.Role,
-				JoinedAt:    time.Now(),
-			},
-		},
-	}
-
-	_, err := m.collection.UpdateOne(ctx, f, update)
-	return err
-}
-
 func (m *mongoWorkspaceRepo) Create(ctx context.Context, workspace *repositories.CreateWorkspaceRequest) (*models.Workspace, error) {
 	workspaceModel := models.Workspace{
-		ID:   bson.NewObjectID(),
-		Name: workspace.Name,
-		Members: []models.WorkspaceMember{
-			{
-				UserID:      workspace.UserID,
-				DisplayName: workspace.UserDisplayName,
-				Role:        models.WorkspaceMemberRoleOwner,
-				JoinedAt:    time.Now(),
-				RemovedAt:   nil,
-			},
-		},
+		ID:        bson.NewObjectID(),
+		Name:      workspace.Name,
 		CreatedBy: workspace.UserID,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -112,39 +58,20 @@ func (m *mongoWorkspaceRepo) Create(ctx context.Context, workspace *repositories
 	return &workspaceModel, nil
 }
 
-func (m *mongoWorkspaceRepo) FindByUserID(ctx context.Context, userID bson.ObjectID) ([]*models.Workspace, error) {
+func (m *mongoWorkspaceRepo) FindByWorkspaceIDs(ctx context.Context, workspaceIDs []bson.ObjectID) ([]models.Workspace, error) {
 	f := NewWorkspaceFilter()
-	f.WithMemberUserID(userID)
+	f.WithWorkspaceIDs(workspaceIDs)
 
 	cursor, err := m.collection.Find(ctx, f)
 	if err != nil {
 		return nil, err
 	}
 
-	var workspaces []*models.Workspace
-	for cursor.Next(ctx) {
-		var workspace models.Workspace
-		if err := cursor.Decode(&workspace); err != nil {
-			return nil, err
-		}
-		workspaces = append(workspaces, &workspace)
-	}
-
-	return workspaces, nil
-}
-
-func (m *mongoWorkspaceRepo) FindWorkspaceMemberByWorkspaceID(ctx context.Context, workspaceID bson.ObjectID) ([]models.WorkspaceMember, error) {
-	f := NewWorkspaceFilter()
-	f.WithWorkspaceID(workspaceID)
-
-	var result struct {
-		Members []models.WorkspaceMember `bson:"members"`
-	}
-
-	err := m.collection.FindOne(ctx, f).Decode(&result)
+	var workspaces []models.Workspace
+	err = cursor.All(ctx, &workspaces)
 	if err != nil {
 		return nil, err
 	}
 
-	return result.Members, nil
+	return workspaces, nil
 }

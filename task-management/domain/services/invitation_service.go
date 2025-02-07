@@ -24,18 +24,26 @@ type InvitationService interface {
 }
 
 type invitationServiceImpl struct {
-	userRepo       repositories.UserRepository
-	workspaceRepo  repositories.WorkspaceRepository
-	invitationRepo repositories.InvitationRepository
-	config         *config.Config
+	userRepo            repositories.UserRepository
+	workspaceRepo       repositories.WorkspaceRepository
+	invitationRepo      repositories.InvitationRepository
+	workspaceMemberRepo repositories.WorkspaceMemberRepository
+	config              *config.Config
 }
 
-func NewInvitationService(userRepo repositories.UserRepository, workspaceRepo repositories.WorkspaceRepository, invitationRepo repositories.InvitationRepository, config *config.Config) InvitationService {
+func NewInvitationService(
+	userRepo repositories.UserRepository,
+	workspaceRepo repositories.WorkspaceRepository,
+	invitationRepo repositories.InvitationRepository,
+	workspaceMemberRepo repositories.WorkspaceMemberRepository,
+	config *config.Config,
+) InvitationService {
 	return &invitationServiceImpl{
-		userRepo:       userRepo,
-		workspaceRepo:  workspaceRepo,
-		invitationRepo: invitationRepo,
-		config:         config,
+		userRepo:            userRepo,
+		workspaceRepo:       workspaceRepo,
+		invitationRepo:      invitationRepo,
+		workspaceMemberRepo: workspaceMemberRepo,
+		config:              config,
 	}
 }
 
@@ -56,7 +64,7 @@ func (i *invitationServiceImpl) Create(ctx context.Context, req *requests.Create
 	}
 
 	// Check if the inviter is the owner of the workspace
-	inviter, err := i.workspaceRepo.FindWorkspaceMemberByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonInviterUserID)
+	inviter, err := i.workspaceMemberRepo.FindByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonInviterUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if inviter == nil {
@@ -66,7 +74,7 @@ func (i *invitationServiceImpl) Create(ctx context.Context, req *requests.Create
 	}
 
 	// Check if the invitee is already a member of the workspace
-	invitee, err := i.workspaceRepo.FindWorkspaceMemberByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonInviteeUserID)
+	invitee, err := i.workspaceMemberRepo.FindByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonInviteeUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if invitee != nil {
@@ -126,7 +134,7 @@ func (i *invitationServiceImpl) ListForUser(ctx context.Context, userID string) 
 		}
 
 		var status = invitation.Status
-		if invitation.ExpiredAt.Before(time.Now()) {
+		if status == models.InvitationStatusPending && invitation.ExpiredAt.Before(time.Now()) {
 			status = models.InvitationStatusExpired
 		}
 
@@ -168,7 +176,7 @@ func validateListForWorkspaceOwnerSearchBy(searchBy string) bool {
 	return false
 }
 
-func validateListForWorkspaceOwnerPaginationRequest(req *requests.ListInvitationForWorkspaceOwnerParams) {
+func normalizeListForWorkspaceOwnerPaginationParams(req *requests.ListInvitationForWorkspaceOwnerParams) {
 	if req.PaginationRequest.Page <= 0 {
 		req.PaginationRequest.Page = 1
 	}
@@ -188,7 +196,7 @@ func (i *invitationServiceImpl) ListForWorkspaceOwner(ctx context.Context, req *
 		req.SearchBy = ""
 	}
 
-	validateListForWorkspaceOwnerPaginationRequest(req)
+	normalizeListForWorkspaceOwnerPaginationParams(req)
 
 	bsonUserID, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
@@ -201,7 +209,7 @@ func (i *invitationServiceImpl) ListForWorkspaceOwner(ctx context.Context, req *
 	}
 
 	// Check if the user is the owner of the workspace
-	member, err := i.workspaceRepo.FindWorkspaceMemberByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonUserID)
+	member, err := i.workspaceMemberRepo.FindByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if member == nil {
@@ -301,12 +309,7 @@ func (i *invitationServiceImpl) UserResponse(ctx context.Context, req *requests.
 	}
 
 	if invitation.Status != models.InvitationStatusPending {
-		return nil, errutils.NewError(exceptions.ErrInvalidInvitationStatus, errutils.BadRequest).WithDebugMessage("Invalid invitation status")
-	}
-
-	user, err := i.userRepo.FindByID(ctx, bsonUserID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInvitationAlreadyResponded, errutils.BadRequest).WithDebugMessage("Invitation already responded")
 	}
 
 	if req.Action == constant.InvitationActionAccept {
@@ -319,14 +322,12 @@ func (i *invitationServiceImpl) UserResponse(ctx context.Context, req *requests.
 
 		// Add the invitee as a member of the workspace
 		createWorkspaceMemberReq := &repositories.CreateWorkspaceMemberRequest{
-			WorkspaceID:     invitation.WorkspaceID,
-			UserID:          invitation.InviteeUserID,
-			UserDisplayName: user.FullName,
-			ProfileUrl:      user.ProfileUrl,
-			Role:            role,
+			WorkspaceID: invitation.WorkspaceID,
+			UserID:      invitation.InviteeUserID,
+			Role:        role,
 		}
 
-		err = i.workspaceRepo.CreateWorkspaceMember(ctx, createWorkspaceMemberReq)
+		err = i.workspaceMemberRepo.Create(ctx, createWorkspaceMemberReq)
 		if err != nil {
 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 		}
