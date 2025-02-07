@@ -14,8 +14,8 @@ type WorkspaceRepository interface {
 }
 
 type CreateWorkspaceRequest struct {
-	Name            string
 	UserID          bson.ObjectID
+	Name            string
 	UserDisplayName string
 	ProfileUrl      string
 }
