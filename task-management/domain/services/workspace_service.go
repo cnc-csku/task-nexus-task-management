@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"math"
 
 	"github.com/cnc-csku/task-nexus/go-lib/utils/errutils"
 	"github.com/cnc-csku/task-nexus/task-management/domain/constant"
@@ -16,7 +18,7 @@ import (
 type WorkspaceService interface {
 	SetupWorkspace(ctx context.Context, req *requests.CreateWorkspaceRequest, userID string) (*models.Workspace, *errutils.Error)
 	ListOwnWorkspace(ctx context.Context, userId string) (*responses.ListOwnWorkspaceResponse, *errutils.Error)
-	ListWorkspaceMembers(ctx context.Context, workspaceID string) ([]models.WorkspaceMember, *errutils.Error)
+	ListWorkspaceMembers(ctx context.Context, req *requests.ListWorkspaceMemberRequest) (*responses.ListWorkspaceMembersResponse, *errutils.Error)
 }
 
 type workspaceServiceImpl struct {
@@ -180,18 +182,89 @@ func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId stri
 	}, nil
 }
 
-func (s *workspaceServiceImpl) ListWorkspaceMembers(ctx context.Context, workspaceID string) ([]models.WorkspaceMember, *errutils.Error) {
-	workspaceObjID, err := bson.ObjectIDFromHex(workspaceID)
+func validateListWorkspaceMembersPaginationRequestSortBy(sortBy string) bool {
+	switch sortBy {
+	case constant.UserFieldFullName, constant.UserFieldDisplayName, constant.UserFieldEmail:
+		return true
+	}
+	return false
+}
+
+func normalizeListWorkspaceMembersPaginationParams(req *requests.ListWorkspaceMemberRequest) {
+	if req.PaginationRequest.Page <= 0 {
+		req.PaginationRequest.Page = 1
+	}
+	if req.PaginationRequest.PageSize <= 0 {
+		req.PaginationRequest.PageSize = 100
+	}
+	if req.PaginationRequest.SortBy == "" || !validateListForWorkspaceOwnerPaginationRequestSortBy(req.PaginationRequest.SortBy) {
+		req.PaginationRequest.SortBy = constant.UserFieldDisplayName
+	}
+	if req.PaginationRequest.Order == "" {
+		req.PaginationRequest.Order = constant.DESC
+	}
+}
+
+func (s *workspaceServiceImpl) ListWorkspaceMembers(ctx context.Context, req *requests.ListWorkspaceMemberRequest) (*responses.ListWorkspaceMembersResponse, *errutils.Error) {
+	fmt.Println(req.WorkspaceID)
+	workspaceObjID, err := bson.ObjectIDFromHex(req.WorkspaceID)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
-	members, err := s.workspaceMemberRepo.FindByWorkspaceID(ctx, workspaceObjID)
+	normalizeListWorkspaceMembersPaginationParams(req)
+
+	workspaceMembers, err := s.workspaceMemberRepo.FindByWorkspaceID(ctx, workspaceObjID)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if members == nil {
-		return []models.WorkspaceMember{}, nil
 	}
 
-	return members, nil
+	userIDs := make([]bson.ObjectID, 0)
+	for _, member := range workspaceMembers {
+		userIDs = append(userIDs, member.UserID)
+	}
+
+	users, totalUser, err := s.userRepo.SearchWithUserIDs(ctx, &repositories.SearchUserWithUserIDsRequest{
+		UserIDs: userIDs,
+		Keyword: req.Keyword,
+		PaginationRequest: repositories.PaginationRequest{
+			Page:     req.Page,
+			PageSize: req.PageSize,
+			SortBy:   req.SortBy,
+			Order:    req.Order,
+		},
+	})
+	if err != nil {
+		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	userMap := make(map[bson.ObjectID]*models.User)
+	for _, user := range users {
+		userMap[user.ID] = user
+	}
+	response := make([]responses.ListWorkspaceMembersResponseWorkspaceMember, 0)
+	for _, member := range workspaceMembers {
+		if user, exists := userMap[member.UserID]; exists {
+			response = append(response, responses.ListWorkspaceMembersResponseWorkspaceMember{
+				WorkspaceMemberID: member.ID.Hex(),
+				UserID:            user.ID.Hex(),
+				Role:              member.Role.String(),
+				JoinedAt:          member.JoinedAt,
+				Email:             user.Email,
+				FullName:          user.FullName,
+				DisplayName:       user.DisplayName,
+				ProfileUrl:        user.ProfileUrl,
+			})
+		}
+	}
+
+	return &responses.ListWorkspaceMembersResponse{
+		Members: response,
+		PaginationResponse: responses.PaginationResponse{
+			Page:      req.Page,
+			PageSize:  req.PageSize,
+			TotalPage: int(math.Ceil(float64(totalUser) / float64(req.PaginationRequest.PageSize))),
+			TotalItem: int(totalUser),
+		},
+	}, nil
 }
