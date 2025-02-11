@@ -59,9 +59,12 @@ func (w *workspaceHandlerImpl) ListOwnWorkspace(c echo.Context) error {
 }
 
 func (w *workspaceHandlerImpl) ListWorkspaceMembers(c echo.Context) error {
-	workspaceID := c.Param("workspaceId")
+	req := new(requests.ListWorkspaceMemberRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
 
-	members, err := w.workspaceService.ListWorkspaceMembers(c.Request().Context(), workspaceID)
+	members, err := w.workspaceService.ListWorkspaceMembers(c.Request().Context(), req)
 	if err != nil {
 		return err.ToEchoError()
 	}
