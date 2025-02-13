@@ -100,7 +100,7 @@ func (m *mongoProjectRepo) Create(ctx context.Context, project *repositories.Cre
 		Description:         project.Description,
 		Status:              project.Status,
 		SprintRunningNumber: 0,
-		TaskRunningNumber:   0,
+		TaskRunningNumber:   1,
 		Workflows:           project.Workflows,
 		CreatedAt:           time.Now(),
 		CreatedBy:           project.CreatedBy,
@@ -361,6 +361,21 @@ func (m *mongoProjectRepo) IncrementSprintRunningNumber(ctx context.Context, pro
 
 	u := NewProjectUpdate()
 	u.IncrementSprintRunningNumber()
+
+	_, err := m.collection.UpdateOne(ctx, f, u)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *mongoProjectRepo) IncrementTaskRunningNumber(ctx context.Context, projectID bson.ObjectID) error {
+	f := NewProjectFilter()
+	f.WithID(projectID)
+
+	u := NewProjectUpdate()
+	u.IncrementTaskRunningNumber()
 
 	_, err := m.collection.UpdateOne(ctx, f, u)
 	if err != nil {

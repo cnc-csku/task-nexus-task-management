@@ -73,3 +73,9 @@ func (u projectUpdate) IncrementSprintRunningNumber() {
 		"sprint_running_number": 1,
 	}
 }
+
+func (u projectUpdate) IncrementTaskRunningNumber() {
+	u["$inc"] = bson.M{
+		"task_running_number": 1,
+	}
+}

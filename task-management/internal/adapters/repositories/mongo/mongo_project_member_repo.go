@@ -97,7 +97,7 @@ func (m *mongoProjectMemberRepo) FindByProjectID(ctx context.Context, projectID 
 	return projectMembers, nil
 }
 
-func (m *mongoProjectMemberRepo) FindByProjectIDAndUserID(ctx context.Context, userID bson.ObjectID, projectID bson.ObjectID) (*models.ProjectMember, error) {
+func (m *mongoProjectMemberRepo) FindByProjectIDAndUserID(ctx context.Context, projectID bson.ObjectID, userID bson.ObjectID) (*models.ProjectMember, error) {
 	f := NewProjectMemberFilter()
 	f.WithUserID(userID)
 	f.WithProjectID(projectID)
