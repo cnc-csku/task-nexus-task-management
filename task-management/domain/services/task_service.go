@@ -10,12 +10,13 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
 	"github.com/cnc-csku/task-nexus/task-management/domain/requests"
+	"github.com/cnc-csku/task-nexus/task-management/domain/responses"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type TaskService interface {
 	Create(ctx context.Context, req *requests.CreateTaskRequest, userID string) (*models.Task, *errutils.Error)
-	GetTaskDetail(ctx context.Context, req *requests.GetTaskDetailPathParam, userId string) (*models.Task, *errutils.Error)
+	GetTaskDetail(ctx context.Context, req *requests.GetTaskDetailPathParam, userId string) (*responses.GetTaskDetailResponse, *errutils.Error)
 }
 
 type taskServiceImpl struct {
@@ -23,6 +24,8 @@ type taskServiceImpl struct {
 	projectRepo       repositories.ProjectRepository
 	projectMemberRepo repositories.ProjectMemberRepository
 	sprintRepo        repositories.SprintRepository
+	taskCommentRepo   repositories.TaskCommentRepository
+	userRepo          repositories.UserRepository
 }
 
 func NewTaskService(
@@ -30,12 +33,16 @@ func NewTaskService(
 	projectRepo repositories.ProjectRepository,
 	projectMemberRepo repositories.ProjectMemberRepository,
 	sprintRepo repositories.SprintRepository,
+	taskCommentRepo repositories.TaskCommentRepository,
+	userRepo repositories.UserRepository,
 ) TaskService {
 	return &taskServiceImpl{
 		taskRepo:          taskRepo,
 		projectRepo:       projectRepo,
 		projectMemberRepo: projectMemberRepo,
 		sprintRepo:        sprintRepo,
+		taskCommentRepo:   taskCommentRepo,
+		userRepo:          userRepo,
 	}
 }
 
@@ -165,7 +172,7 @@ func validateParentTaskType(taskType string, parentTaskType models.TaskType) *er
 	return nil
 }
 
-func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTaskDetailPathParam, userId string) (*models.Task, *errutils.Error) {
+func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTaskDetailPathParam, userId string) (*responses.GetTaskDetailResponse, *errutils.Error) {
 	bsonUserID, err := bson.ObjectIDFromHex(userId)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -175,7 +182,7 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if task == nil {
-		return nil, errutils.NewError(exceptions.ErrTaskNotFound, errutils.BadRequest)
+		return nil, errutils.NewError(exceptions.ErrTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Task not found: %s", req.TaskID))
 	}
 
 	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, task.ProjectID, bsonUserID)
@@ -185,5 +192,85 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
 	}
 
-	return task, nil
+	creator, err := s.userRepo.FindByID(ctx, task.CreatedBy)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if creator == nil {
+		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.InternalServerError).WithDebugMessage(fmt.Sprintf("User not found: %s", task.CreatedBy.Hex()))
+	}
+
+	updater, err := s.userRepo.FindByID(ctx, task.UpdatedBy)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if updater == nil {
+		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.InternalServerError).WithDebugMessage(fmt.Sprintf("User not found: %s", task.UpdatedBy.Hex()))
+	}
+
+	comments, err := s.taskCommentRepo.FindByTaskID(ctx, req.TaskID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	commentsUserIDs := extractUserIDsFromComments(comments)
+
+	commentsUsers, err := s.userRepo.FindByIDs(ctx, commentsUserIDs)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	commentsUsersMap := mapUsersByID(commentsUsers)
+
+	return &responses.GetTaskDetailResponse{
+		ID:                 task.ID.Hex(),
+		TaskID:             task.TaskID,
+		ProjectID:          task.ProjectID.Hex(),
+		Title:              task.Title,
+		Description:        task.Description,
+		ParentID:           task.ParentID,
+		Type:               task.Type,
+		Status:             task.Status,
+		Priority:           task.Priority,
+		Approval:           task.Approval,
+		Assignee:           task.Assignee,
+		Sprint:             task.Sprint,
+		CreatedAt:          task.CreatedAt,
+		CreatedBy:          task.CreatedBy.Hex(),
+		CreatorDisplayName: creator.DisplayName,
+		UpdatedAt:          task.UpdatedAt,
+		UpdatedBy:          task.UpdatedBy.Hex(),
+		UpdaterDisplayName: updater.DisplayName,
+		TaskComments:       buildTaskComments(comments, commentsUsersMap),
+	}, nil
+}
+
+func extractUserIDsFromComments(comments []*models.TaskComment) []bson.ObjectID {
+	userIDs := make([]bson.ObjectID, 0, len(comments))
+	for _, comment := range comments {
+		userIDs = append(userIDs, comment.UserID)
+	}
+	return userIDs
+}
+
+func mapUsersByID(users []models.User) map[string]string {
+	userMap := make(map[string]string, len(users))
+	for _, user := range users {
+		userMap[user.ID.Hex()] = user.DisplayName
+	}
+	return userMap
+}
+
+func buildTaskComments(comments []*models.TaskComment, userMap map[string]string) []responses.GetTaskDetailResponseTaskComment {
+	taskComments := make([]responses.GetTaskDetailResponseTaskComment, 0, len(comments))
+	for _, comment := range comments {
+		taskComments = append(taskComments, responses.GetTaskDetailResponseTaskComment{
+			ID:              comment.ID.Hex(),
+			Content:         comment.Content,
+			UserID:          comment.UserID.Hex(),
+			UserDisplayName: userMap[comment.UserID.Hex()],
+			TaskID:          comment.TaskID,
+			CreatedAt:       comment.CreatedAt,
+			UpdatedAt:       comment.UpdatedAt,
+		})
+	}
+	return taskComments
 }

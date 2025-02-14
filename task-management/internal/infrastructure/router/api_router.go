@@ -59,6 +59,8 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	{
 		tasks.POST("", r.task.Create, r.authMiddleware.Middleware)
 		tasks.GET("/:taskId", r.task.GetTaskDetail, r.authMiddleware.Middleware)
+
+		tasks.POST("/:taskId/comments", r.taskComment.Create, r.authMiddleware.Middleware)
 	}
 
 	setup := api.Group("/setup/v1")
