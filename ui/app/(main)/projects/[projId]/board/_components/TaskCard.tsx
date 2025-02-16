@@ -1,7 +1,7 @@
-import { Card, CardBody, CardHeader } from "@nextui-org/card";
-import { Avatar } from "@nextui-org/avatar";
-import { Badge } from "@nextui-org/badge";
-import { Chip } from "@nextui-org/chip";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Avatar } from "@heroui/avatar";
+import { Badge } from "@heroui/badge";
+import { Chip } from "@heroui/chip";
 
 export default function TaskCard() {
   return (

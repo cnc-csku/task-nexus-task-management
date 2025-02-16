@@ -1,4 +1,4 @@
-import { Button, ButtonProps } from "@nextui-org/button";
+import { Button, ButtonProps } from "@heroui/button";
 import Image from "next/image";
 
 export interface GoogleLoginButtonProps extends ButtonProps {}

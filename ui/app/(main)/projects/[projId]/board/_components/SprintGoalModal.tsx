@@ -1,4 +1,4 @@
-import { Modal, ModalBody, ModalContent, ModalHeader } from "@nextui-org/modal";
+import { Modal, ModalBody, ModalContent, ModalHeader } from "@heroui/modal";
 
 interface SprintGoalModalProps {
   isOpen: boolean;

@@ -2,11 +2,11 @@
 
 import BackButton from "@/components/ui/BackButton";
 import Header from "@/components/ui/Header";
-import { Card, CardBody, CardHeader } from "@nextui-org/card";
-import { Chip } from "@nextui-org/chip";
-import { Avatar } from "@nextui-org/avatar";
-import { Input } from "@nextui-org/input";
-import { Select, SelectItem } from "@nextui-org/select";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Chip } from "@heroui/chip";
+import { Avatar } from "@heroui/avatar";
+import { Input } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
 
 export default function TaskDetailPage() {
   return (

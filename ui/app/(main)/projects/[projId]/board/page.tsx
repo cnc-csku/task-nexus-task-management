@@ -1,9 +1,9 @@
 "use client";
 import Header from "@/components/ui/Header";
 import TaskCard from "./_components/TaskCard";
-import { Select, SelectItem } from "@nextui-org/select";
-import { Button } from "@nextui-org/button";
-import { useDisclosure } from "@nextui-org/modal";
+import { Select, SelectItem } from "@heroui/select";
+import { Button } from "@heroui/button";
+import { useDisclosure } from "@heroui/modal";
 import SprintGoalModal from "./_components/SprintGoalModal";
 
 export default function BoardPage() {

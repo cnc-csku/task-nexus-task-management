@@ -1,13 +1,13 @@
 "use client";
 
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@nextui-org/table";
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/table";
 import ProjectsTableHeader from "./ProjectsTableHeader";
-import { Button } from "@nextui-org/button";
-import { Dropdown, DropdownTrigger, DropdownItem, DropdownMenu } from "@nextui-org/dropdown";
+import { Button } from "@heroui/button";
+import { Dropdown, DropdownTrigger, DropdownItem, DropdownMenu } from "@heroui/dropdown";
 import { IoMdMore } from "react-icons/io";
-import { Link } from "@nextui-org/link";
-import { Avatar } from "@nextui-org/avatar";
-import { Chip } from "@nextui-org/chip";
+import { Link } from "@heroui/link";
+import { Avatar } from "@heroui/avatar";
+import { Chip } from "@heroui/chip";
 import { useRouter } from "next/navigation";
 import { Key } from "react";
 
