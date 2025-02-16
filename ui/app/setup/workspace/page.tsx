@@ -1,6 +1,6 @@
 "use client";
 
-import { Divider } from "@nextui-org/divider";
+import { Divider } from "@heroui/divider";
 import { CreateWorkspaceFormType } from "@/interfaces/Workspace";
 import { motion } from "framer-motion";
 import SetupWorkspaceForm from "./_components/SetupWorkspaceForm";

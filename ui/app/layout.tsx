@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Montserrat, Noto_Sans_Thai } from "next/font/google";
-import NextUIProvider from "@/lib/next-ui/NextUIProvider";
+import HeroUIProvider from "@/lib/hero-ui/HeroUIProvider";
 import QueryClientProvider from "@/lib/react-query/QueryClientProvider";
 import NextAuthProvider from "@/lib/next-auth/NextAuthProvider";
 import { getServerSession } from "next-auth";
@@ -38,10 +38,10 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={monserat.className + " " + notoSansThai.className}>
-        <NextUIProvider>
+        <HeroUIProvider>
           <QueryClientProvider>
             <NextAuthProvider session={session}>
-              {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+              <ReactQueryDevtools initialIsOpen={false} />
               <Toaster
                 position="top-right"
                 closeButton
@@ -50,7 +50,7 @@ export default async function RootLayout({
               {children}
             </NextAuthProvider>
           </QueryClientProvider>
-        </NextUIProvider>
+        </HeroUIProvider>
       </body>
     </html>
   );

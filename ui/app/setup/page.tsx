@@ -1,5 +1,5 @@
 "use client";
-import { Link } from "@nextui-org/link";
+import { Link } from "@heroui/link";
 import { useState } from "react";
 import { BsArrowRightCircle } from "react-icons/bs";
 import { motion } from "framer-motion";

@@ -1,6 +1,6 @@
 "use client";
 
-import { Divider } from "@nextui-org/divider";
+import { Divider } from "@heroui/divider";
 import RegisterForm from "../../../components/forms/RegisterForm";
 import { UserRegisterFormType } from "@/interfaces/User";
 import { motion } from "framer-motion";

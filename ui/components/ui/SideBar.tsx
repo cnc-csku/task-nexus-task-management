@@ -1,11 +1,11 @@
 "use client";
 
 import { MdKeyboardArrowDown, MdAnalytics, MdSettings, MdTimeline, MdDashboard } from "react-icons/md";
-import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@nextui-org/dropdown";
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/dropdown";
 import { GrPowerCycle } from "react-icons/gr";
 import { GoTasklist } from "react-icons/go";
 import SideBarItem from "./SideBarItem";
-import { Button } from "@nextui-org/button";
+import { Button } from "@heroui/button";
 import { useParams } from "next/navigation";
 
 export default function SideBar() {

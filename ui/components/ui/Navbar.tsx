@@ -1,11 +1,11 @@
 "use client";
-import { Navbar as NextNav, NavbarBrand, NavbarContent, NavbarItem, NavbarMenuToggle, NavbarMenu, NavbarMenuItem } from "@nextui-org/navbar";
-import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@nextui-org/dropdown";
-import { Avatar } from "@nextui-org/avatar";
-import { User } from "@nextui-org/user";
+import { Navbar as NextNav, NavbarBrand, NavbarContent, NavbarItem, NavbarMenuToggle, NavbarMenu, NavbarMenuItem } from "@heroui/navbar";
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/dropdown";
+import { Avatar } from "@heroui/avatar";
+import { User } from "@heroui/user";
 import { IoMdNotificationsOutline } from "react-icons/io";
-import { Button } from "@nextui-org/button";
-import { Badge } from "@nextui-org/badge";
+import { Button } from "@heroui/button";
+import { Badge } from "@heroui/badge";
 
 export default function Navbar() {
   return (

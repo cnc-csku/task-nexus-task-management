@@ -1,11 +1,11 @@
 "use client";
 
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@nextui-org/table";
-import { Link } from "@nextui-org/link";
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/table";
+import { Link } from "@heroui/link";
 import React from "react";
-import { Avatar } from "@nextui-org/avatar";
-import { Chip } from "@nextui-org/chip";
-import { Badge } from "@nextui-org/badge";
+import { Avatar } from "@heroui/avatar";
+import { Chip } from "@heroui/chip";
+import { Badge } from "@heroui/badge";
 import { useRouter } from "next/navigation";
 
 export default function TasksTable() {
