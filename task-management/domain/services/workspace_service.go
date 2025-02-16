@@ -17,7 +17,7 @@ import (
 
 type WorkspaceService interface {
 	SetupWorkspace(ctx context.Context, req *requests.CreateWorkspaceRequest, userID string) (*models.Workspace, *errutils.Error)
-	ListOwnWorkspace(ctx context.Context, userId string) (*responses.ListOwnWorkspaceResponse, *errutils.Error)
+	ListOwnWorkspace(ctx context.Context, userId string) ([]responses.ListOwnWorkspaceResponseWorkspace, *errutils.Error)
 	ListWorkspaceMembers(ctx context.Context, req *requests.ListWorkspaceMemberRequest) (*responses.ListWorkspaceMembersResponse, *errutils.Error)
 }
 
@@ -135,7 +135,7 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 	return workspace, nil
 }
 
-func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId string) (*responses.ListOwnWorkspaceResponse, *errutils.Error) {
+func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId string) ([]responses.ListOwnWorkspaceResponseWorkspace, *errutils.Error) {
 	userObjID, err := bson.ObjectIDFromHex(userId)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
@@ -145,9 +145,7 @@ func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId stri
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if workspaceMembers == nil {
-		return &responses.ListOwnWorkspaceResponse{
-			Workspaces: []responses.ListOwnWorkspaceResponseWorkspace{},
-		}, nil
+		return []responses.ListOwnWorkspaceResponseWorkspace{}, nil
 	}
 
 	workspaceIDs := make([]bson.ObjectID, 0)
@@ -177,9 +175,7 @@ func (s *workspaceServiceImpl) ListOwnWorkspace(ctx context.Context, userId stri
 		}
 	}
 
-	return &responses.ListOwnWorkspaceResponse{
-		Workspaces: workspaceResponses,
-	}, nil
+	return workspaceResponses, nil
 }
 
 func validateListWorkspaceMembersPaginationRequestSortBy(sortBy string) bool {
