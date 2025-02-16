@@ -40,6 +40,7 @@ var RepositorySet = wire.NewSet(
 	mongo.NewMongoGlobalSettingRepo,
 	mongo.NewMongoSprintRepo,
 	mongo.NewMongoTaskRepo,
+	mongo.NewMongoTaskCommentRepo,
 )
 
 var ServiceSet = wire.NewSet(
@@ -50,6 +51,7 @@ var ServiceSet = wire.NewSet(
 	services.NewWorkspaceService,
 	services.NewSprintService,
 	services.NewTaskService,
+	services.NewTaskCommentService,
 )
 
 var RestHandlerSet = wire.NewSet(
@@ -61,6 +63,7 @@ var RestHandlerSet = wire.NewSet(
 	rest.NewWorkspaceHandler,
 	rest.NewSprintHandler,
 	rest.NewTaskHandler,
+	rest.NewTaskCommentHandler,
 )
 
 var GrpcClientSet = wire.NewSet(
