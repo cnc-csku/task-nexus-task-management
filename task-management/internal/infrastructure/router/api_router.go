@@ -55,6 +55,12 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.PUT("/:projectId/sprints/:sprintId", r.sprint.Edit, r.authMiddleware.Middleware)
 	}
 
+	tasks := api.Group("/tasks/v1")
+	{
+		tasks.POST("", r.task.Create, r.authMiddleware.Middleware)
+		tasks.GET("/:taskId", r.task.GetTaskDetail, r.authMiddleware.Middleware)
+	}
+
 	setup := api.Group("/setup/v1")
 	{
 		setup.GET("", r.common.GetSetupStatus)

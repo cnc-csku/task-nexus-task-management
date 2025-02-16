@@ -170,14 +170,14 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	} else if member == nil {
-		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
 	}
 
 	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	} else if project == nil {
-		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound)
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound).WithDebugMessage("Project not found")
 	}
 
 	return project, nil
