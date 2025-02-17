@@ -1,19 +1,33 @@
 "use client";
-import { Navbar as NextNav, NavbarBrand, NavbarContent, NavbarItem, NavbarMenuToggle, NavbarMenu, NavbarMenuItem } from "@heroui/navbar";
+import { Navbar as NextNav, NavbarContent, NavbarItem } from "@heroui/navbar";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/dropdown";
 import { Avatar } from "@heroui/avatar";
 import { User } from "@heroui/user";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { Button } from "@heroui/button";
 import { Badge } from "@heroui/badge";
+import { MdMenu } from "react-icons/md";
+export interface NavbarProps {
+  sideBarToggle?: () => void;
+}
 
-export default function Navbar() {
+export default function Navbar({ sideBarToggle }: NavbarProps) {
   return (
     <NextNav
       maxWidth="full"
-      className="bg-white h-10 shadow-sm"
+      className="bg-white"
     >
-      <NavbarBrand>TaskNexus</NavbarBrand>
+      { sideBarToggle && (
+        <NavbarContent>
+          <Button
+            variant="light"
+            isIconOnly
+            onPress={sideBarToggle}
+          >
+            <MdMenu className="text-xl cursor-pointer" />
+          </Button>
+        </NavbarContent>
+      )}
       <NavbarContent justify="end">
         <NavbarItem>
           <Dropdown placement="bottom-end">
@@ -48,7 +62,6 @@ export default function Navbar() {
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
               <Avatar
-                isBordered
                 as="button"
                 className="transition-transform"
                 size="sm"

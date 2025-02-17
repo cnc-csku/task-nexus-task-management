@@ -1,7 +1,7 @@
 "use client";
 
 import { Divider } from "@heroui/divider";
-import RegisterForm from "../../../components/forms/RegisterForm";
+import RegisterForm from "../../../components/auth/RegisterForm";
 import { UserRegisterFormType } from "@/interfaces/User";
 import { motion } from "framer-motion";
 import useSetupUser from "@/hooks/api/setup/useSetupUser";

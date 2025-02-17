@@ -8,14 +8,14 @@ interface WorkspaceListProps {
 export default function WorkspaceList({ workspaces }: WorkspaceListProps) {
   return (
     <div className="flex flex-col gap-3">
-      {workspaces.map((workspace) => {
-        return (
-          <WorkspaceItem
-            key={workspace.id}
-            workspace={workspace}
-          />
-        );
-      })}
+        {workspaces.map((workspace) => {
+          return (
+            <WorkspaceItem
+              key={workspace.id}
+              workspace={workspace}
+            />
+          );
+        })}
     </div>
   );
 }
