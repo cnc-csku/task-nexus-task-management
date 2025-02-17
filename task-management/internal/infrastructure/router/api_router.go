@@ -21,6 +21,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	{
 		workspaces.GET("/own-workspaces", r.workspace.ListOwnWorkspace, r.authMiddleware.Middleware)
 		workspaces.GET("/:workspaceId/members", r.workspace.ListWorkspaceMembers, r.authMiddleware.Middleware)
+		workspaces.GET("/:workspaceId/my-projects", r.project.ListMyProjects, r.authMiddleware.Middleware)
 	}
 
 	invitations := api.Group("/invitations/v1")
@@ -34,7 +35,6 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	projects := api.Group("/projects/v1")
 	{
 		projects.POST("", r.project.Create, r.authMiddleware.Middleware)
-		projects.GET("/:workspaceId/my-projects", r.project.ListMyProjects, r.authMiddleware.Middleware)
 		projects.GET("/:projectId", r.project.GetProjectDetail, r.authMiddleware.Middleware)
 
 		// Positions
