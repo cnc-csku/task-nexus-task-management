@@ -3,7 +3,7 @@
 import { Divider } from "@heroui/divider";
 import { CreateWorkspaceFormType } from "@/interfaces/Workspace";
 import { motion } from "framer-motion";
-import SetupWorkspaceForm from "./_components/SetupWorkspaceForm";
+import SetupWorkspaceForm from "@/components/workspace/SetupWorkspaceForm";
 import useSetupWorkspace from "@/hooks/api/setup/useSetupWorkspace";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/utils/errutils";

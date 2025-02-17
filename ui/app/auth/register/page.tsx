@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { UserRegisterFormType } from "@/interfaces/User";
-import RegisterForm from "@/components/forms/RegisterForm";
+import RegisterForm from "@/components/auth/RegisterForm";
 
 export default function RegisterPage() {
   const onRegister = async (data: UserRegisterFormType) => {

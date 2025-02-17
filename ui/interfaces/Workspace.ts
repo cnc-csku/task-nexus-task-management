@@ -3,10 +3,13 @@ import { z } from "zod";
 export interface Workspace {
     id: string;
     name: string;
-    members: WorkspaceMember[];
     createdBy: string
     createdAt: Date;
     updatedAt: Date
+}
+
+export interface WorkspaceWithMembers extends Workspace {
+    members: WorkspaceMember[];
 }
 
 export interface WorkspaceMember {

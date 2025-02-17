@@ -9,7 +9,7 @@ export interface WorkspaceItemProps {
 export default function WorkspaceItem({ workspace }: WorkspaceItemProps) {
   return (
     <Link
-      href={"/"}
+      href={`/workspaces/${workspace.id}/projects`}
       className="flex flex-col border border-gray-200 rounded-2xl hover:bg-gray-200 transition-colors"
     >
       <div className="px-5 py-4">
