@@ -7,7 +7,7 @@ import NextAuthProvider from "@/lib/next-auth/NextAuthProvider";
 import { getServerSession } from "next-auth";
 import { Toaster } from "sonner";
 import { authOptions } from "@/lib/next-auth/auth";
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 const notoSansThai = Noto_Sans_Thai({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -47,7 +47,7 @@ export default async function RootLayout({
                 closeButton
                 richColors
               />
-              {children}
+              <div className="bg-white">{children}</div>
             </NextAuthProvider>
           </QueryClientProvider>
         </HeroUIProvider>
