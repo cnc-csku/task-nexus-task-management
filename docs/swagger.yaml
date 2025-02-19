@@ -1,0 +1,26 @@
+info:
+  contact: {}
+paths:
+  /api/health:
+    get:
+      consumes:
+      - application/json
+      description: Check the health of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              allOf:
+              - type: string
+              - properties:
+                  message:
+                    type: string
+                type: object
+            type: object
+      summary: Health Check
+      tags:
+      - health
+swagger: "2.0"
