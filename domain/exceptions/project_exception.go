@@ -7,4 +7,5 @@ var (
 	ErrProjectPrefixAlreadyExists = errors.New("project prefix already exists")
 	ErrProjectNotFound            = errors.New("project not found")
 	ErrDefaultWorkflowNotFound    = errors.New("default workflow not found")
+	ErrInvalidAttributeType       = errors.New("invalid attribute type")
 )

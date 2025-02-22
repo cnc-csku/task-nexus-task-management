@@ -21,6 +21,8 @@ type ProjectHandler interface {
 	ListMembers(c echo.Context) error
 	AddWorkflows(c echo.Context) error
 	ListWorkflows(c echo.Context) error
+	AddAttributeTemplates(c echo.Context) error
+	ListAttributeTemplates(c echo.Context) error
 }
 
 type projectHandlerImpl struct {
@@ -199,4 +201,41 @@ func (u *projectHandlerImpl) ListWorkflows(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, workflows)
+}
+
+func (u *projectHandlerImpl) AddAttributeTemplates(c echo.Context) error {
+	req := new(requests.AddAttributeTemplatesRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	res, err := u.projectService.AddAttributeTemplates(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, res)
+}
+
+func (u *projectHandlerImpl) ListAttributeTemplates(c echo.Context) error {
+	req := new(requests.ListAttributeTemplatesPathParams)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	attributeTemplates, err := u.projectService.ListAttributeTemplates(c.Request().Context(), req)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, attributeTemplates)
 }

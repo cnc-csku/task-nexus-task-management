@@ -79,3 +79,11 @@ func (u projectUpdate) IncrementTaskRunningNumber() {
 		"task_running_number": 1,
 	}
 }
+
+func (u projectUpdate) AddAttributeTemplates(attributeTemplates []bson.M) {
+	u["$push"] = bson.M{
+		"attributes_templates": bson.M{
+			"$each": attributeTemplates,
+		},
+	}
+}

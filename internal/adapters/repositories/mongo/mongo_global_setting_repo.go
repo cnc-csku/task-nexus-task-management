@@ -23,11 +23,11 @@ func NewMongoGlobalSettingRepo(config *config.Config, client *mongo.Client) repo
 	}
 }
 
-func (m *mongoGlobalSettingRepository) GetByKey(ctx context.Context, key string) (*models.GlobalSetting, error) {
+func (m *mongoGlobalSettingRepository) GetByKey(ctx context.Context, key string) (*models.KeyValuePair, error) {
 	f := NewGlobalSettingFilter()
 	f.WithKey(key)
 
-	var setting models.GlobalSetting
+	var setting models.KeyValuePair
 	err := m.collection.FindOne(ctx, f).Decode(&setting)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -40,7 +40,7 @@ func (m *mongoGlobalSettingRepository) GetByKey(ctx context.Context, key string)
 	return &setting, nil
 }
 
-func (m *mongoGlobalSettingRepository) Set(ctx context.Context, setting *models.GlobalSetting) error {
+func (m *mongoGlobalSettingRepository) Set(ctx context.Context, setting *models.KeyValuePair) error {
 	f := NewGlobalSettingFilter()
 	f.WithKey(setting.Key)
 

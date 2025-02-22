@@ -7,6 +7,6 @@ import (
 )
 
 type GlobalSettingRepository interface {
-	GetByKey(ctx context.Context, key string) (*models.GlobalSetting, error)
-	Set(ctx context.Context, setting *models.GlobalSetting) error
+	GetByKey(ctx context.Context, key string) (*models.KeyValuePair, error)
+	Set(ctx context.Context, setting *models.KeyValuePair) error
 }
