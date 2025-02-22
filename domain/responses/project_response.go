@@ -40,3 +40,7 @@ type ListProjectMembersResponseMember struct {
 type AddWorkflowsResponse struct {
 	Message string `json:"message"`
 }
+
+type AddAttributeTemplatesResponse struct {
+	Message string `json:"message"`
+}

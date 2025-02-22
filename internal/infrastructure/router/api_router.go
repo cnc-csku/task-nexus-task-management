@@ -53,6 +53,10 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.POST("/:projectId/sprints", r.sprint.Create, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/sprints/:sprintId", r.sprint.GetByID, r.authMiddleware.Middleware)
 		projects.PUT("/:projectId/sprints/:sprintId", r.sprint.Edit, r.authMiddleware.Middleware)
+
+		// Attribute Templates
+		projects.POST("/:projectId/attribute-templates", r.project.AddAttributeTemplates, r.authMiddleware.Middleware)
+		projects.GET("/:projectId/attribute-templates", r.project.ListAttributeTemplates, r.authMiddleware.Middleware)
 	}
 
 	tasks := api.Group("/tasks/v1")

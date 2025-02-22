@@ -25,6 +25,8 @@ type ProjectService interface {
 	ListMembers(ctx context.Context, req *requests.ListProjectMembersRequest) (*responses.ListProjectMembersResponse, *errutils.Error)
 	AddWorkflows(ctx context.Context, req *requests.AddWorkflowsRequest, userID string) (*responses.AddWorkflowsResponse, *errutils.Error)
 	ListWorkflows(ctx context.Context, req *requests.ListWorkflowsPathParams) ([]models.Workflow, *errutils.Error)
+	AddAttributeTemplates(ctx context.Context, req *requests.AddAttributeTemplatesRequest, userID string) (*responses.AddAttributeTemplatesResponse, *errutils.Error)
+	ListAttributeTemplates(ctx context.Context, req *requests.ListAttributeTemplatesPathParams) ([]models.AttributeTemplate, *errutils.Error)
 }
 
 type projectServiceImpl struct {
@@ -242,6 +244,13 @@ func (p *projectServiceImpl) ListPositions(ctx context.Context, req *requests.Li
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound).WithDebugMessage("Project not found")
 	}
 
 	positions, err := p.projectRepo.FindPositionByProjectID(ctx, bsonProjectID)
@@ -475,10 +484,109 @@ func (p *projectServiceImpl) ListWorkflows(ctx context.Context, req *requests.Li
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
+	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound).WithDebugMessage("Project not found")
+	}
+
 	workflows, err := p.projectRepo.FindWorkflowByProjectID(ctx, bsonProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
 	return workflows, nil
+}
+
+func (p *projectServiceImpl) AddAttributeTemplates(ctx context.Context, req *requests.AddAttributeTemplatesRequest, userID string) (*responses.AddAttributeTemplatesResponse, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	for _, attributeTemplate := range req.AttributeTemplates {
+		if !models.KeyValuePairType(attributeTemplate.Type).IsValid() {
+			return nil, errutils.NewError(exceptions.ErrInvalidAttributeType, errutils.BadRequest).WithDebugMessage("Invalid attribute type")
+		}
+	}
+
+	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound)
+	}
+
+	// Check if the user is owner or moderator of the project
+	member, err := p.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
+	} else if member.Role != models.ProjectMemberRoleOwner && member.Role != models.ProjectMemberRoleModerator {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
+	}
+
+	// Check if the attribute template already exists
+	existingAttributeTemplates, err := p.projectRepo.FindAttributeTemplatesByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	attributeTemplateMap := make(map[string]struct{})
+	for _, attributeTemplate := range existingAttributeTemplates {
+		attributeTemplateMap[attributeTemplate.Name] = struct{}{}
+	}
+
+	var newAttributeTemplates []models.AttributeTemplate
+	for _, attributeTemplate := range req.AttributeTemplates {
+		if _, ok := attributeTemplateMap[attributeTemplate.Name]; !ok {
+			newAttributeTemplates = append(newAttributeTemplates, models.AttributeTemplate{
+				Name: attributeTemplate.Name,
+				Type: models.KeyValuePairType(attributeTemplate.Type),
+			})
+		}
+	}
+
+	if len(newAttributeTemplates) == 0 {
+		return &responses.AddAttributeTemplatesResponse{
+			Message: "No new attribute template added",
+		}, nil
+	}
+
+	err = p.projectRepo.AddAttributeTemplates(ctx, bsonProjectID, newAttributeTemplates)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	return &responses.AddAttributeTemplatesResponse{
+		Message: "Attribute template added successfully",
+	}, nil
+}
+
+func (p *projectServiceImpl) ListAttributeTemplates(ctx context.Context, req *requests.ListAttributeTemplatesPathParams) ([]models.AttributeTemplate, *errutils.Error) {
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound).WithDebugMessage("Project not found")
+	}
+
+	attributeTemplates, err := p.projectRepo.FindAttributeTemplatesByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	return attributeTemplates, nil
 }

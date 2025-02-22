@@ -24,26 +24,6 @@ type Project struct {
 	UpdatedBy           bson.ObjectID       `bson:"updated_by" json:"updatedBy"`
 }
 
-type Workflow struct {
-	PreviousStatuses []string `bson:"previous_statuses" json:"previousStatuses"`
-	Status           string   `bson:"status" json:"status"`
-	IsDefault        bool     `bson:"is_default" json:"isDefault"`
-}
-
-func GetDefaultWorkflows() []Workflow {
-	return []Workflow{
-		{Status: "TODO", IsDefault: true},
-		{Status: "IN_PROGRESS", PreviousStatuses: []string{"TODO"}},
-		{Status: "DONE", PreviousStatuses: []string{"IN_PROGRESS"}},
-	}
-}
-
-type AttributeTemplate struct {
-	Name  string      `bson:"name" json:"name"`
-	Type  string      `bson:"type" json:"type"`
-	Value interface{} `bson:"value" json:"value"`
-}
-
 type ProjectStatus string
 
 const (
@@ -61,4 +41,23 @@ func (p ProjectStatus) IsValid() bool {
 		return true
 	}
 	return false
+}
+
+type Workflow struct {
+	PreviousStatuses []string `bson:"previous_statuses" json:"previousStatuses"`
+	Status           string   `bson:"status" json:"status"`
+	IsDefault        bool     `bson:"is_default" json:"isDefault"`
+}
+
+func GetDefaultWorkflows() []Workflow {
+	return []Workflow{
+		{Status: "TODO", IsDefault: true},
+		{Status: "IN_PROGRESS", PreviousStatuses: []string{"TODO"}},
+		{Status: "DONE", PreviousStatuses: []string{"IN_PROGRESS"}},
+	}
+}
+
+type AttributeTemplate struct {
+	Name string           `bson:"name" json:"name"`
+	Type KeyValuePairType `bson:"type" json:"type"`
 }
