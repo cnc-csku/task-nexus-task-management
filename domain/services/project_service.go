@@ -143,7 +143,7 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
-	var bsonProjectIDs []bson.ObjectID
+	bsonProjectIDs := []bson.ObjectID{}
 	for _, projectMember := range projectMembers {
 		bsonProjectIDs = append(bsonProjectIDs, projectMember.ProjectID)
 	}

@@ -150,7 +150,7 @@ func (m *mongoProjectRepo) FindByProjectIDsAndWorkspaceID(ctx context.Context, p
 		return nil, err
 	}
 
-	var projects []*models.Project
+	projects := []*models.Project{}
 	if err := cursor.All(ctx, &projects); err != nil {
 		return nil, err
 	}
