@@ -21,6 +21,6 @@ func NewGlobalSettingUpdate() globalSettingUpdate {
 	return globalSettingUpdate{}
 }
 
-func (u globalSettingUpdate) WithSetting(setting *models.GlobalSetting) {
+func (u globalSettingUpdate) WithSetting(setting *models.KeyValuePair) {
 	u["$set"] = setting
 }

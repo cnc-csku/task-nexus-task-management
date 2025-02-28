@@ -113,3 +113,25 @@ func (m *mongoProjectMemberRepo) FindByProjectIDAndUserID(ctx context.Context, p
 
 	return projectMember, nil
 }
+
+func (m *mongoProjectMemberRepo) FindProjectOwnersByProjectIDs(ctx context.Context, projectIDs []bson.ObjectID) (map[bson.ObjectID]models.ProjectMember, error) {
+	f := NewProjectMemberFilter()
+	f.WithProjectIDs(projectIDs)
+	f.WithRole(models.ProjectMemberRoleOwner)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	projectOwners := make(map[bson.ObjectID]models.ProjectMember)
+	for cursor.Next(ctx) {
+		var projectMember models.ProjectMember
+		if err := cursor.Decode(&projectMember); err != nil {
+			return nil, err
+		}
+		projectOwners[projectMember.ProjectID] = projectMember
+	}
+
+	return projectOwners, nil
+}

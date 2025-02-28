@@ -19,6 +19,8 @@ type ProjectRepository interface {
 	FindWorkflowByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.Workflow, error)
 	IncrementSprintRunningNumber(ctx context.Context, projectID bson.ObjectID) error
 	IncrementTaskRunningNumber(ctx context.Context, projectID bson.ObjectID) error
+	AddAttributeTemplates(ctx context.Context, projectID bson.ObjectID, attributeTemplates []models.AttributeTemplate) error
+	FindAttributeTemplatesByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.AttributeTemplate, error)
 }
 
 type CreateProjectRequest struct {

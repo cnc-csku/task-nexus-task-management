@@ -102,6 +102,8 @@ func (m *mongoProjectRepo) Create(ctx context.Context, project *repositories.Cre
 		SprintRunningNumber: 0,
 		TaskRunningNumber:   1,
 		Workflows:           project.Workflows,
+		AttributeTemplates:  []models.AttributeTemplate{},
+		Positions:           []string{},
 		CreatedAt:           time.Now(),
 		CreatedBy:           project.CreatedBy,
 		UpdatedAt:           time.Now(),
@@ -383,4 +385,46 @@ func (m *mongoProjectRepo) IncrementTaskRunningNumber(ctx context.Context, proje
 	}
 
 	return nil
+}
+
+func (m *mongoProjectRepo) AddAttributeTemplates(ctx context.Context, projectID bson.ObjectID, attributeTemplate []models.AttributeTemplate) error {
+	f := NewProjectFilter()
+	f.WithID(projectID)
+
+	update := NewProjectUpdate()
+
+	bsonAttributeTemplates := make([]bson.M, len(attributeTemplate))
+	for i, a := range attributeTemplate {
+		bsonAttributeTemplates[i] = bson.M{
+			"name": a.Name,
+			"type": a.Type,
+		}
+	}
+	update.AddAttributeTemplates(bsonAttributeTemplates)
+
+	_, err := m.collection.UpdateOne(ctx, f, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *mongoProjectRepo) FindAttributeTemplatesByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.AttributeTemplate, error) {
+	f := NewProjectFilter()
+	f.WithID(projectID)
+
+	var result struct {
+		AttributeTemplates []models.AttributeTemplate `bson:"attributes_templates"`
+	}
+
+	err := m.collection.FindOne(ctx, f).Decode(&result)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return result.AttributeTemplates, nil
 }

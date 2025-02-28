@@ -54,3 +54,17 @@ type AddWorkflowsRequestWorkflow struct {
 type ListWorkflowsPathParams struct {
 	ProjectID string `param:"projectId" validate:"required"`
 }
+
+type AddAttributeTemplatesRequest struct {
+	ProjectID          string                                  `param:"projectId" validate:"required"`
+	AttributeTemplates []AddAttributeTemplatesRequestAttribute `json:"attributesTemplates" validate:"required,dive"`
+}
+
+type AddAttributeTemplatesRequestAttribute struct {
+	Name string `json:"name" validate:"required"`
+	Type string `json:"type" validate:"required"`
+}
+
+type ListAttributeTemplatesPathParams struct {
+	ProjectID string `param:"projectId" validate:"required"`
+}
