@@ -13,10 +13,23 @@ type CreateProjectResponse struct {
 }
 
 type ListMyProjectsResponse struct {
-	Projects []ListMyProjectsResponseProject `json:"projects"`
+	ID                   string    `json:"id"`
+	WorkspaceID          string    `json:"workspaceId"`
+	Name                 string    `json:"name"`
+	ProjectPrefix        string    `json:"projectPrefix"`
+	Description          *string   `json:"description"`
+	Status               string    `json:"status"`
+	OwnerUserID          string    `json:"ownerUserId"`
+	OwnerProjectMemberID string    `json:"ownerProjectMemberId"`
+	OwnerDisplayName     string    `json:"ownerDisplayName"`
+	OwnerProfileUrl      string    `json:"ownerProfileUrl"`
+	CreatedAt            time.Time `json:"createdAt"`
+	CreatedBy            string    `json:"createdBy"`
+	UpdatedAt            time.Time `json:"updatedAt"`
+	UpdatedBy            string    `json:"updatedBy"`
 }
 
-type ListMyProjectsResponseProject struct {
+type GetMyProjectDetailResponse struct {
 	ID                   string    `json:"id"`
 	WorkspaceID          string    `json:"workspaceId"`
 	Name                 string    `json:"name"`
