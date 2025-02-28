@@ -17,8 +17,8 @@ import (
 
 type ProjectService interface {
 	Create(ctx context.Context, req *requests.CreateProjectRequest, userId string) (*responses.CreateProjectResponse, *errutils.Error)
-	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) (*responses.ListMyProjectsResponse, *errutils.Error)
-	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*models.Project, *errutils.Error)
+	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]responses.ListMyProjectsResponse, *errutils.Error)
+	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetMyProjectDetailResponse, *errutils.Error)
 	AddPositions(ctx context.Context, req *requests.AddPositionsRequest, userID string) (*responses.AddPositionsResponse, *errutils.Error)
 	ListPositions(ctx context.Context, req *requests.ListPositionsPathParams) ([]string, *errutils.Error)
 	AddMembers(ctx context.Context, req *requests.AddProjectMembersRequest, userID string) (*responses.AddProjectMembersResponse, *errutils.Error)
@@ -127,7 +127,7 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 	return res, nil
 }
 
-func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) (*responses.ListMyProjectsResponse, *errutils.Error) {
+func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]responses.ListMyProjectsResponse, *errutils.Error) {
 	bsonWorkspaceID, err := bson.ObjectIDFromHex(req.WorkspaceID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInvalidWorkspaceID, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -173,7 +173,7 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 		ownerMap[owner.ID] = owner
 	}
 
-	resp := make([]responses.ListMyProjectsResponseProject, 0)
+	resp := make([]responses.ListMyProjectsResponse, 0)
 	for _, project := range projects {
 		owner, ok := owners[project.ID]
 		if !ok {
@@ -184,7 +184,7 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 			continue
 		}
 
-		resp = append(resp, responses.ListMyProjectsResponseProject{
+		resp = append(resp, responses.ListMyProjectsResponse{
 			ID:                   project.ID.Hex(),
 			WorkspaceID:          project.WorkspaceID.Hex(),
 			Name:                 project.Name,
@@ -202,12 +202,10 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 		})
 	}
 
-	return &responses.ListMyProjectsResponse{
-		Projects: resp,
-	}, nil
+	return resp, nil
 }
 
-func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*models.Project, *errutils.Error) {
+func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetMyProjectDetailResponse, *errutils.Error) {
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -233,7 +231,32 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound).WithDebugMessage("Project not found")
 	}
 
-	return project, nil
+	owner, err := p.projectMemberRepo.FindProjectOwnerByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	ownerInfo, err := p.userRepo.FindByID(ctx, owner.UserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	return &responses.GetMyProjectDetailResponse{
+		ID:                   project.ID.Hex(),
+		WorkspaceID:          project.WorkspaceID.Hex(),
+		Name:                 project.Name,
+		ProjectPrefix:        project.ProjectPrefix,
+		Description:          project.Description,
+		Status:               project.Status.String(),
+		OwnerUserID:          owner.UserID.Hex(),
+		OwnerProjectMemberID: owner.ID.Hex(),
+		OwnerDisplayName:     ownerInfo.DisplayName,
+		OwnerProfileUrl:      ownerInfo.ProfileUrl,
+		CreatedAt:            project.CreatedAt,
+		CreatedBy:            project.CreatedBy.Hex(),
+		UpdatedAt:            project.UpdatedAt,
+		UpdatedBy:            project.UpdatedBy.Hex(),
+	}, nil
 }
 
 func (p *projectServiceImpl) AddPositions(ctx context.Context, req *requests.AddPositionsRequest, userID string) (*responses.AddPositionsResponse, *errutils.Error) {

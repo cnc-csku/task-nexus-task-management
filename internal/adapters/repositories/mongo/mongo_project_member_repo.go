@@ -114,6 +114,23 @@ func (m *mongoProjectMemberRepo) FindByProjectIDAndUserID(ctx context.Context, p
 	return projectMember, nil
 }
 
+func (m *mongoProjectMemberRepo) FindProjectOwnerByProjectID(ctx context.Context, projectID bson.ObjectID) (*models.ProjectMember, error) {
+	f := NewProjectMemberFilter()
+	f.WithProjectID(projectID)
+	f.WithRole(models.ProjectMemberRoleOwner)
+
+	projectMember := new(models.ProjectMember)
+	err := m.collection.FindOne(ctx, f).Decode(projectMember)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return projectMember, nil
+}
+
 func (m *mongoProjectMemberRepo) FindProjectOwnersByProjectIDs(ctx context.Context, projectIDs []bson.ObjectID) (map[bson.ObjectID]models.ProjectMember, error) {
 	f := NewProjectMemberFilter()
 	f.WithProjectIDs(projectIDs)
