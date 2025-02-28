@@ -44,27 +44,15 @@ func NewProjectUpdate() projectUpdate {
 	return projectUpdate{}
 }
 
-func (u projectUpdate) AddPositions(position []string) {
-	u["$push"] = bson.M{
-		"positions": bson.M{
-			"$each": position,
-		},
+func (u projectUpdate) UpdatePositions(positions []string) {
+	u["$set"] = bson.M{
+		"positions": positions,
 	}
 }
 
-func (u projectUpdate) AddMembers(member []bson.M) {
-	u["$push"] = bson.M{
-		"members": bson.M{
-			"$each": member,
-		},
-	}
-}
-
-func (u projectUpdate) AddWorkflows(workflow []bson.M) {
-	u["$push"] = bson.M{
-		"workflows": bson.M{
-			"$each": workflow,
-		},
+func (u projectUpdate) UpdateWorkflows(workflows []bson.M) {
+	u["$set"] = bson.M{
+		"workflows": workflows,
 	}
 }
 
@@ -80,10 +68,8 @@ func (u projectUpdate) IncrementTaskRunningNumber() {
 	}
 }
 
-func (u projectUpdate) AddAttributeTemplates(attributeTemplates []bson.M) {
-	u["$push"] = bson.M{
-		"attributes_templates": bson.M{
-			"$each": attributeTemplates,
-		},
+func (u projectUpdate) UpdateAttributeTemplates(attributeTemplates []bson.M) {
+	u["$set"] = bson.M{
+		"attribute_templates": attributeTemplates,
 	}
 }

@@ -15,9 +15,9 @@ type GetProjectsDetailPathParams struct {
 	ProjectID string `param:"projectId" validate:"required"`
 }
 
-type AddPositionsRequest struct {
+type UpdatePositionsRequest struct {
 	ProjectID string   `param:"projectId" validate:"required"`
-	Title     []string `json:"title" validate:"required"`
+	Titles    []string `json:"titles" validate:"required"`
 }
 
 type ListPositionsPathParams struct {
@@ -41,26 +41,27 @@ type ListProjectMembersRequest struct {
 	PaginationRequest
 }
 
-type AddWorkflowsRequest struct {
-	ProjectID string                        `param:"projectId" validate:"required"`
-	Workflows []AddWorkflowsRequestWorkflow `json:"workflows" validate:"required,dive"`
+type UpdateWorkflowsRequest struct {
+	ProjectID string                           `param:"projectId" validate:"required"`
+	Workflows []UpdateWorkflowsRequestWorkflow `json:"workflows" validate:"required,dive"`
 }
 
-type AddWorkflowsRequestWorkflow struct {
+type UpdateWorkflowsRequestWorkflow struct {
 	PreviousStatuses []string `json:"previousStatuses"`
 	Status           string   `json:"status" validate:"required"`
+	IsDefault        bool     `json:"isDefault"`
 }
 
 type ListWorkflowsPathParams struct {
 	ProjectID string `param:"projectId" validate:"required"`
 }
 
-type AddAttributeTemplatesRequest struct {
-	ProjectID          string                                  `param:"projectId" validate:"required"`
-	AttributeTemplates []AddAttributeTemplatesRequestAttribute `json:"attributesTemplates" validate:"required,dive"`
+type UpdateAttributeTemplatesRequest struct {
+	ProjectID          string                                     `param:"projectId" validate:"required"`
+	AttributeTemplates []UpdateAttributeTemplatesRequestAttribute `json:"attributesTemplates" validate:"required,dive"`
 }
 
-type AddAttributeTemplatesRequestAttribute struct {
+type UpdateAttributeTemplatesRequestAttribute struct {
 	Name string `json:"name" validate:"required"`
 	Type string `json:"type" validate:"required"`
 }

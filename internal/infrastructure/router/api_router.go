@@ -38,7 +38,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.GET("/:projectId", r.project.GetProjectDetail, r.authMiddleware.Middleware)
 
 		// Positions
-		projects.POST("/:projectId/positions", r.project.AddPositions, r.authMiddleware.Middleware)
+		projects.PUT("/:projectId/positions", r.project.UpdatePositions, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/positions", r.project.ListPositions, r.authMiddleware.Middleware)
 
 		// Members
@@ -46,7 +46,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.GET("/:projectId/members", r.project.ListMembers, r.authMiddleware.Middleware)
 
 		// Workflow
-		projects.POST("/:projectId/workflows", r.project.AddWorkflows, r.authMiddleware.Middleware)
+		projects.PUT("/:projectId/workflows", r.project.UpdateWorkflows, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/workflows", r.project.ListWorkflows, r.authMiddleware.Middleware)
 
 		// Sprint
@@ -55,7 +55,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.PUT("/:projectId/sprints/:sprintId", r.sprint.Edit, r.authMiddleware.Middleware)
 
 		// Attribute Templates
-		projects.POST("/:projectId/attribute-templates", r.project.AddAttributeTemplates, r.authMiddleware.Middleware)
+		projects.PUT("/:projectId/attribute-templates", r.project.UpdateAttributeTemplates, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/attribute-templates", r.project.ListAttributeTemplates, r.authMiddleware.Middleware)
 	}
 

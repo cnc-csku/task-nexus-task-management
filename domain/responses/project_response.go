@@ -46,7 +46,7 @@ type GetMyProjectDetailResponse struct {
 	UpdatedBy            string    `json:"updatedBy"`
 }
 
-type AddPositionsResponse struct {
+type UpdatePositionsResponse struct {
 	Message string `json:"message"`
 }
 
@@ -71,10 +71,10 @@ type ListProjectMembersResponseMember struct {
 	RemovedAt   *time.Time `json:"removedAt"`
 }
 
-type AddWorkflowsResponse struct {
+type UpdateWorkflowsResponse struct {
 	Message string `json:"message"`
 }
 
-type AddAttributeTemplatesResponse struct {
+type UpdateAttributeTemplatesResponse struct {
 	Message string `json:"message"`
 }

@@ -203,12 +203,12 @@ func (m *mongoProjectRepo) FindPositionByProjectID(ctx context.Context, projectI
 	return result.Positions, nil
 }
 
-func (m *mongoProjectRepo) AddPositions(ctx context.Context, projectID bson.ObjectID, position []string) error {
+func (m *mongoProjectRepo) UpdatePositions(ctx context.Context, projectID bson.ObjectID, position []string) error {
 	f := NewProjectFilter()
 	f.WithID(projectID)
 
 	update := NewProjectUpdate()
-	update.AddPositions(position)
+	update.UpdatePositions(position)
 
 	_, err := m.collection.UpdateOne(ctx, f, update)
 	if err != nil {
@@ -312,7 +312,7 @@ func (m *mongoProjectRepo) SearchProjectMember(ctx context.Context, in *reposito
 	return result.Members, countResult.Count, nil
 }
 
-func (m *mongoProjectRepo) AddWorkflows(ctx context.Context, projectID bson.ObjectID, workflows []models.Workflow) error {
+func (m *mongoProjectRepo) UpdateWorkflows(ctx context.Context, projectID bson.ObjectID, workflows []models.Workflow) error {
 	f := NewProjectFilter()
 	f.WithID(projectID)
 
@@ -326,9 +326,10 @@ func (m *mongoProjectRepo) AddWorkflows(ctx context.Context, projectID bson.Obje
 		bsonWorkflows[i] = bson.M{
 			"previous_statuses": w.PreviousStatuses,
 			"status":            w.Status,
+			"is_default":        w.IsDefault,
 		}
 	}
-	update.AddWorkflows(bsonWorkflows)
+	update.UpdateWorkflows(bsonWorkflows)
 
 	_, err := m.collection.UpdateOne(ctx, f, update)
 	if err != nil {
@@ -387,20 +388,20 @@ func (m *mongoProjectRepo) IncrementTaskRunningNumber(ctx context.Context, proje
 	return nil
 }
 
-func (m *mongoProjectRepo) AddAttributeTemplates(ctx context.Context, projectID bson.ObjectID, attributeTemplate []models.AttributeTemplate) error {
+func (m *mongoProjectRepo) UpdateAttributeTemplates(ctx context.Context, projectID bson.ObjectID, attributeTemplates []models.AttributeTemplate) error {
 	f := NewProjectFilter()
 	f.WithID(projectID)
 
 	update := NewProjectUpdate()
 
-	bsonAttributeTemplates := make([]bson.M, len(attributeTemplate))
-	for i, a := range attributeTemplate {
+	bsonAttributeTemplates := make([]bson.M, len(attributeTemplates))
+	for i, a := range attributeTemplates {
 		bsonAttributeTemplates[i] = bson.M{
 			"name": a.Name,
 			"type": a.Type,
 		}
 	}
-	update.AddAttributeTemplates(bsonAttributeTemplates)
+	update.UpdateAttributeTemplates(bsonAttributeTemplates)
 
 	_, err := m.collection.UpdateOne(ctx, f, update)
 	if err != nil {
