@@ -17,7 +17,7 @@ import (
 
 type ProjectService interface {
 	Create(ctx context.Context, req *requests.CreateProjectRequest, userId string) (*responses.CreateProjectResponse, *errutils.Error)
-	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]*models.Project, *errutils.Error)
+	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) (*responses.ListMyProjectsResponse, *errutils.Error)
 	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*models.Project, *errutils.Error)
 	AddPositions(ctx context.Context, req *requests.AddPositionsRequest, userID string) (*responses.AddPositionsResponse, *errutils.Error)
 	ListPositions(ctx context.Context, req *requests.ListPositionsPathParams) ([]string, *errutils.Error)
@@ -127,7 +127,7 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 	return res, nil
 }
 
-func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]*models.Project, *errutils.Error) {
+func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) (*responses.ListMyProjectsResponse, *errutils.Error) {
 	bsonWorkspaceID, err := bson.ObjectIDFromHex(req.WorkspaceID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInvalidWorkspaceID, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -143,17 +143,68 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
-	var projectIDs []bson.ObjectID
+	var bsonProjectIDs []bson.ObjectID
 	for _, projectMember := range projectMembers {
-		projectIDs = append(projectIDs, projectMember.ProjectID)
+		bsonProjectIDs = append(bsonProjectIDs, projectMember.ProjectID)
 	}
 
-	projects, err := p.projectRepo.FindByProjectIDsAndWorkspaceID(ctx, projectIDs, bsonWorkspaceID)
+	projects, err := p.projectRepo.FindByProjectIDsAndWorkspaceID(ctx, bsonProjectIDs, bsonWorkspaceID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
-	return projects, nil
+	owners, err := p.projectMemberRepo.FindProjectOwnersByProjectIDs(ctx, bsonProjectIDs)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	var bsonOwnerIDs []bson.ObjectID
+	for _, owner := range owners {
+		bsonOwnerIDs = append(bsonOwnerIDs, owner.UserID)
+	}
+
+	ownerInfo, err := p.userRepo.FindByIDs(ctx, bsonOwnerIDs)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	ownerMap := make(map[bson.ObjectID]models.User)
+	for _, owner := range ownerInfo {
+		ownerMap[owner.ID] = owner
+	}
+
+	resp := make([]responses.ListMyProjectsResponseProject, 0)
+	for _, project := range projects {
+		owner, ok := owners[project.ID]
+		if !ok {
+			continue
+		}
+		ownerInfo, ok := ownerMap[owner.UserID]
+		if !ok {
+			continue
+		}
+
+		resp = append(resp, responses.ListMyProjectsResponseProject{
+			ID:                   project.ID.Hex(),
+			WorkspaceID:          project.WorkspaceID.Hex(),
+			Name:                 project.Name,
+			ProjectPrefix:        project.ProjectPrefix,
+			Description:          project.Description,
+			Status:               project.Status.String(),
+			OwnerUserID:          owner.UserID.Hex(),
+			OwnerProjectMemberID: owner.ID.Hex(),
+			OwnerDisplayName:     ownerInfo.DisplayName,
+			OwnerProfileUrl:      ownerInfo.ProfileUrl,
+			CreatedAt:            project.CreatedAt,
+			CreatedBy:            project.CreatedBy.Hex(),
+			UpdatedAt:            project.UpdatedAt,
+			UpdatedBy:            project.UpdatedBy.Hex(),
+		})
+	}
+
+	return &responses.ListMyProjectsResponse{
+		Projects: resp,
+	}, nil
 }
 
 func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*models.Project, *errutils.Error) {
