@@ -13,13 +13,13 @@ type ProjectRepository interface {
 	FindByWorkspaceIDAndProjectPrefix(ctx context.Context, workspaceID bson.ObjectID, projectPrefix string) (*models.Project, error)
 	Create(ctx context.Context, project *CreateProjectRequest) (*models.Project, error)
 	FindByProjectIDsAndWorkspaceID(ctx context.Context, projectIDs []bson.ObjectID, workspaceID bson.ObjectID) ([]*models.Project, error)
-	AddPositions(ctx context.Context, projectID bson.ObjectID, position []string) error
+	UpdatePositions(ctx context.Context, projectID bson.ObjectID, position []string) error
 	FindPositionByProjectID(ctx context.Context, projectID bson.ObjectID) ([]string, error)
-	AddWorkflows(ctx context.Context, projectID bson.ObjectID, workflows []models.Workflow) error
+	UpdateWorkflows(ctx context.Context, projectID bson.ObjectID, workflows []models.Workflow) error
 	FindWorkflowByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.Workflow, error)
 	IncrementSprintRunningNumber(ctx context.Context, projectID bson.ObjectID) error
 	IncrementTaskRunningNumber(ctx context.Context, projectID bson.ObjectID) error
-	AddAttributeTemplates(ctx context.Context, projectID bson.ObjectID, attributeTemplates []models.AttributeTemplate) error
+	UpdateAttributeTemplates(ctx context.Context, projectID bson.ObjectID, attributeTemplates []models.AttributeTemplate) error
 	FindAttributeTemplatesByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.AttributeTemplate, error)
 }
 

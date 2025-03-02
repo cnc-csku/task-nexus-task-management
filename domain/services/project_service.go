@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"math"
+	"strings"
 
 	"github.com/cnc-csku/task-nexus-go-lib/utils/errutils"
 	"github.com/cnc-csku/task-nexus/task-management/config"
@@ -19,13 +20,13 @@ type ProjectService interface {
 	Create(ctx context.Context, req *requests.CreateProjectRequest, userId string) (*responses.CreateProjectResponse, *errutils.Error)
 	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]responses.ListMyProjectsResponse, *errutils.Error)
 	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetMyProjectDetailResponse, *errutils.Error)
-	AddPositions(ctx context.Context, req *requests.AddPositionsRequest, userID string) (*responses.AddPositionsResponse, *errutils.Error)
+	UpdatePositions(ctx context.Context, req *requests.UpdatePositionsRequest, userID string) (*responses.UpdatePositionsResponse, *errutils.Error)
 	ListPositions(ctx context.Context, req *requests.ListPositionsPathParams) ([]string, *errutils.Error)
 	AddMembers(ctx context.Context, req *requests.AddProjectMembersRequest, userID string) (*responses.AddProjectMembersResponse, *errutils.Error)
 	ListMembers(ctx context.Context, req *requests.ListProjectMembersRequest) (*responses.ListProjectMembersResponse, *errutils.Error)
-	AddWorkflows(ctx context.Context, req *requests.AddWorkflowsRequest, userID string) (*responses.AddWorkflowsResponse, *errutils.Error)
+	UpdateWorkflows(ctx context.Context, req *requests.UpdateWorkflowsRequest, userID string) (*responses.UpdateWorkflowsResponse, *errutils.Error)
 	ListWorkflows(ctx context.Context, req *requests.ListWorkflowsPathParams) ([]models.Workflow, *errutils.Error)
-	AddAttributeTemplates(ctx context.Context, req *requests.AddAttributeTemplatesRequest, userID string) (*responses.AddAttributeTemplatesResponse, *errutils.Error)
+	UpdateAttributeTemplates(ctx context.Context, req *requests.UpdateAttributeTemplatesRequest, userID string) (*responses.UpdateAttributeTemplatesResponse, *errutils.Error)
 	ListAttributeTemplates(ctx context.Context, req *requests.ListAttributeTemplatesPathParams) ([]models.AttributeTemplate, *errutils.Error)
 }
 
@@ -259,7 +260,7 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 	}, nil
 }
 
-func (p *projectServiceImpl) AddPositions(ctx context.Context, req *requests.AddPositionsRequest, userID string) (*responses.AddPositionsResponse, *errutils.Error) {
+func (p *projectServiceImpl) UpdatePositions(ctx context.Context, req *requests.UpdatePositionsRequest, userID string) (*responses.UpdatePositionsResponse, *errutils.Error) {
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -280,37 +281,13 @@ func (p *projectServiceImpl) AddPositions(ctx context.Context, req *requests.Add
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
 	}
 
-	// Check if the position already exists
-	existingPositions, err := p.projectRepo.FindPositionByProjectID(ctx, bsonProjectID)
+	err = p.projectRepo.UpdatePositions(ctx, bsonProjectID, req.Titles)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
-	positionMap := make(map[string]struct{})
-	for _, position := range existingPositions {
-		positionMap[position] = struct{}{}
-	}
-
-	var newPositions []string
-	for _, position := range req.Title {
-		if _, ok := positionMap[position]; !ok {
-			newPositions = append(newPositions, position)
-		}
-	}
-
-	if len(newPositions) == 0 {
-		return &responses.AddPositionsResponse{
-			Message: "No new position added",
-		}, nil
-	}
-
-	err = p.projectRepo.AddPositions(ctx, bsonProjectID, newPositions)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
-	}
-
-	return &responses.AddPositionsResponse{
-		Message: "Position added successfully",
+	return &responses.UpdatePositionsResponse{
+		Message: "Position updated successfully",
 	}, nil
 }
 
@@ -487,7 +464,7 @@ func (p *projectServiceImpl) ListMembers(ctx context.Context, req *requests.List
 	}, nil
 }
 
-func (p *projectServiceImpl) AddWorkflows(ctx context.Context, req *requests.AddWorkflowsRequest, userID string) (*responses.AddWorkflowsResponse, *errutils.Error) {
+func (p *projectServiceImpl) UpdateWorkflows(ctx context.Context, req *requests.UpdateWorkflowsRequest, userID string) (*responses.UpdateWorkflowsResponse, *errutils.Error) {
 	bsonUserID, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -515,39 +492,39 @@ func (p *projectServiceImpl) AddWorkflows(ctx context.Context, req *requests.Add
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
 	}
 
-	// Check if the workflow already exists
-	existingWorkflows, err := p.projectRepo.FindWorkflowByProjectID(ctx, bsonProjectID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
-	}
-
-	workflowMap := make(map[string]struct{})
-	for _, workflow := range existingWorkflows {
-		workflowMap[workflow.Status] = struct{}{}
-	}
-
-	var newWorkflows []models.Workflow
+	var (
+		workflows          []models.Workflow
+		isDefaultWorkflows []models.Workflow
+	)
 	for _, workflow := range req.Workflows {
-		if _, ok := workflowMap[workflow.Status]; !ok {
-			newWorkflows = append(newWorkflows, models.Workflow{
-				Status:           workflow.Status,
-				PreviousStatuses: workflow.PreviousStatuses,
-			})
+		wf := models.Workflow{
+			Status:           workflow.Status,
+			PreviousStatuses: workflow.PreviousStatuses,
+			IsDefault:        workflow.IsDefault,
+		}
+		workflows = append(workflows, wf)
+
+		if workflow.IsDefault {
+			isDefaultWorkflows = append(isDefaultWorkflows, wf)
 		}
 	}
 
-	if len(newWorkflows) == 0 {
-		return &responses.AddWorkflowsResponse{
-			Message: "No new workflow added",
-		}, nil
+	if len(isDefaultWorkflows) == 0 {
+		return nil, errutils.NewError(exceptions.ErrNoDefaultWorkflow, errutils.BadRequest).WithDebugMessage("No default workflow")
+	} else if len(isDefaultWorkflows) > 1 {
+		errFields := make([]string, 0)
+		for _, wf := range isDefaultWorkflows {
+			errFields = append(errFields, wf.Status)
+		}
+		return nil, errutils.NewError(exceptions.ErrMultipleDefaultWorkflow, errutils.BadRequest).WithDebugMessage("Multiple default workflow").WithFields(errFields...)
 	}
 
-	err = p.projectRepo.AddWorkflows(ctx, bsonProjectID, newWorkflows)
+	err = p.projectRepo.UpdateWorkflows(ctx, bsonProjectID, workflows)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
-	return &responses.AddWorkflowsResponse{
+	return &responses.UpdateWorkflowsResponse{
 		Message: "Workflow added successfully",
 	}, nil
 }
@@ -573,7 +550,7 @@ func (p *projectServiceImpl) ListWorkflows(ctx context.Context, req *requests.Li
 	return workflows, nil
 }
 
-func (p *projectServiceImpl) AddAttributeTemplates(ctx context.Context, req *requests.AddAttributeTemplatesRequest, userID string) (*responses.AddAttributeTemplatesResponse, *errutils.Error) {
+func (p *projectServiceImpl) UpdateAttributeTemplates(ctx context.Context, req *requests.UpdateAttributeTemplatesRequest, userID string) (*responses.UpdateAttributeTemplatesResponse, *errutils.Error) {
 	bsonUserID, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -585,7 +562,7 @@ func (p *projectServiceImpl) AddAttributeTemplates(ctx context.Context, req *req
 	}
 
 	for _, attributeTemplate := range req.AttributeTemplates {
-		if !models.KeyValuePairType(attributeTemplate.Type).IsValid() {
+		if !models.KeyValuePairType(strings.ToUpper(attributeTemplate.Type)).IsValid() {
 			return nil, errutils.NewError(exceptions.ErrInvalidAttributeType, errutils.BadRequest).WithDebugMessage("Invalid attribute type")
 		}
 	}
@@ -607,40 +584,21 @@ func (p *projectServiceImpl) AddAttributeTemplates(ctx context.Context, req *req
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
 	}
 
-	// Check if the attribute template already exists
-	existingAttributeTemplates, err := p.projectRepo.FindAttributeTemplatesByProjectID(ctx, bsonProjectID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
-	}
-
-	attributeTemplateMap := make(map[string]struct{})
-	for _, attributeTemplate := range existingAttributeTemplates {
-		attributeTemplateMap[attributeTemplate.Name] = struct{}{}
-	}
-
-	var newAttributeTemplates []models.AttributeTemplate
+	var attributeTemplates []models.AttributeTemplate
 	for _, attributeTemplate := range req.AttributeTemplates {
-		if _, ok := attributeTemplateMap[attributeTemplate.Name]; !ok {
-			newAttributeTemplates = append(newAttributeTemplates, models.AttributeTemplate{
-				Name: attributeTemplate.Name,
-				Type: models.KeyValuePairType(attributeTemplate.Type),
-			})
-		}
+		attributeTemplates = append(attributeTemplates, models.AttributeTemplate{
+			Name: attributeTemplate.Name,
+			Type: models.KeyValuePairType(strings.ToUpper(attributeTemplate.Type)),
+		})
 	}
 
-	if len(newAttributeTemplates) == 0 {
-		return &responses.AddAttributeTemplatesResponse{
-			Message: "No new attribute template added",
-		}, nil
-	}
-
-	err = p.projectRepo.AddAttributeTemplates(ctx, bsonProjectID, newAttributeTemplates)
+	err = p.projectRepo.UpdateAttributeTemplates(ctx, bsonProjectID, attributeTemplates)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
-	return &responses.AddAttributeTemplatesResponse{
-		Message: "Attribute template added successfully",
+	return &responses.UpdateAttributeTemplatesResponse{
+		Message: "Attribute template updated successfully",
 	}, nil
 }
 

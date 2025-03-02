@@ -15,13 +15,13 @@ type ProjectHandler interface {
 	Create(c echo.Context) error
 	ListMyProjects(c echo.Context) error
 	GetProjectDetail(c echo.Context) error
-	AddPositions(c echo.Context) error
+	UpdatePositions(c echo.Context) error
 	ListPositions(c echo.Context) error
 	AddMembers(c echo.Context) error
 	ListMembers(c echo.Context) error
-	AddWorkflows(c echo.Context) error
+	UpdateWorkflows(c echo.Context) error
 	ListWorkflows(c echo.Context) error
-	AddAttributeTemplates(c echo.Context) error
+	UpdateAttributeTemplates(c echo.Context) error
 	ListAttributeTemplates(c echo.Context) error
 }
 
@@ -92,8 +92,8 @@ func (u *projectHandlerImpl) GetProjectDetail(c echo.Context) error {
 	return c.JSON(http.StatusOK, project)
 }
 
-func (u *projectHandlerImpl) AddPositions(c echo.Context) error {
-	req := new(requests.AddPositionsRequest)
+func (u *projectHandlerImpl) UpdatePositions(c echo.Context) error {
+	req := new(requests.UpdatePositionsRequest)
 	if err := c.Bind(req); err != nil {
 		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
 	}
@@ -103,7 +103,7 @@ func (u *projectHandlerImpl) AddPositions(c echo.Context) error {
 	}
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
-	res, err := u.projectService.AddPositions(c.Request().Context(), req, userClaims.ID)
+	res, err := u.projectService.UpdatePositions(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}
@@ -166,8 +166,8 @@ func (u *projectHandlerImpl) ListMembers(c echo.Context) error {
 	return c.JSON(http.StatusOK, members)
 }
 
-func (u *projectHandlerImpl) AddWorkflows(c echo.Context) error {
-	req := new(requests.AddWorkflowsRequest)
+func (u *projectHandlerImpl) UpdateWorkflows(c echo.Context) error {
+	req := new(requests.UpdateWorkflowsRequest)
 	if err := c.Bind(req); err != nil {
 		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
 	}
@@ -177,7 +177,7 @@ func (u *projectHandlerImpl) AddWorkflows(c echo.Context) error {
 	}
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
-	res, err := u.projectService.AddWorkflows(c.Request().Context(), req, userClaims.ID)
+	res, err := u.projectService.UpdateWorkflows(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}
@@ -203,8 +203,8 @@ func (u *projectHandlerImpl) ListWorkflows(c echo.Context) error {
 	return c.JSON(http.StatusOK, workflows)
 }
 
-func (u *projectHandlerImpl) AddAttributeTemplates(c echo.Context) error {
-	req := new(requests.AddAttributeTemplatesRequest)
+func (u *projectHandlerImpl) UpdateAttributeTemplates(c echo.Context) error {
+	req := new(requests.UpdateAttributeTemplatesRequest)
 	if err := c.Bind(req); err != nil {
 		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
 	}
@@ -214,7 +214,7 @@ func (u *projectHandlerImpl) AddAttributeTemplates(c echo.Context) error {
 	}
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
-	res, err := u.projectService.AddAttributeTemplates(c.Request().Context(), req, userClaims.ID)
+	res, err := u.projectService.UpdateAttributeTemplates(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}
