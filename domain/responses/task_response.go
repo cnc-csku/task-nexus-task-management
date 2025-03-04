@@ -8,7 +8,7 @@ import (
 
 type GetTaskDetailResponse struct {
 	ID                 string                             `json:"id"`
-	TaskID             string                             `json:"taskId"`
+	TaskRef            string                             `json:"taskRef"`
 	ProjectID          string                             `json:"projectId"`
 	Title              string                             `json:"title"`
 	Description        *string                            `json:"description"`
@@ -16,8 +16,8 @@ type GetTaskDetailResponse struct {
 	Type               models.TaskType                    `json:"type"`
 	Status             string                             `json:"status"`
 	Priority           *models.TaskPriority               `json:"priority"`
-	Approval           []models.TaskApproval              `json:"approval"`
-	Assignee           []models.TaskAssignee              `json:"assignee"`
+	Approvals          []models.TaskApproval              `json:"approvals"`
+	Assignees          []models.TaskAssignee              `json:"assignees"`
 	Sprint             *models.TaskSprint                 `json:"sprint"`
 	CreatedAt          time.Time                          `json:"createdAt"`
 	CreatedBy          string                             `json:"createdBy"`

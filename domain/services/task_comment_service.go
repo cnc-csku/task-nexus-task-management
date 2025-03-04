@@ -42,7 +42,7 @@ func (s *taskCommentServiceImpl) Create(ctx context.Context, req *requests.Creat
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
-	task, err := s.taskRepo.FindByTaskID(ctx, req.TaskID)
+	task, err := s.taskRepo.FindByTaskRef(ctx, req.TaskRef)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if task == nil {
@@ -57,7 +57,7 @@ func (s *taskCommentServiceImpl) Create(ctx context.Context, req *requests.Creat
 	}
 
 	comment, err := s.taskCommentRepo.Create(ctx, &repositories.CreateTaskCommentRequest{
-		TaskID:  req.TaskID,
+		TaskID:  task.ID,
 		Content: req.Content,
 		UserID:  bsonUserID,
 	})

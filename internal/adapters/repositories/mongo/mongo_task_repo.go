@@ -29,7 +29,7 @@ func NewMongoTaskRepo(config *config.Config, mongoClient *mongo.Client) reposito
 func (m *mongoTaskRepo) Create(ctx context.Context, task *repositories.CreateTaskRequest) (*models.Task, error) {
 	newTask := models.Task{
 		ID:          bson.NewObjectID(),
-		TaskID:      task.TaskID,
+		TaskRef:     task.TaskRef,
 		ProjectID:   task.ProjectID,
 		Title:       task.Title,
 		Description: task.Description,
@@ -68,11 +68,11 @@ func (m *mongoTaskRepo) FindByID(ctx context.Context, id bson.ObjectID) (*models
 	return task, nil
 }
 
-func (m *mongoTaskRepo) FindByTaskID(ctx context.Context, taskID string) (*models.Task, error) {
+func (m *mongoTaskRepo) FindByTaskRef(ctx context.Context, taskRef string) (*models.Task, error) {
 	task := new(models.Task)
 
 	f := NewTaskFilter()
-	f.WithTaskID(taskID)
+	f.WithTaskRef(taskRef)
 
 	err := m.collection.FindOne(ctx, f).Decode(task)
 	if err != nil {
@@ -83,4 +83,95 @@ func (m *mongoTaskRepo) FindByTaskID(ctx context.Context, taskID string) (*model
 	}
 
 	return task, nil
+}
+
+func (m *mongoTaskRepo) UpdateDetail(ctx context.Context, in *repositories.UpdateTaskDetailRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateDetail(in)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) UpdateStatus(ctx context.Context, in *repositories.UpdateTaskStatusRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateStatus(in)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) UpdateApprovals(ctx context.Context, in *repositories.UpdateTaskApprovalsRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateApprovals(in)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) ApproveTask(ctx context.Context, in *repositories.ApproveTaskRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+	f.WithUserApproval(in.UserID)
+
+	u := NewTaskUpdate()
+	u.ApproveTask(in.Reason)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) UpdateAssignees(ctx context.Context, in *repositories.UpdateTaskAssigneesRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateAssignees(in)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) UpdateSprint(ctx context.Context, in *repositories.UpdateTaskSprintRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateSprint(in)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
 }

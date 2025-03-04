@@ -18,7 +18,7 @@ func (f taskCommentFilter) WithIDs(ids []bson.ObjectID) {
 	}
 }
 
-func (f taskCommentFilter) WithTaskID(taskID string) {
+func (f taskCommentFilter) WithTaskID(taskID bson.ObjectID) {
 	f["task_id"] = taskID
 }
 
