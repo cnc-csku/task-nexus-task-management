@@ -155,8 +155,8 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 	return task, nil
 }
 
-func validateParentTaskType(taskType string, parentTaskType models.TaskType) *errutils.Error {
-	switch taskType {
+func validateParentTaskType(childTaskType string, parentTaskType models.TaskType) *errutils.Error {
+	switch childTaskType {
 	case models.TaskTypeEpic.String():
 		return nil
 	case models.TaskTypeStory.String(), models.TaskTypeTask.String(), models.TaskTypeBug.String():

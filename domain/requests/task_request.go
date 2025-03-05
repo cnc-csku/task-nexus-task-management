@@ -32,7 +32,7 @@ type UpdateTaskApprovalsRequest struct {
 	ApprovalUserIDs []string `json:"approvalUserIds" validate:"required"` // List User in the following project
 }
 
-type ApproveTaskRequest struct { // Check if the requester's user id is in the approval list
+type ApproveTaskRequest struct {
 	TaskRef string `param:"taskRef" validate:"required"`
 	Reason  string `json:"reason"`
 }

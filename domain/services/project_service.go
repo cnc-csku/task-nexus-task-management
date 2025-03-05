@@ -19,7 +19,7 @@ import (
 type ProjectService interface {
 	Create(ctx context.Context, req *requests.CreateProjectRequest, userId string) (*responses.CreateProjectResponse, *errutils.Error)
 	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]responses.ListMyProjectsResponse, *errutils.Error)
-	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetMyProjectDetailResponse, *errutils.Error)
+	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetProjectDetailResponse, *errutils.Error)
 	UpdatePositions(ctx context.Context, req *requests.UpdatePositionsRequest, userID string) (*responses.UpdatePositionsResponse, *errutils.Error)
 	ListPositions(ctx context.Context, req *requests.ListPositionsPathParams) ([]string, *errutils.Error)
 	AddMembers(ctx context.Context, req *requests.AddProjectMembersRequest, userID string) (*responses.AddProjectMembersResponse, *errutils.Error)
@@ -206,7 +206,7 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 	return resp, nil
 }
 
-func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetMyProjectDetailResponse, *errutils.Error) {
+func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetProjectDetailResponse, *errutils.Error) {
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -242,7 +242,7 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
-	return &responses.GetMyProjectDetailResponse{
+	return &responses.GetProjectDetailResponse{
 		ID:                   project.ID.Hex(),
 		WorkspaceID:          project.WorkspaceID.Hex(),
 		Name:                 project.Name,
