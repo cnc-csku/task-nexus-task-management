@@ -29,7 +29,7 @@ type ListMyProjectsResponse struct {
 	UpdatedBy            string    `json:"updatedBy"`
 }
 
-type GetMyProjectDetailResponse struct {
+type GetProjectDetailResponse struct {
 	ID                   string    `json:"id"`
 	WorkspaceID          string    `json:"workspaceId"`
 	Name                 string    `json:"name"`

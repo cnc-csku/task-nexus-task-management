@@ -14,6 +14,12 @@ import (
 type TaskHandler interface {
 	Create(c echo.Context) error
 	GetTaskDetail(c echo.Context) error
+	UpdateDetail(c echo.Context) error
+	UpdateStatus(c echo.Context) error
+	UpdateApprovals(c echo.Context) error
+	ApproveTask(c echo.Context) error
+	UpdateAssignees(c echo.Context) error
+	UpdateSprint(c echo.Context) error
 }
 
 type taskHandlerImpl struct {
@@ -26,7 +32,7 @@ func NewTaskHandler(taskService services.TaskService) TaskHandler {
 	}
 }
 
-func (u *taskHandlerImpl) Create(c echo.Context) error {
+func (h *taskHandlerImpl) Create(c echo.Context) error {
 	req := new(requests.CreateTaskRequest)
 	if err := c.Bind(req); err != nil {
 		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
@@ -37,7 +43,7 @@ func (u *taskHandlerImpl) Create(c echo.Context) error {
 	}
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
-	resp, err := u.taskService.Create(c.Request().Context(), req, userClaims.ID)
+	resp, err := h.taskService.Create(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}
@@ -45,7 +51,7 @@ func (u *taskHandlerImpl) Create(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (u *taskHandlerImpl) GetTaskDetail(c echo.Context) error {
+func (h *taskHandlerImpl) GetTaskDetail(c echo.Context) error {
 	req := new(requests.GetTaskDetailPathParam)
 	if err := c.Bind(req); err != nil {
 		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
@@ -56,7 +62,121 @@ func (u *taskHandlerImpl) GetTaskDetail(c echo.Context) error {
 	}
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
-	resp, err := u.taskService.GetTaskDetail(c.Request().Context(), req, userClaims.ID)
+	resp, err := h.taskService.GetTaskDetail(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) UpdateDetail(c echo.Context) error {
+	req := new(requests.UpdateTaskDetailRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.UpdateDetail(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) UpdateStatus(c echo.Context) error {
+	req := new(requests.UpdateTaskStatusRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.UpdateStatus(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) UpdateApprovals(c echo.Context) error {
+	req := new(requests.UpdateTaskApprovalsRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.UpdateApprovals(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) ApproveTask(c echo.Context) error {
+	req := new(requests.ApproveTaskRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.ApproveTask(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) UpdateAssignees(c echo.Context) error {
+	req := new(requests.UpdateTaskAssigneesRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.UpdateAssignees(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) UpdateSprint(c echo.Context) error {
+	req := new(requests.UpdateTaskSprintRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.UpdateSprint(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}

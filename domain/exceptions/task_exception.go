@@ -7,4 +7,6 @@ var (
 	ErrInvalidTaskType       = errors.New("invalid task type")
 	ErrParentTaskNotFound    = errors.New("parent task not found")
 	ErrInvalidParentTaskType = errors.New("invalid parent task type")
+	ErrInvalidTaskPriority   = errors.New("invalid task priority")
+	ErrInvalidTaskStatus     = errors.New("invalid task status")
 )

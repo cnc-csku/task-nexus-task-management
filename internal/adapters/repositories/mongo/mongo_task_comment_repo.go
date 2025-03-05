@@ -43,7 +43,7 @@ func (m *mongoTaskCommentRepo) Create(ctx context.Context, taskComment *reposito
 	return &newTaskComment, nil
 }
 
-func (m *mongoTaskCommentRepo) FindByTaskID(ctx context.Context, taskID string) ([]*models.TaskComment, error) {
+func (m *mongoTaskCommentRepo) FindByTaskID(ctx context.Context, taskID bson.ObjectID) ([]*models.TaskComment, error) {
 	f := NewTaskCommentFilter()
 	f.WithTaskID(taskID)
 

@@ -99,7 +99,7 @@ func (m *mongoProjectRepo) Create(ctx context.Context, project *repositories.Cre
 		ProjectPrefix:       project.ProjectPrefix,
 		Description:         project.Description,
 		Status:              project.Status,
-		SprintRunningNumber: 0,
+		SprintRunningNumber: 1,
 		TaskRunningNumber:   1,
 		Workflows:           project.Workflows,
 		AttributeTemplates:  []models.AttributeTemplate{},

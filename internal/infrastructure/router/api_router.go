@@ -62,9 +62,15 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	tasks := api.Group("/tasks/v1")
 	{
 		tasks.POST("", r.task.Create, r.authMiddleware.Middleware)
-		tasks.GET("/:taskId", r.task.GetTaskDetail, r.authMiddleware.Middleware)
+		tasks.GET("/:taskRef", r.task.GetTaskDetail, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/detail", r.task.UpdateDetail, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/status", r.task.UpdateStatus, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/approvals", r.task.UpdateApprovals, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/approve", r.task.ApproveTask, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/assignees", r.task.UpdateAssignees, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/sprint", r.task.UpdateSprint, r.authMiddleware.Middleware)
 
-		tasks.POST("/:taskId/comments", r.taskComment.Create, r.authMiddleware.Middleware)
+		tasks.POST("/:taskRef/comments", r.taskComment.Create, r.authMiddleware.Middleware)
 	}
 
 	setup := api.Group("/setup/v1")

@@ -1,6 +1,6 @@
 package requests
 
 type CreateTaskCommentRequest struct {
-	TaskID  string `param:"taskId" validate:"required"`
+	TaskRef string `param:"taskRef" validate:"required"`
 	Content string `json:"content" validate:"required"`
 }

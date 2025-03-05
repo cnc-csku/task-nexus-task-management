@@ -8,7 +8,7 @@ import (
 
 type Task struct {
 	ID          bson.ObjectID  `bson:"_id" json:"id"`
-	TaskID      string         `bson:"task_id" json:"taskId"`
+	TaskRef     string         `bson:"task_ref" json:"taskRef"`
 	ProjectID   bson.ObjectID  `bson:"project_id" json:"projectId"`
 	Title       string         `bson:"title" json:"title"`
 	Description *string        `bson:"description" json:"description"`
@@ -16,8 +16,8 @@ type Task struct {
 	Type        TaskType       `bson:"type" json:"type"`
 	Status      string         `bson:"status" json:"status"`
 	Priority    *TaskPriority  `bson:"priority" json:"priority"`
-	Approval    []TaskApproval `bson:"approval" json:"approval"`
-	Assignee    []TaskAssignee `bson:"assignee" json:"assignee"`
+	Approvals   []TaskApproval `bson:"approvals" json:"approvals"`
+	Assignees   []TaskAssignee `bson:"assignees" json:"assignees"`
 	Sprint      *TaskSprint    `bson:"sprint" json:"sprint"`
 	CreatedAt   time.Time      `bson:"created_at" json:"createdAt"`
 	CreatedBy   bson.ObjectID  `bson:"created_by" json:"createdBy"`
@@ -69,14 +69,14 @@ func (t TaskPriority) IsValid() bool {
 }
 
 type TaskApproval struct {
-	Reason string        `bson:"reason" json:"reason"`
+	Reason *string       `bson:"reason" json:"reason"`
 	UserID bson.ObjectID `bson:"user_id" json:"userId"`
 }
 
 type TaskAssignee struct {
-	Role  string        `bson:"role" json:"role"`
-	Value bson.ObjectID `bson:"value" json:"value"`
-	Point int           `bson:"point" json:"point"`
+	Postion string        `bson:"position" json:"position"`
+	UserID  bson.ObjectID `bson:"user_id" json:"userId"`
+	Point   *int          `bson:"point" json:"point"`
 }
 
 type TaskSprint struct {
