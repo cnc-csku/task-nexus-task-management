@@ -7,21 +7,21 @@ import (
 )
 
 type Project struct {
-	ID                  bson.ObjectID       `bson:"_id" json:"id"`
-	WorkspaceID         bson.ObjectID       `bson:"workspace_id" json:"workspaceId"`
-	Name                string              `bson:"name" json:"name"`
-	ProjectPrefix       string              `bson:"project_prefix" json:"projectPrefix"`
-	Description         *string             `bson:"description" json:"description"`
-	Status              ProjectStatus       `bson:"status" json:"status"`
-	SprintRunningNumber int                 `bson:"sprint_running_number" json:"sprintRunningNumber"`
-	TaskRunningNumber   int                 `bson:"task_running_number" json:"taskRunningNumber"`
-	Workflows           []Workflow          `bson:"workflows" json:"workflows"`
-	AttributeTemplates  []AttributeTemplate `bson:"attributes_templates" json:"attributesTemplates"`
-	Positions           []string            `bson:"positions" json:"positions"`
-	CreatedAt           time.Time           `bson:"created_at" json:"createdAt"`
-	CreatedBy           bson.ObjectID       `bson:"created_by" json:"createdBy"`
-	UpdatedAt           time.Time           `bson:"updated_at" json:"updatedAt"`
-	UpdatedBy           bson.ObjectID       `bson:"updated_by" json:"updatedBy"`
+	ID                  bson.ObjectID              `bson:"_id" json:"id"`
+	WorkspaceID         bson.ObjectID              `bson:"workspace_id" json:"workspaceId"`
+	Name                string                     `bson:"name" json:"name"`
+	ProjectPrefix       string                     `bson:"project_prefix" json:"projectPrefix"`
+	Description         *string                    `bson:"description" json:"description"`
+	Status              ProjectStatus              `bson:"status" json:"status"`
+	SprintRunningNumber int                        `bson:"sprint_running_number" json:"sprintRunningNumber"`
+	TaskRunningNumber   int                        `bson:"task_running_number" json:"taskRunningNumber"`
+	Workflows           []ProjectWorkflow          `bson:"workflows" json:"workflows"`
+	AttributeTemplates  []ProjectAttributeTemplate `bson:"attributes_templates" json:"attributesTemplates"`
+	Positions           []string                   `bson:"positions" json:"positions"`
+	CreatedAt           time.Time                  `bson:"created_at" json:"createdAt"`
+	CreatedBy           bson.ObjectID              `bson:"created_by" json:"createdBy"`
+	UpdatedAt           time.Time                  `bson:"updated_at" json:"updatedAt"`
+	UpdatedBy           bson.ObjectID              `bson:"updated_by" json:"updatedBy"`
 }
 
 type ProjectStatus string
@@ -43,21 +43,25 @@ func (p ProjectStatus) IsValid() bool {
 	return false
 }
 
-type Workflow struct {
+type ProjectWorkflow struct {
 	PreviousStatuses []string `bson:"previous_statuses" json:"previousStatuses"`
 	Status           string   `bson:"status" json:"status"`
 	IsDefault        bool     `bson:"is_default" json:"isDefault"`
 }
 
-func GetDefaultWorkflows() []Workflow {
-	return []Workflow{
-		{Status: "TODO", IsDefault: true},
-		{Status: "IN_PROGRESS", PreviousStatuses: []string{"TODO"}},
-		{Status: "DONE", PreviousStatuses: []string{"IN_PROGRESS"}},
+func GetDefaultWorkflows() []ProjectWorkflow {
+	return []ProjectWorkflow{
+		{Status: "Todo", IsDefault: true},
+		{Status: "In Progress", PreviousStatuses: []string{"Todo"}},
+		{Status: "Done", PreviousStatuses: []string{"In Progress"}},
 	}
 }
 
-type AttributeTemplate struct {
+func GetDefaultPositions() []string {
+	return []string{"Backend Developer", "Frontend Developer", "UX/UI Designer", "Quality Assurance"}
+}
+
+type ProjectAttributeTemplate struct {
 	Name string           `bson:"name" json:"name"`
 	Type KeyValuePairType `bson:"type" json:"type"`
 }
