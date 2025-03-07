@@ -7,11 +7,11 @@ import (
 )
 
 type CreateProjectResponse struct {
-	ID            string  `json:"id"`
-	WorkspaceID   string  `json:"workspaceId"`
-	Name          string  `json:"name"`
-	ProjectPrefix string  `json:"projectPrefix"`
-	Description   *string `json:"description"`
+	ID            string `json:"id"`
+	WorkspaceID   string `json:"workspaceId"`
+	Name          string `json:"name"`
+	ProjectPrefix string `json:"projectPrefix"`
+	Description   string `json:"description"`
 }
 
 type ListProjectsResponse struct {
@@ -19,7 +19,7 @@ type ListProjectsResponse struct {
 	WorkspaceID          string    `json:"workspaceId"`
 	Name                 string    `json:"name"`
 	ProjectPrefix        string    `json:"projectPrefix"`
-	Description          *string   `json:"description"`
+	Description          string    `json:"description"`
 	Status               string    `json:"status"`
 	OwnerUserID          string    `json:"ownerUserId"`
 	OwnerProjectMemberID string    `json:"ownerProjectMemberId"`
@@ -36,7 +36,7 @@ type GetProjectDetailResponse struct {
 	WorkspaceID          string                            `json:"workspaceId"`
 	Name                 string                            `json:"name"`
 	ProjectPrefix        string                            `json:"projectPrefix"`
-	Description          *string                           `json:"description"`
+	Description          string                            `json:"description"`
 	Status               string                            `json:"status"`
 	OwnerUserID          string                            `json:"ownerUserId"`
 	OwnerProjectMemberID string                            `json:"ownerProjectMemberId"`

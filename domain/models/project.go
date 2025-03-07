@@ -11,7 +11,7 @@ type Project struct {
 	WorkspaceID         bson.ObjectID              `bson:"workspace_id" json:"workspaceId"`
 	Name                string                     `bson:"name" json:"name"`
 	ProjectPrefix       string                     `bson:"project_prefix" json:"projectPrefix"`
-	Description         *string                    `bson:"description" json:"description"`
+	Description         string                     `bson:"description" json:"description"`
 	Status              ProjectStatus              `bson:"status" json:"status"`
 	SprintRunningNumber int                        `bson:"sprint_running_number" json:"sprintRunningNumber"`
 	TaskRunningNumber   int                        `bson:"task_running_number" json:"taskRunningNumber"`
