@@ -21,18 +21,15 @@ type SprintService interface {
 type sprintServiceImpl struct {
 	sprintRepo  repositories.SprintRepository
 	projectRepo repositories.ProjectRepository
-	// runningNumberRepo repositories.RunningNumberRepository
 }
 
 func NewSprintService(
 	sprintRepo repositories.SprintRepository,
 	projectRepo repositories.ProjectRepository,
-	// runningNumberRepo repositories.RunningNumberRepository,
 ) SprintService {
 	return &sprintServiceImpl{
 		sprintRepo:  sprintRepo,
 		projectRepo: projectRepo,
-		// runningNumberRepo: runningNumberRepo,
 	}
 }
 

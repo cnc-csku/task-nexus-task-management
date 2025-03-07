@@ -106,6 +106,7 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 		Name:            req.Name,
 		UserDisplayName: user.DisplayName,
 		ProfileUrl:      user.ProfileUrl,
+		UserID:          userObjID,
 	})
 
 	if err != nil {

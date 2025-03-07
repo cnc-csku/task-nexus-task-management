@@ -378,12 +378,20 @@ func (p *projectServiceImpl) AddMembers(ctx context.Context, req *requests.AddPr
 		})
 	}
 
+	if len(createProjMemberReq) == 0 {
+		return &responses.AddProjectMembersResponse{
+			Message: "No member added",
+		}, nil
+	}
+
 	err = p.projectMemberRepo.CreateMany(ctx, createProjMemberReq)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
-	return nil, nil
+	return &responses.AddProjectMembersResponse{
+		Message: "Members added successfully",
+	}, nil
 }
 
 func validateListMembersPaginationRequestSortBy(sortBy string) bool {

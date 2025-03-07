@@ -68,7 +68,7 @@ func (i *invitationServiceImpl) Create(ctx context.Context, req *requests.Create
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if inviter == nil {
-		return nil, errutils.NewError(exceptions.ErrMemberNotFoundInWorkspace, errutils.BadRequest).WithDebugMessage("Inviter not found in workspace")
+		return nil, errutils.NewError(exceptions.ErrRequesterNotFoundInWorkspace, errutils.BadRequest).WithDebugMessage("Inviter not found in workspace")
 	} else if inviter.Role != models.WorkspaceMemberRoleOwner {
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("Inviter is not an owner")
 	}

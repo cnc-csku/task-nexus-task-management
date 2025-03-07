@@ -9,11 +9,11 @@ import (
 
 type TaskCommentRepository interface {
 	Create(ctx context.Context, taskComment *CreateTaskCommentRequest) (*models.TaskComment, error)
-	FindByTaskID(ctx context.Context, taskID string) ([]*models.TaskComment, error)
+	FindByTaskID(ctx context.Context, taskID bson.ObjectID) ([]*models.TaskComment, error)
 }
 
 type CreateTaskCommentRequest struct {
-	TaskID  string
+	TaskID  bson.ObjectID
 	Content string
 	UserID  bson.ObjectID
 }
