@@ -72,7 +72,7 @@ func (m *mongoProjectMemberRepo) FindByUserID(ctx context.Context, userID bson.O
 		return nil, err
 	}
 
-	var projectMembers []*models.ProjectMember
+	projectMembers := make([]*models.ProjectMember, 0)
 	if err := cursor.All(ctx, &projectMembers); err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (m *mongoProjectMemberRepo) FindByProjectID(ctx context.Context, projectID 
 		return nil, err
 	}
 
-	var projectMembers []*models.ProjectMember
+	projectMembers := make([]*models.ProjectMember, 0)
 	if err := cursor.All(ctx, &projectMembers); err != nil {
 		return nil, err
 	}

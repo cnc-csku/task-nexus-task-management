@@ -146,6 +146,10 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
+	if len(projectMembers) == 0 {
+		return []responses.ListProjectsResponse{}, nil
+	}
+
 	bsonProjectIDs := []bson.ObjectID{}
 	for _, projectMember := range projectMembers {
 		bsonProjectIDs = append(bsonProjectIDs, projectMember.ProjectID)

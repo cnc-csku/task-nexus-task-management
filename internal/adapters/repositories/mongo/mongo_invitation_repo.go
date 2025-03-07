@@ -99,7 +99,7 @@ func (m *mongoInvitationRepo) FindByInviteeUserID(ctx context.Context, inviteeUs
 	}
 	defer cursor.Close(ctx)
 
-	var invitations []models.Invitation
+	invitations := make([]models.Invitation, 0)
 	if err := cursor.All(ctx, &invitations); err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func (m *mongoInvitationRepo) SearchInvitationForEachWorkspace(ctx context.Conte
 	}
 	defer cursor.Close(ctx)
 
-	var invitations []models.Invitation
+	invitations := make([]models.Invitation, 0)
 	for cursor.Next(ctx) {
 		var invitation models.Invitation
 		if err := cursor.Decode(&invitation); err != nil {
