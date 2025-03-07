@@ -84,9 +84,14 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		return nil, errutils.NewError(exceptions.ErrInvalidTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid task type: %s", req.Type))
 	}
 
-	var parentID *string
+	var nullableBsonTaskParentID *bson.ObjectID
 	if req.ParentID != nil {
-		parentTask, err := s.taskRepo.FindByTaskRef(ctx, *req.ParentID)
+		bsonTaskParentID, err := bson.ObjectIDFromHex(*req.ParentID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		}
+
+		parentTask, err := s.taskRepo.FindByID(ctx, bsonTaskParentID)
 		if err != nil {
 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 		} else if parentTask == nil {
@@ -97,7 +102,7 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 			return nil, serviceErr
 		}
 
-		parentID = req.ParentID
+		nullableBsonTaskParentID = &bsonTaskParentID
 	}
 
 	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
@@ -137,7 +142,7 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		ProjectID:   bsonProjectID,
 		Title:       req.Title,
 		Description: req.Description,
-		ParentID:    parentID,
+		ParentID:    nullableBsonTaskParentID,
 		Type:        models.TaskType(req.Type),
 		Status:      defaultWorkflow.Status,
 		Sprint:      taskSprint,
@@ -307,6 +312,10 @@ func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.Update
 		} else if parentTask == nil {
 			return nil, errutils.NewError(exceptions.ErrParentTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task not found: %s", *req.ParentID))
 		}
+
+		if serviceErr := validateParentTaskType(req.Type, parentTask.Type); serviceErr != nil {
+			return nil, serviceErr
+		}
 	}
 
 	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, task.ProjectID, bsonUserID)
@@ -330,7 +339,7 @@ func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.Update
 		ID:          task.ID,
 		Title:       req.Title,
 		Description: req.Description,
-		ParentID:    req.ParentID,
+		ParentID:    &bsonTaskParentID,
 		Type:        models.TaskType(req.Type),
 		Priority:    req.Priority,
 		UpdatedBy:   bsonUserID,

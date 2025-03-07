@@ -3,7 +3,7 @@ package requests
 type CreateTaskRequest struct {
 	ProjectID   string  `json:"projectId" validate:"required"`
 	Title       string  `json:"title" validate:"required"`
-	Description *string `json:"description"`
+	Description string  `json:"description"`
 	ParentID    *string `json:"parentId"`
 	Type        string  `json:"type" validate:"required"`
 	SprintID    *string `json:"sprintId"`
@@ -16,7 +16,7 @@ type GetTaskDetailPathParam struct {
 type UpdateTaskDetailRequest struct {
 	TaskRef     string  `param:"taskRef" validate:"required"`
 	Title       string  `json:"title" validate:"required"`
-	Description *string `json:"description"`
+	Description string  `json:"description"`
 	ParentID    *string `json:"parentId"`
 	Type        string  `json:"type" validate:"required"`
 	Priority    *string `json:"priority"`

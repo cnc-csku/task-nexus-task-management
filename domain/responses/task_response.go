@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type GetTaskDetailResponse struct {
@@ -11,8 +12,8 @@ type GetTaskDetailResponse struct {
 	TaskRef            string                             `json:"taskRef"`
 	ProjectID          string                             `json:"projectId"`
 	Title              string                             `json:"title"`
-	Description        *string                            `json:"description"`
-	ParentID           *string                            `json:"parentId"`
+	Description        string                             `json:"description"`
+	ParentID           *bson.ObjectID                     `json:"parentId"`
 	Type               models.TaskType                    `json:"type"`
 	Status             string                             `json:"status"`
 	Priority           *models.TaskPriority               `json:"priority"`

@@ -23,8 +23,8 @@ type CreateTaskRequest struct {
 	TaskRef     string
 	ProjectID   bson.ObjectID
 	Title       string
-	Description *string
-	ParentID    *string
+	Description string
+	ParentID    *bson.ObjectID
 	Type        models.TaskType
 	Status      string
 	Sprint      *models.TaskSprint
@@ -34,8 +34,8 @@ type CreateTaskRequest struct {
 type UpdateTaskDetailRequest struct {
 	ID          bson.ObjectID
 	Title       string
-	Description *string
-	ParentID    *string
+	Description string
+	ParentID    *bson.ObjectID
 	Type        models.TaskType
 	Priority    *string
 	UpdatedBy   bson.ObjectID

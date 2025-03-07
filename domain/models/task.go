@@ -11,8 +11,8 @@ type Task struct {
 	TaskRef     string         `bson:"task_ref" json:"taskRef"`
 	ProjectID   bson.ObjectID  `bson:"project_id" json:"projectId"`
 	Title       string         `bson:"title" json:"title"`
-	Description *string        `bson:"description" json:"description"`
-	ParentID    *string        `bson:"parent_id" json:"parentId"`
+	Description string         `bson:"description" json:"description"`
+	ParentID    *bson.ObjectID `bson:"parent_id" json:"parentId"`
 	Type        TaskType       `bson:"type" json:"type"`
 	Status      string         `bson:"status" json:"status"`
 	Priority    *TaskPriority  `bson:"priority" json:"priority"`
