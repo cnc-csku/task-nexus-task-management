@@ -18,16 +18,16 @@ import (
 
 type ProjectService interface {
 	Create(ctx context.Context, req *requests.CreateProjectRequest, userId string) (*responses.CreateProjectResponse, *errutils.Error)
-	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]responses.ListMyProjectsResponse, *errutils.Error)
-	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetMyProjectDetailResponse, *errutils.Error)
+	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]responses.ListProjectsResponse, *errutils.Error)
+	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetProjectDetailResponse, *errutils.Error)
 	UpdatePositions(ctx context.Context, req *requests.UpdatePositionsRequest, userID string) (*responses.UpdatePositionsResponse, *errutils.Error)
 	ListPositions(ctx context.Context, req *requests.ListPositionsPathParams) ([]string, *errutils.Error)
 	AddMembers(ctx context.Context, req *requests.AddProjectMembersRequest, userID string) (*responses.AddProjectMembersResponse, *errutils.Error)
 	ListMembers(ctx context.Context, req *requests.ListProjectMembersRequest) (*responses.ListProjectMembersResponse, *errutils.Error)
 	UpdateWorkflows(ctx context.Context, req *requests.UpdateWorkflowsRequest, userID string) (*responses.UpdateWorkflowsResponse, *errutils.Error)
-	ListWorkflows(ctx context.Context, req *requests.ListWorkflowsPathParams) ([]models.Workflow, *errutils.Error)
+	ListWorkflows(ctx context.Context, req *requests.ListWorkflowsPathParams) ([]models.ProjectWorkflow, *errutils.Error)
 	UpdateAttributeTemplates(ctx context.Context, req *requests.UpdateAttributeTemplatesRequest, userID string) (*responses.UpdateAttributeTemplatesResponse, *errutils.Error)
-	ListAttributeTemplates(ctx context.Context, req *requests.ListAttributeTemplatesPathParams) ([]models.AttributeTemplate, *errutils.Error)
+	ListAttributeTemplates(ctx context.Context, req *requests.ListAttributeTemplatesPathParams) ([]models.ProjectAttributeTemplate, *errutils.Error)
 }
 
 type projectServiceImpl struct {
@@ -102,14 +102,16 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 	}
 
 	project := &repositories.CreateProjectRequest{
-		WorkspaceID:   bsonWorkspaceID,
-		Name:          req.Name,
-		ProjectPrefix: req.ProjectPrefix,
-		Description:   req.Description,
-		Status:        models.ProjectStatusActive,
-		Owner:         owner,
-		Workflows:     models.GetDefaultWorkflows(),
-		CreatedBy:     bsonUserId,
+		WorkspaceID:        bsonWorkspaceID,
+		Name:               req.Name,
+		ProjectPrefix:      req.ProjectPrefix,
+		Description:        req.Description,
+		Status:             models.ProjectStatusActive,
+		Owner:              owner,
+		Workflows:          models.GetDefaultWorkflows(),
+		Positions:          models.GetDefaultPositions(),
+		AttributeTemplates: []models.ProjectAttributeTemplate{},
+		CreatedBy:          bsonUserId,
 	}
 
 	createdProject, err := p.projectRepo.Create(ctx, project)
@@ -128,7 +130,7 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 	return res, nil
 }
 
-func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]responses.ListMyProjectsResponse, *errutils.Error) {
+func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]responses.ListProjectsResponse, *errutils.Error) {
 	bsonWorkspaceID, err := bson.ObjectIDFromHex(req.WorkspaceID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInvalidWorkspaceID, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -174,7 +176,7 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 		ownerMap[owner.ID] = owner
 	}
 
-	resp := make([]responses.ListMyProjectsResponse, 0)
+	resp := make([]responses.ListProjectsResponse, 0)
 	for _, project := range projects {
 		owner, ok := owners[project.ID]
 		if !ok {
@@ -185,7 +187,7 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 			continue
 		}
 
-		resp = append(resp, responses.ListMyProjectsResponse{
+		resp = append(resp, responses.ListProjectsResponse{
 			ID:                   project.ID.Hex(),
 			WorkspaceID:          project.WorkspaceID.Hex(),
 			Name:                 project.Name,
@@ -206,7 +208,7 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 	return resp, nil
 }
 
-func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetMyProjectDetailResponse, *errutils.Error) {
+func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetProjectDetailResponse, *errutils.Error) {
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -242,7 +244,7 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
-	return &responses.GetMyProjectDetailResponse{
+	return &responses.GetProjectDetailResponse{
 		ID:                   project.ID.Hex(),
 		WorkspaceID:          project.WorkspaceID.Hex(),
 		Name:                 project.Name,
@@ -253,6 +255,9 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 		OwnerProjectMemberID: owner.ID.Hex(),
 		OwnerDisplayName:     ownerInfo.DisplayName,
 		OwnerProfileUrl:      ownerInfo.ProfileUrl,
+		Positions:            project.Positions,
+		Workflows:            project.Workflows,
+		AttributeTemplates:   project.AttributeTemplates,
 		CreatedAt:            project.CreatedAt,
 		CreatedBy:            project.CreatedBy.Hex(),
 		UpdatedAt:            project.UpdatedAt,
@@ -493,11 +498,11 @@ func (p *projectServiceImpl) UpdateWorkflows(ctx context.Context, req *requests.
 	}
 
 	var (
-		workflows          []models.Workflow
-		isDefaultWorkflows []models.Workflow
+		workflows          []models.ProjectWorkflow
+		isDefaultWorkflows []models.ProjectWorkflow
 	)
 	for _, workflow := range req.Workflows {
-		wf := models.Workflow{
+		wf := models.ProjectWorkflow{
 			Status:           workflow.Status,
 			PreviousStatuses: workflow.PreviousStatuses,
 			IsDefault:        workflow.IsDefault,
@@ -529,7 +534,7 @@ func (p *projectServiceImpl) UpdateWorkflows(ctx context.Context, req *requests.
 	}, nil
 }
 
-func (p *projectServiceImpl) ListWorkflows(ctx context.Context, req *requests.ListWorkflowsPathParams) ([]models.Workflow, *errutils.Error) {
+func (p *projectServiceImpl) ListWorkflows(ctx context.Context, req *requests.ListWorkflowsPathParams) ([]models.ProjectWorkflow, *errutils.Error) {
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -584,9 +589,9 @@ func (p *projectServiceImpl) UpdateAttributeTemplates(ctx context.Context, req *
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
 	}
 
-	var attributeTemplates []models.AttributeTemplate
+	var attributeTemplates []models.ProjectAttributeTemplate
 	for _, attributeTemplate := range req.AttributeTemplates {
-		attributeTemplates = append(attributeTemplates, models.AttributeTemplate{
+		attributeTemplates = append(attributeTemplates, models.ProjectAttributeTemplate{
 			Name: attributeTemplate.Name,
 			Type: models.KeyValuePairType(strings.ToUpper(attributeTemplate.Type)),
 		})
@@ -602,7 +607,7 @@ func (p *projectServiceImpl) UpdateAttributeTemplates(ctx context.Context, req *
 	}, nil
 }
 
-func (p *projectServiceImpl) ListAttributeTemplates(ctx context.Context, req *requests.ListAttributeTemplatesPathParams) ([]models.AttributeTemplate, *errutils.Error) {
+func (p *projectServiceImpl) ListAttributeTemplates(ctx context.Context, req *requests.ListAttributeTemplatesPathParams) ([]models.ProjectAttributeTemplate, *errutils.Error) {
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
