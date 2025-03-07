@@ -2,6 +2,8 @@ package responses
 
 import (
 	"time"
+
+	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 )
 
 type CreateProjectResponse struct {
@@ -12,7 +14,7 @@ type CreateProjectResponse struct {
 	Description   *string `json:"description"`
 }
 
-type ListMyProjectsResponse struct {
+type ListProjectsResponse struct {
 	ID                   string    `json:"id"`
 	WorkspaceID          string    `json:"workspaceId"`
 	Name                 string    `json:"name"`
@@ -30,20 +32,23 @@ type ListMyProjectsResponse struct {
 }
 
 type GetProjectDetailResponse struct {
-	ID                   string    `json:"id"`
-	WorkspaceID          string    `json:"workspaceId"`
-	Name                 string    `json:"name"`
-	ProjectPrefix        string    `json:"projectPrefix"`
-	Description          *string   `json:"description"`
-	Status               string    `json:"status"`
-	OwnerUserID          string    `json:"ownerUserId"`
-	OwnerProjectMemberID string    `json:"ownerProjectMemberId"`
-	OwnerDisplayName     string    `json:"ownerDisplayName"`
-	OwnerProfileUrl      string    `json:"ownerProfileUrl"`
-	CreatedAt            time.Time `json:"createdAt"`
-	CreatedBy            string    `json:"createdBy"`
-	UpdatedAt            time.Time `json:"updatedAt"`
-	UpdatedBy            string    `json:"updatedBy"`
+	ID                   string                            `json:"id"`
+	WorkspaceID          string                            `json:"workspaceId"`
+	Name                 string                            `json:"name"`
+	ProjectPrefix        string                            `json:"projectPrefix"`
+	Description          *string                           `json:"description"`
+	Status               string                            `json:"status"`
+	OwnerUserID          string                            `json:"ownerUserId"`
+	OwnerProjectMemberID string                            `json:"ownerProjectMemberId"`
+	OwnerDisplayName     string                            `json:"ownerDisplayName"`
+	OwnerProfileUrl      string                            `json:"ownerProfileUrl"`
+	Positions            []string                          `json:"positions"`
+	Workflows            []models.ProjectWorkflow          `json:"workflows"`
+	AttributeTemplates   []models.ProjectAttributeTemplate `json:"attributeTemplates"`
+	CreatedAt            time.Time                         `json:"createdAt"`
+	CreatedBy            string                            `json:"createdBy"`
+	UpdatedAt            time.Time                         `json:"updatedAt"`
+	UpdatedBy            string                            `json:"updatedBy"`
 }
 
 type UpdatePositionsResponse struct {

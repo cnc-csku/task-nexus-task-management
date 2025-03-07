@@ -126,7 +126,7 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		}
 	}
 
-	var defaultWorkflow *models.Workflow
+	var defaultWorkflow *models.ProjectWorkflow
 	for _, workflow := range project.Workflows {
 		if workflow.IsDefault {
 			defaultWorkflow = &workflow

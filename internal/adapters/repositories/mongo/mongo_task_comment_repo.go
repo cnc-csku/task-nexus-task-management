@@ -52,7 +52,7 @@ func (m *mongoTaskCommentRepo) FindByTaskID(ctx context.Context, taskID bson.Obj
 		return nil, err
 	}
 
-	var taskComments []*models.TaskComment
+	taskComments := make([]*models.TaskComment, 0)
 	if err := cursor.All(ctx, &taskComments); err != nil {
 		return nil, err
 	}

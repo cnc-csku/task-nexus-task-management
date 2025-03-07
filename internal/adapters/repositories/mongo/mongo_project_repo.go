@@ -88,11 +88,10 @@ func (m *mongoProjectRepo) Create(ctx context.Context, project *repositories.Cre
 	// }
 	// defer session.EndSession(ctx)
 
-	var newProject models.Project
 	// _, err = session.WithTransaction(
 	// 	ctx,
 	// 	func(ctx context.Context) (interface{}, error) {
-	newProject = models.Project{
+	newProject := models.Project{
 		ID:                  bson.NewObjectID(),
 		WorkspaceID:         project.WorkspaceID,
 		Name:                project.Name,
@@ -102,8 +101,8 @@ func (m *mongoProjectRepo) Create(ctx context.Context, project *repositories.Cre
 		SprintRunningNumber: 1,
 		TaskRunningNumber:   1,
 		Workflows:           project.Workflows,
-		AttributeTemplates:  []models.AttributeTemplate{},
-		Positions:           []string{},
+		AttributeTemplates:  project.AttributeTemplates,
+		Positions:           project.Positions,
 		CreatedAt:           time.Now(),
 		CreatedBy:           project.CreatedBy,
 		UpdatedAt:           time.Now(),
@@ -312,7 +311,7 @@ func (m *mongoProjectRepo) SearchProjectMember(ctx context.Context, in *reposito
 	return result.Members, countResult.Count, nil
 }
 
-func (m *mongoProjectRepo) UpdateWorkflows(ctx context.Context, projectID bson.ObjectID, workflows []models.Workflow) error {
+func (m *mongoProjectRepo) UpdateWorkflows(ctx context.Context, projectID bson.ObjectID, workflows []models.ProjectWorkflow) error {
 	f := NewProjectFilter()
 	f.WithID(projectID)
 
@@ -339,12 +338,12 @@ func (m *mongoProjectRepo) UpdateWorkflows(ctx context.Context, projectID bson.O
 	return nil
 }
 
-func (m *mongoProjectRepo) FindWorkflowByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.Workflow, error) {
+func (m *mongoProjectRepo) FindWorkflowByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.ProjectWorkflow, error) {
 	f := NewProjectFilter()
 	f.WithID(projectID)
 
 	var result struct {
-		Workflows []models.Workflow `bson:"workflows"`
+		Workflows []models.ProjectWorkflow `bson:"workflows"`
 	}
 
 	err := m.collection.FindOne(ctx, f).Decode(&result)
@@ -388,7 +387,7 @@ func (m *mongoProjectRepo) IncrementTaskRunningNumber(ctx context.Context, proje
 	return nil
 }
 
-func (m *mongoProjectRepo) UpdateAttributeTemplates(ctx context.Context, projectID bson.ObjectID, attributeTemplates []models.AttributeTemplate) error {
+func (m *mongoProjectRepo) UpdateAttributeTemplates(ctx context.Context, projectID bson.ObjectID, attributeTemplates []models.ProjectAttributeTemplate) error {
 	f := NewProjectFilter()
 	f.WithID(projectID)
 
@@ -411,12 +410,12 @@ func (m *mongoProjectRepo) UpdateAttributeTemplates(ctx context.Context, project
 	return nil
 }
 
-func (m *mongoProjectRepo) FindAttributeTemplatesByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.AttributeTemplate, error) {
+func (m *mongoProjectRepo) FindAttributeTemplatesByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.ProjectAttributeTemplate, error) {
 	f := NewProjectFilter()
 	f.WithID(projectID)
 
 	var result struct {
-		AttributeTemplates []models.AttributeTemplate `bson:"attributes_templates"`
+		AttributeTemplates []models.ProjectAttributeTemplate `bson:"attributes_templates"`
 	}
 
 	err := m.collection.FindOne(ctx, f).Decode(&result)

@@ -75,7 +75,7 @@ func (m *mongoUserRepo) FindByIDs(ctx context.Context, userIDs []bson.ObjectID) 
 	}
 	defer cursor.Close(ctx)
 
-	var users []models.User
+	users := make([]models.User, 0)
 	for cursor.Next(ctx) {
 		var user models.User
 		if err := cursor.Decode(&user); err != nil {
@@ -120,16 +120,8 @@ func (m *mongoUserRepo) Search(ctx context.Context, in *repositories.SearchUserR
 	}
 	defer cursor.Close(ctx)
 
-	var users []*models.User
-	for cursor.Next(ctx) {
-		var user models.User
-		if err := cursor.Decode(&user); err != nil {
-			return nil, 0, err
-		}
-		users = append(users, &user)
-	}
-
-	if err := cursor.Err(); err != nil {
+	users := make([]*models.User, 0)
+	if err := cursor.All(ctx, &users); err != nil {
 		return nil, 0, err
 	}
 
@@ -174,16 +166,8 @@ func (m *mongoUserRepo) SearchWithUserIDs(ctx context.Context, in *repositories.
 	}
 	defer cursor.Close(ctx)
 
-	var users []*models.User
-	for cursor.Next(ctx) {
-		var user models.User
-		if err := cursor.Decode(&user); err != nil {
-			return nil, 0, err
-		}
-		users = append(users, &user)
-	}
-
-	if err := cursor.Err(); err != nil {
+	users := make([]*models.User, 0)
+	if err := cursor.All(ctx, &users); err != nil {
 		return nil, 0, err
 	}
 
