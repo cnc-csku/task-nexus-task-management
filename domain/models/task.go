@@ -69,7 +69,7 @@ func (t TaskPriority) IsValid() bool {
 }
 
 type TaskApproval struct {
-	Reason *string       `bson:"reason" json:"reason"`
+	Reason string        `bson:"reason" json:"reason"`
 	UserID bson.ObjectID `bson:"user_id" json:"userId"`
 }
 
