@@ -70,6 +70,6 @@ func (u projectUpdate) IncrementTaskRunningNumber() {
 
 func (u projectUpdate) UpdateAttributeTemplates(attributeTemplates []bson.M) {
 	u["$set"] = bson.M{
-		"attribute_templates": attributeTemplates,
+		"attributes_templates": attributeTemplates,
 	}
 }
