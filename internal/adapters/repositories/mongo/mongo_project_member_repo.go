@@ -152,3 +152,21 @@ func (m *mongoProjectMemberRepo) FindProjectOwnersByProjectIDs(ctx context.Conte
 
 	return projectOwners, nil
 }
+
+func (m *mongoProjectMemberRepo) FindByProjectIDAndPositions(ctx context.Context, projectID bson.ObjectID, positions []string) ([]*models.ProjectMember, error) {
+	f := NewProjectMemberFilter()
+	f.WithProjectID(projectID)
+	f.WithPositions(positions)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	projectMembers := make([]*models.ProjectMember, 0)
+	if err := cursor.All(ctx, &projectMembers); err != nil {
+		return nil, err
+	}
+
+	return projectMembers, nil
+}

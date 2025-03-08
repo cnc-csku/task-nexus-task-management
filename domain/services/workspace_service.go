@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/cnc-csku/task-nexus-go-lib/utils/errutils"
@@ -203,7 +202,6 @@ func normalizeListWorkspaceMembersPaginationParams(req *requests.ListWorkspaceMe
 }
 
 func (s *workspaceServiceImpl) ListWorkspaceMembers(ctx context.Context, req *requests.ListWorkspaceMemberRequest) (*responses.ListWorkspaceMembersResponse, *errutils.Error) {
-	fmt.Println(req.WorkspaceID)
 	workspaceObjID, err := bson.ObjectIDFromHex(req.WorkspaceID)
 	if err != nil {
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())

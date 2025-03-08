@@ -5,6 +5,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/cnc-csku/task-nexus-go-lib/utils/array"
 	"github.com/cnc-csku/task-nexus-go-lib/utils/errutils"
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/domain/constant"
@@ -37,6 +38,7 @@ type projectServiceImpl struct {
 	projectRepo         repositories.ProjectRepository
 	projectMemberRepo   repositories.ProjectMemberRepository
 	config              *config.Config
+	taskRepo            repositories.TaskRepository
 }
 
 func NewProjectService(
@@ -46,6 +48,7 @@ func NewProjectService(
 	projectRepo repositories.ProjectRepository,
 	projectMemberRepo repositories.ProjectMemberRepository,
 	config *config.Config,
+	taskRepo repositories.TaskRepository,
 ) ProjectService {
 	return &projectServiceImpl{
 		userRepo:            userRepo,
@@ -54,6 +57,7 @@ func NewProjectService(
 		projectRepo:         projectRepo,
 		projectMemberRepo:   projectMemberRepo,
 		config:              config,
+		taskRepo:            taskRepo,
 	}
 }
 
@@ -280,6 +284,10 @@ func (p *projectServiceImpl) UpdatePositions(ctx context.Context, req *requests.
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
+	if len(req.Titles) == 0 {
+		return nil, errutils.NewError(exceptions.ErrNoPositionProvided, errutils.BadRequest).WithDebugMessage("No position provided")
+	}
+
 	// Check if the user is owner or moderator of the project
 	member, err := p.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
 	if err != nil {
@@ -288,6 +296,35 @@ func (p *projectServiceImpl) UpdatePositions(ctx context.Context, req *requests.
 		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.BadRequest)
 	} else if member.Role != models.ProjectMemberRoleOwner && member.Role != models.ProjectMemberRoleModerator {
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
+	}
+
+	currentPositions, err := p.projectRepo.FindPositionByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	deletedPositions := make([]string, 0)
+	for _, position := range currentPositions {
+		if !array.ContainAny(req.Titles, []string{position}) {
+			deletedPositions = append(deletedPositions, position)
+		}
+	}
+
+	// Check if the deleted positions are used by any member
+	members, err := p.projectMemberRepo.FindByProjectIDAndPositions(ctx, bsonProjectID, deletedPositions)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if len(members) > 0 {
+		positionMap := make(map[string]struct{})
+		errFields := make([]string, 0)
+		for _, member := range members {
+			if _, exists := positionMap[member.Position]; !exists {
+				positionMap[member.Position] = struct{}{}
+				errFields = append(errFields, member.Position)
+			}
+		}
+
+		return nil, errutils.NewError(exceptions.ErrPositionUsedByMember, errutils.BadRequest).WithDebugMessage("Position is used by member").WithFields(errFields...)
 	}
 
 	err = p.projectRepo.UpdatePositions(ctx, bsonProjectID, req.Titles)
@@ -492,6 +529,10 @@ func (p *projectServiceImpl) UpdateWorkflows(ctx context.Context, req *requests.
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
+	if len(req.Workflows) == 0 {
+		return nil, errutils.NewError(exceptions.ErrNoWorkflowProvided, errutils.BadRequest).WithDebugMessage("No workflow provided")
+	}
+
 	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
@@ -507,6 +548,40 @@ func (p *projectServiceImpl) UpdateWorkflows(ctx context.Context, req *requests.
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
 	} else if member.Role != models.ProjectMemberRoleOwner && member.Role != models.ProjectMemberRoleModerator {
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest)
+	}
+
+	currentWorkflows, err := p.projectRepo.FindWorkflowByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	inputtedStatus := make([]string, 0)
+	for _, workflow := range req.Workflows {
+		inputtedStatus = append(inputtedStatus, workflow.Status)
+	}
+
+	deletedWorkflows := make([]string, 0)
+	for _, workflow := range currentWorkflows {
+		if !array.ContainAny(inputtedStatus, []string{workflow.Status}) {
+			deletedWorkflows = append(deletedWorkflows, workflow.Status)
+		}
+	}
+
+	// Check if the deleted workflows are used by any task
+	tasks, err := p.taskRepo.FindByProjectIDAndStatuses(ctx, bsonProjectID, deletedWorkflows)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if len(tasks) > 0 {
+		statusMap := make(map[string]struct{})
+		errFields := make([]string, 0)
+		for _, task := range tasks {
+			if _, exists := statusMap[task.Status]; !exists {
+				statusMap[task.Status] = struct{}{}
+				errFields = append(errFields, task.Status)
+			}
+		}
+
+		return nil, errutils.NewError(exceptions.ErrWorkflowUsedByTask, errutils.BadRequest).WithDebugMessage("Workflow is used by task").WithFields(errFields...)
 	}
 
 	var (

@@ -18,7 +18,6 @@ type UpdateTaskDetailRequest struct {
 	Title       string  `json:"title" validate:"required"`
 	Description string  `json:"description"`
 	ParentID    *string `json:"parentId"`
-	Type        string  `json:"type" validate:"required"`
 	Priority    *string `json:"priority"`
 }
 
@@ -45,7 +44,7 @@ type UpdateTaskAssigneesRequest struct {
 type UpdateTaskAssigneesRequestAssignee struct {
 	Position string `json:"position" validate:"required"` // List project's position
 	UserId   string `json:"userId" validate:"required"`   // List User in the following project
-	Point    int    `json:"point"`
+	Point    *int   `json:"point"`
 }
 
 type UpdateTaskSprintRequest struct {

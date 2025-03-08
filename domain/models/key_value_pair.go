@@ -10,7 +10,7 @@ type KeyValuePairType string
 
 const (
 	KeyValuePairTypeString KeyValuePairType = "STRING"
-	KeyValuePairTypeInt    KeyValuePairType = "NUMBER"
+	KeyValuePairTypeNumber KeyValuePairType = "NUMBER"
 	KeyValuePairTypeBool   KeyValuePairType = "BOOLEAN"
 	KeyValuePairTypeDate   KeyValuePairType = "DATE"
 )
@@ -21,7 +21,7 @@ func (k KeyValuePairType) String() string {
 
 func (k KeyValuePairType) IsValid() bool {
 	switch k {
-	case KeyValuePairTypeString, KeyValuePairTypeInt, KeyValuePairTypeBool, KeyValuePairTypeDate:
+	case KeyValuePairTypeString, KeyValuePairTypeNumber, KeyValuePairTypeBool, KeyValuePairTypeDate:
 		return true
 	}
 	return false

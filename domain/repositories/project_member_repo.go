@@ -15,6 +15,7 @@ type ProjectMemberRepository interface {
 	FindByProjectIDAndUserID(ctx context.Context, projectID bson.ObjectID, userID bson.ObjectID) (*models.ProjectMember, error)
 	FindProjectOwnerByProjectID(ctx context.Context, projectID bson.ObjectID) (*models.ProjectMember, error)
 	FindProjectOwnersByProjectIDs(ctx context.Context, projectIDs []bson.ObjectID) (map[bson.ObjectID]models.ProjectMember, error)
+	FindByProjectIDAndPositions(ctx context.Context, projectID bson.ObjectID, positions []string) ([]*models.ProjectMember, error)
 }
 
 type CreateProjectMemberRequest struct {

@@ -17,6 +17,10 @@ type TaskRepository interface {
 	ApproveTask(ctx context.Context, in *ApproveTaskRequest) (*models.Task, error)
 	UpdateAssignees(ctx context.Context, in *UpdateTaskAssigneesRequest) (*models.Task, error)
 	UpdateSprint(ctx context.Context, in *UpdateTaskSprintRequest) (*models.Task, error)
+	FindByProjectIDAndStatuses(ctx context.Context, projectID bson.ObjectID, statuses []string) ([]*models.Task, error)
+	UpdateHasChildren(ctx context.Context, in *UpdateTaskHasChildrenRequest) (*models.Task, error)
+	FindByParentID(ctx context.Context, parentID bson.ObjectID) ([]*models.Task, error)
+	UpdateChildrenPoint(ctx context.Context, in *UpdateTaskChildrenPointRequest) (*models.Task, error)
 }
 
 type CreateTaskRequest struct {
@@ -36,7 +40,6 @@ type UpdateTaskDetailRequest struct {
 	Title       string
 	Description string
 	ParentID    *bson.ObjectID
-	Type        models.TaskType
 	Priority    *string
 	UpdatedBy   bson.ObjectID
 }
@@ -72,7 +75,7 @@ type UpdateTaskAssigneesRequest struct {
 type UpdateTaskAssigneesRequestAssignee struct {
 	Position string
 	UserID   bson.ObjectID
-	Point    int
+	Point    *int
 }
 
 type UpdateTaskSprintRequest struct {
@@ -80,4 +83,14 @@ type UpdateTaskSprintRequest struct {
 	CurrentSprintID   bson.ObjectID
 	PreviousSprintIDs []bson.ObjectID
 	UpdatedBy         bson.ObjectID
+}
+
+type UpdateTaskHasChildrenRequest struct {
+	ID          bson.ObjectID
+	HasChildren bool
+}
+
+type UpdateTaskChildrenPointRequest struct {
+	ID            bson.ObjectID
+	ChildrenPoint int
 }

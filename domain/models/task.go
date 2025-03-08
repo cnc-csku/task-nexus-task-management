@@ -7,22 +7,24 @@ import (
 )
 
 type Task struct {
-	ID          bson.ObjectID  `bson:"_id" json:"id"`
-	TaskRef     string         `bson:"task_ref" json:"taskRef"`
-	ProjectID   bson.ObjectID  `bson:"project_id" json:"projectId"`
-	Title       string         `bson:"title" json:"title"`
-	Description string         `bson:"description" json:"description"`
-	ParentID    *bson.ObjectID `bson:"parent_id" json:"parentId"`
-	Type        TaskType       `bson:"type" json:"type"`
-	Status      string         `bson:"status" json:"status"`
-	Priority    *TaskPriority  `bson:"priority" json:"priority"`
-	Approvals   []TaskApproval `bson:"approvals" json:"approvals"`
-	Assignees   []TaskAssignee `bson:"assignees" json:"assignees"`
-	Sprint      *TaskSprint    `bson:"sprint" json:"sprint"`
-	CreatedAt   time.Time      `bson:"created_at" json:"createdAt"`
-	CreatedBy   bson.ObjectID  `bson:"created_by" json:"createdBy"`
-	UpdatedAt   time.Time      `bson:"updated_at" json:"updatedAt"`
-	UpdatedBy   bson.ObjectID  `bson:"updated_by" json:"updatedBy"`
+	ID            bson.ObjectID  `bson:"_id" json:"id"`
+	TaskRef       string         `bson:"task_ref" json:"taskRef"`
+	ProjectID     bson.ObjectID  `bson:"project_id" json:"projectId"`
+	Title         string         `bson:"title" json:"title"`
+	Description   string         `bson:"description" json:"description"`
+	ParentID      *bson.ObjectID `bson:"parent_id" json:"parentId"`
+	Type          TaskType       `bson:"type" json:"type"`
+	Status        string         `bson:"status" json:"status"`
+	Priority      *TaskPriority  `bson:"priority" json:"priority"`
+	Approvals     []TaskApproval `bson:"approvals" json:"approvals"`
+	Assignees     []TaskAssignee `bson:"assignees" json:"assignees"`
+	ChildrenPoint int            `bson:"children_point" json:"childrenPoint"`
+	HasChildren   bool           `bson:"has_children" json:"hasChildren"`
+	Sprint        *TaskSprint    `bson:"sprint" json:"sprint"`
+	CreatedAt     time.Time      `bson:"created_at" json:"createdAt"`
+	CreatedBy     bson.ObjectID  `bson:"created_by" json:"createdBy"`
+	UpdatedAt     time.Time      `bson:"updated_at" json:"updatedAt"`
+	UpdatedBy     bson.ObjectID  `bson:"updated_by" json:"updatedBy"`
 }
 
 type TaskType string

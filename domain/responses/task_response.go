@@ -19,6 +19,8 @@ type GetTaskDetailResponse struct {
 	Priority           *models.TaskPriority               `json:"priority"`
 	Approvals          []models.TaskApproval              `json:"approvals"`
 	Assignees          []models.TaskAssignee              `json:"assignees"`
+	ChildrenPoint      int                                `json:"childrenPoint"`
+	HasChildren        bool                               `json:"hasChildren"`
 	Sprint             *models.TaskSprint                 `json:"sprint"`
 	CreatedAt          time.Time                          `json:"createdAt"`
 	CreatedBy          string                             `json:"createdBy"`
