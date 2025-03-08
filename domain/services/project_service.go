@@ -518,6 +518,7 @@ func (p *projectServiceImpl) UpdateWorkflows(ctx context.Context, req *requests.
 			Status:           workflow.Status,
 			PreviousStatuses: workflow.PreviousStatuses,
 			IsDefault:        workflow.IsDefault,
+			IsDone:           workflow.IsDone,
 		}
 		workflows = append(workflows, wf)
 

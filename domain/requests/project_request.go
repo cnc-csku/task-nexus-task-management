@@ -50,6 +50,7 @@ type UpdateWorkflowsRequestWorkflow struct {
 	PreviousStatuses []string `json:"previousStatuses"`
 	Status           string   `json:"status" validate:"required"`
 	IsDefault        bool     `json:"isDefault"`
+	IsDone           bool     `json:"isDone"`
 }
 
 type ListWorkflowsPathParams struct {
