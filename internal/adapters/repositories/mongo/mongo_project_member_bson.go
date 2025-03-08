@@ -28,3 +28,9 @@ func (f projectMemberFilter) WithProjectIDs(projectIDs []bson.ObjectID) {
 func (f projectMemberFilter) WithRole(role models.ProjectMemberRole) {
 	f["role"] = role
 }
+
+func (f projectMemberFilter) WithPositions(positions []string) {
+	f["position"] = bson.M{
+		"$in": positions,
+	}
+}

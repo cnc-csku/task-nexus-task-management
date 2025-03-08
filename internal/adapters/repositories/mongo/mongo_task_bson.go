@@ -1,7 +1,6 @@
 package mongo
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
@@ -26,6 +25,20 @@ func (f taskFilter) WithUserApproval(userID bson.ObjectID) {
 	f["approval.user_id"] = userID
 }
 
+func (f taskFilter) WithProjectID(projectID bson.ObjectID) {
+	f["project_id"] = projectID
+}
+
+func (f taskFilter) WithStatuses(statuses []string) {
+	f["status"] = bson.M{
+		"$in": statuses,
+	}
+}
+
+func (f taskFilter) WithParentID(parentID bson.ObjectID) {
+	f["parent_id"] = parentID
+}
+
 type taskUpdate bson.M
 
 func NewTaskUpdate() taskUpdate {
@@ -37,7 +50,6 @@ func (u taskUpdate) UpdateDetail(in *repositories.UpdateTaskDetailRequest) {
 		"title":       in.Title,
 		"description": in.Description,
 		"parent_id":   in.ParentID,
-		"type":        in.Type,
 		"priority":    in.Priority,
 		"updated_at":  time.Now(),
 		"updated_by":  in.UpdatedBy,
@@ -82,7 +94,6 @@ func (u taskUpdate) UpdateAssignees(in *repositories.UpdateTaskAssigneesRequest)
 			"point":    a.Point,
 		}
 	}
-	fmt.Println("assignees", assignees)
 
 	u["$set"] = bson.M{
 		"assignees":  assignees,
@@ -99,5 +110,19 @@ func (u taskUpdate) UpdateSprint(in *repositories.UpdateTaskSprintRequest) {
 		},
 		"updated_at": time.Now(),
 		"updated_by": in.UpdatedBy,
+	}
+}
+
+func (u taskUpdate) UpdateHasChildren(hasChildren bool) {
+	u["$set"] = bson.M{
+		"has_children": hasChildren,
+		"updated_at":   time.Now(),
+	}
+}
+
+func (u taskUpdate) UpdateChildrenPoint(point int) {
+	u["$set"] = bson.M{
+		"children_point": point,
+		"updated_at":     time.Now(),
 	}
 }

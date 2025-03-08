@@ -175,3 +175,72 @@ func (m *mongoTaskRepo) UpdateSprint(ctx context.Context, in *repositories.Updat
 
 	return m.FindByID(ctx, in.ID)
 }
+
+func (m *mongoTaskRepo) FindByProjectIDAndStatuses(ctx context.Context, projectID bson.ObjectID, statuses []string) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithProjectID(projectID)
+	f.WithStatuses(statuses)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+func (m *mongoTaskRepo) UpdateHasChildren(ctx context.Context, in *repositories.UpdateTaskHasChildrenRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateHasChildren(in.HasChildren)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) FindByParentID(ctx context.Context, parentID bson.ObjectID) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithParentID(parentID)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+func (m *mongoTaskRepo) UpdateChildrenPoint(ctx context.Context, in *repositories.UpdateTaskChildrenPointRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateChildrenPoint(in.ChildrenPoint)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
