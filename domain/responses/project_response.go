@@ -44,7 +44,7 @@ type GetProjectDetailResponse struct {
 	OwnerProfileUrl      string                            `json:"ownerProfileUrl"`
 	Positions            []string                          `json:"positions"`
 	Workflows            []models.ProjectWorkflow          `json:"workflows"`
-	AttributeTemplates   []models.ProjectAttributeTemplate `json:"attributeTemplates"`
+	AttributeTemplates   []models.ProjectAttributeTemplate `json:"attributesTemplates"`
 	CreatedAt            time.Time                         `json:"createdAt"`
 	CreatedBy            string                            `json:"createdBy"`
 	UpdatedAt            time.Time                         `json:"updatedAt"`
