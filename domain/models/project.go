@@ -47,13 +47,29 @@ type ProjectWorkflow struct {
 	PreviousStatuses []string `bson:"previous_statuses" json:"previousStatuses"`
 	Status           string   `bson:"status" json:"status"`
 	IsDefault        bool     `bson:"is_default" json:"isDefault"`
+	IsDone           bool     `bson:"is_done" json:"isDone"`
 }
 
 func GetDefaultWorkflows() []ProjectWorkflow {
 	return []ProjectWorkflow{
-		{Status: "Todo", IsDefault: true},
-		{Status: "In Progress", PreviousStatuses: []string{"Todo"}},
-		{Status: "Done", PreviousStatuses: []string{"In Progress"}},
+		{
+			Status:           "Todo",
+			PreviousStatuses: nil,
+			IsDefault:        true,
+			IsDone:           false,
+		},
+		{
+			Status:           "In Progress",
+			PreviousStatuses: []string{"Todo"},
+			IsDefault:        false,
+			IsDone:           false,
+		},
+		{
+			Status:           "Done",
+			PreviousStatuses: []string{"In Progress"},
+			IsDefault:        false,
+			IsDone:           true,
+		},
 	}
 }
 

@@ -326,6 +326,7 @@ func (m *mongoProjectRepo) UpdateWorkflows(ctx context.Context, projectID bson.O
 			"previous_statuses": w.PreviousStatuses,
 			"status":            w.Status,
 			"is_default":        w.IsDefault,
+			"is_done":           w.IsDone,
 		}
 	}
 	update.UpdateWorkflows(bsonWorkflows)
