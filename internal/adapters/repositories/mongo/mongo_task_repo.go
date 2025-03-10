@@ -36,6 +36,7 @@ func (m *mongoTaskRepo) Create(ctx context.Context, task *repositories.CreateTas
 		ParentID:    task.ParentID,
 		Type:        task.Type,
 		Status:      task.Status,
+		Priority:    models.TaskPriorityMedium,
 		Sprint:      task.Sprint,
 		CreatedAt:   time.Now(),
 		CreatedBy:   task.CreatedBy,

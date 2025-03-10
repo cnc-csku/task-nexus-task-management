@@ -31,7 +31,7 @@ type UpdateTaskDetailRequest struct {
 	Title       string  `json:"title" validate:"required"`
 	Description string  `json:"description"`
 	ParentID    *string `json:"parentId"`
-	Priority    *string `json:"priority"`
+	Priority    string  `json:"priority"`
 }
 
 type UpdateTaskStatusRequest struct {

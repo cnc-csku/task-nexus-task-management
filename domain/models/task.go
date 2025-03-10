@@ -15,7 +15,7 @@ type Task struct {
 	ParentID      *bson.ObjectID `bson:"parent_id" json:"parentId"`
 	Type          TaskType       `bson:"type" json:"type"`
 	Status        string         `bson:"status" json:"status"`
-	Priority      *TaskPriority  `bson:"priority" json:"priority"`
+	Priority      TaskPriority   `bson:"priority" json:"priority"`
 	Approvals     []TaskApproval `bson:"approvals" json:"approvals"`
 	Assignees     []TaskAssignee `bson:"assignees" json:"assignees"`
 	ChildrenPoint int            `bson:"children_point" json:"childrenPoint"`

@@ -43,7 +43,7 @@ type UpdateTaskDetailRequest struct {
 	Title       string
 	Description string
 	ParentID    *bson.ObjectID
-	Priority    *string
+	Priority    string
 	UpdatedBy   bson.ObjectID
 }
 

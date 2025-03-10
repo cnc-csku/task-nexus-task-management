@@ -624,6 +624,7 @@ func (p *projectServiceImpl) UpdateWorkflows(ctx context.Context, req *requests.
 	var (
 		workflows          []models.ProjectWorkflow
 		isDefaultWorkflows []models.ProjectWorkflow
+		isDoneWorkflows    []models.ProjectWorkflow
 	)
 	for _, workflow := range req.Workflows {
 		wf := models.ProjectWorkflow{
@@ -637,6 +638,10 @@ func (p *projectServiceImpl) UpdateWorkflows(ctx context.Context, req *requests.
 		if workflow.IsDefault {
 			isDefaultWorkflows = append(isDefaultWorkflows, wf)
 		}
+
+		if workflow.IsDone {
+			isDoneWorkflows = append(isDoneWorkflows, wf)
+		}
 	}
 
 	if len(isDefaultWorkflows) == 0 {
@@ -647,6 +652,10 @@ func (p *projectServiceImpl) UpdateWorkflows(ctx context.Context, req *requests.
 			errFields = append(errFields, wf.Status)
 		}
 		return nil, errutils.NewError(exceptions.ErrMultipleDefaultWorkflow, errutils.BadRequest).WithDebugMessage("Multiple default workflow").WithFields(errFields...)
+	}
+
+	if len(isDoneWorkflows) == 0 {
+		return nil, errutils.NewError(exceptions.ErrNoIsDoneWorkflow, errutils.BadRequest).WithDebugMessage("No is done workflow")
 	}
 
 	err = p.projectRepo.UpdateWorkflows(ctx, bsonProjectID, workflows)

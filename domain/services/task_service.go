@@ -461,8 +461,8 @@ func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.Update
 	}
 
 	// Check if task priority is valid
-	if req.Priority != nil && !models.TaskPriority(*req.Priority).IsValid() {
-		return nil, errutils.NewError(exceptions.ErrInvalidTaskPriority, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid task priority: %s", *req.Priority))
+	if !models.TaskPriority(req.Priority).IsValid() {
+		return nil, errutils.NewError(exceptions.ErrInvalidTaskPriority, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid task priority: %s", req.Priority))
 	}
 
 	task, err := s.taskRepo.FindByTaskRef(ctx, req.TaskRef)
