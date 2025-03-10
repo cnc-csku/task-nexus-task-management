@@ -18,7 +18,7 @@ type Project struct {
 	Workflows           []ProjectWorkflow          `bson:"workflows" json:"workflows"`
 	AttributeTemplates  []ProjectAttributeTemplate `bson:"attributes_templates" json:"attributesTemplates"`
 	Positions           []string                   `bson:"positions" json:"positions"`
-	SetupStatus         bool                       `bson:"setup_status" json:"setupStatus"`
+	SetupStatus         ProjectStatus              `bson:"setup_status" json:"setupStatus"`
 	CreatedAt           time.Time                  `bson:"created_at" json:"createdAt"`
 	CreatedBy           bson.ObjectID              `bson:"created_by" json:"createdBy"`
 	UpdatedAt           time.Time                  `bson:"updated_at" json:"updatedAt"`
