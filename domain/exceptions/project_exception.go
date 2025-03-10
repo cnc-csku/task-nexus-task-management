@@ -14,4 +14,6 @@ var (
 	ErrNoWorkflowProvided         = errors.New("no workflow provided")
 	ErrPositionUsedByMember       = errors.New("position is used by member")
 	ErrWorkflowUsedByTask         = errors.New("workflow is used by task")
+	ErrMemberNotFoundInProject    = errors.New("member not found in project")
+	ErrInvalidProjectSetupStatus  = errors.New("invalid project setup status")
 )

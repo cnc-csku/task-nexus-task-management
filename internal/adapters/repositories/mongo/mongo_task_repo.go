@@ -68,6 +68,25 @@ func (m *mongoTaskRepo) FindByID(ctx context.Context, id bson.ObjectID) (*models
 	return task, nil
 }
 
+func (m *mongoTaskRepo) FindByIDs(ctx context.Context, ids []bson.ObjectID) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithIDs(ids)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 func (m *mongoTaskRepo) FindByTaskRef(ctx context.Context, taskRef string) (*models.Task, error) {
 	task := new(models.Task)
 
@@ -243,4 +262,64 @@ func (m *mongoTaskRepo) UpdateChildrenPoint(ctx context.Context, in *repositorie
 	}
 
 	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) FindByProjectIDAndType(ctx context.Context, projectID bson.ObjectID, taskType models.TaskType) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithProjectID(projectID)
+	f.WithType(taskType)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+func (m *mongoTaskRepo) Search(ctx context.Context, in *repositories.SearchTaskRequest) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithProjectID(in.ProjectID)
+	f.WithTypes(in.TaskTypes)
+
+	if in.SprintID != nil {
+		f.WithSprintID(*in.SprintID)
+	}
+
+	if in.EpicTaskID != nil {
+		f.WithParentID(*in.EpicTaskID)
+	}
+
+	if len(in.UserIDs) > 0 {
+		f.WithUserIDs(in.UserIDs)
+	}
+
+	if in.Statuses != nil {
+		f.WithStatuses(in.Statuses)
+	}
+
+	if in.SearchKeyword != nil {
+		f.WithSearchKeyword(*in.SearchKeyword)
+	}
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }

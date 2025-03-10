@@ -12,6 +12,7 @@ type SprintRepository interface {
 	Create(ctx context.Context, sprint *CreateSprintRequest) (*models.Sprint, error)
 	FindByID(ctx context.Context, sprintID bson.ObjectID) (*models.Sprint, error)
 	Update(ctx context.Context, sprint *UpdateSprintRequest) error
+	FindByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.Sprint, error)
 }
 
 type CreateSprintRequest struct {

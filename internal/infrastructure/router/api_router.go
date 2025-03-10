@@ -37,6 +37,9 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.POST("", r.project.Create, r.authMiddleware.Middleware)
 		projects.GET("/:projectId", r.project.GetProjectDetail, r.authMiddleware.Middleware)
 
+		// Setup
+		projects.PUT("/:projectId/setup-status", r.project.UpdateSetupStatus, r.authMiddleware.Middleware)
+
 		// Positions
 		projects.PUT("/:projectId/positions", r.project.UpdatePositions, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/positions", r.project.ListPositions, r.authMiddleware.Middleware)
@@ -53,16 +56,25 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.POST("/:projectId/sprints", r.sprint.Create, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/sprints/:sprintId", r.sprint.GetByID, r.authMiddleware.Middleware)
 		projects.PUT("/:projectId/sprints/:sprintId", r.sprint.Edit, r.authMiddleware.Middleware)
+		projects.GET("/:projectId/sprints", r.sprint.ListByProjectID, r.authMiddleware.Middleware)
 
 		// Attribute Templates
 		projects.PUT("/:projectId/attribute-templates", r.project.UpdateAttributeTemplates, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/attribute-templates", r.project.ListAttributeTemplates, r.authMiddleware.Middleware)
+
+		// Project Members
+		// Position
+		projects.PUT("/:projectId/members/position", r.projectMember.UpdatePosition, r.authMiddleware.Middleware)
 	}
 
 	tasks := api.Group("/tasks/v1")
 	{
 		tasks.POST("", r.task.Create, r.authMiddleware.Middleware)
 		tasks.GET("/:taskRef", r.task.GetTaskDetail, r.authMiddleware.Middleware)
+
+		tasks.GET("/projects/:projectId/epic", r.task.ListEpicTasks, r.authMiddleware.Middleware)
+		tasks.GET("/projects/:projectId", r.task.SearchTask, r.authMiddleware.Middleware)
+
 		tasks.PUT("/:taskRef/detail", r.task.UpdateDetail, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/status", r.task.UpdateStatus, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/approvals", r.task.UpdateApprovals, r.authMiddleware.Middleware)

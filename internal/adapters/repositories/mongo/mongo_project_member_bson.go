@@ -11,6 +11,10 @@ func NewProjectMemberFilter() projectMemberFilter {
 	return projectMemberFilter{}
 }
 
+func (f projectMemberFilter) WithID(id bson.ObjectID) {
+	f["_id"] = id
+}
+
 func (f projectMemberFilter) WithUserID(userID bson.ObjectID) {
 	f["user_id"] = userID
 }
@@ -32,5 +36,17 @@ func (f projectMemberFilter) WithRole(role models.ProjectMemberRole) {
 func (f projectMemberFilter) WithPositions(positions []string) {
 	f["position"] = bson.M{
 		"$in": positions,
+	}
+}
+
+type projectMemberUpdate bson.M
+
+func NewProjectMemberUpdate() projectMemberUpdate {
+	return projectMemberUpdate{}
+}
+
+func (u projectMemberUpdate) UpdatePosition(position string) {
+	u["$set"] = bson.M{
+		"position": position,
 	}
 }

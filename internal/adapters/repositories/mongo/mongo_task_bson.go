@@ -3,6 +3,7 @@ package mongo
 import (
 	"time"
 
+	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -15,6 +16,12 @@ func NewTaskFilter() taskFilter {
 
 func (f taskFilter) WithID(id bson.ObjectID) {
 	f["_id"] = id
+}
+
+func (f taskFilter) WithIDs(ids []bson.ObjectID) {
+	f["_id"] = bson.M{
+		"$in": ids,
+	}
 }
 
 func (f taskFilter) WithTaskRef(taskRef string) {
@@ -35,8 +42,41 @@ func (f taskFilter) WithStatuses(statuses []string) {
 	}
 }
 
+func (f taskFilter) WithNotInStatuses(statuses []string) {
+	f["status"] = bson.M{
+		"$nin": statuses,
+	}
+}
+
 func (f taskFilter) WithParentID(parentID bson.ObjectID) {
 	f["parent_id"] = parentID
+}
+
+func (f taskFilter) WithType(taskType models.TaskType) {
+	f["type"] = taskType
+}
+
+func (f taskFilter) WithTypes(taskTypes []models.TaskType) {
+	f["type"] = bson.M{
+		"$in": taskTypes,
+	}
+}
+
+func (f taskFilter) WithSprintID(sprintID bson.ObjectID) {
+	f["sprint.current_sprint_id"] = sprintID
+}
+
+func (f taskFilter) WithUserIDs(userIDs []bson.ObjectID) {
+	f["assignees.user_id"] = bson.M{
+		"$in": userIDs,
+	}
+}
+
+func (f taskFilter) WithSearchKeyword(keyword string) {
+	f["$or"] = []bson.M{
+		{"task_ref": bson.M{"$regex": keyword, "$options": "i"}},
+		{"title": bson.M{"$regex": keyword, "$options": "i"}},
+	}
 }
 
 type taskUpdate bson.M

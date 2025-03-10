@@ -1,9 +1,9 @@
 package requests
 
 type RegisterRequest struct {
-	Email       string `json:"email" validate:"required,email"`
-	Password    string `json:"password" validate:"required"`
-	FullName    string `json:"fullName" validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+	FullName string `json:"fullName" validate:"required"`
 }
 
 type LoginRequest struct {
@@ -12,6 +12,6 @@ type LoginRequest struct {
 }
 
 type SearchUserParams struct {
-	Keyword           string             `query:"keyword"`
-	PaginationRequest 
+	Keyword string `query:"keyword"`
+	PaginationRequest
 }

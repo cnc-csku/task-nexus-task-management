@@ -21,6 +21,7 @@ type ProjectRepository interface {
 	IncrementTaskRunningNumber(ctx context.Context, projectID bson.ObjectID) error
 	UpdateAttributeTemplates(ctx context.Context, projectID bson.ObjectID, attributeTemplates []models.ProjectAttributeTemplate) error
 	FindAttributeTemplatesByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.ProjectAttributeTemplate, error)
+	UpdateSetupStatus(ctx context.Context, in *UpdateProjectSetupStatus) (*models.Project, error)
 }
 
 type CreateProjectRequest struct {
@@ -34,4 +35,9 @@ type CreateProjectRequest struct {
 	AttributeTemplates []models.ProjectAttributeTemplate
 	Positions          []string
 	CreatedBy          bson.ObjectID
+}
+
+type UpdateProjectSetupStatus struct {
+	ProjectID   bson.ObjectID
+	SetupStatus models.ProjectSetupStatus
 }

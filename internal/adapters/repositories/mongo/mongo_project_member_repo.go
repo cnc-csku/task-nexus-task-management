@@ -63,6 +63,23 @@ func (m *mongoProjectMemberRepo) CreateMany(ctx context.Context, projectMembers 
 	return nil
 }
 
+func (m *mongoProjectMemberRepo) FindByID(ctx context.Context, id bson.ObjectID) (*models.ProjectMember, error) {
+	projectMember := new(models.ProjectMember)
+
+	f := NewProjectMemberFilter()
+	f.WithID(id)
+
+	err := m.collection.FindOne(ctx, f).Decode(projectMember)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return projectMember, nil
+}
+
 func (m *mongoProjectMemberRepo) FindByUserID(ctx context.Context, userID bson.ObjectID) ([]*models.ProjectMember, error) {
 	f := NewProjectMemberFilter()
 	f.WithUserID(userID)
@@ -169,4 +186,19 @@ func (m *mongoProjectMemberRepo) FindByProjectIDAndPositions(ctx context.Context
 	}
 
 	return projectMembers, nil
+}
+
+func (m *mongoProjectMemberRepo) UpdatePositionByID(ctx context.Context, in *repositories.UpdatePositionRequest) (*models.ProjectMember, error) {
+	f := NewProjectMemberFilter()
+	f.WithID(in.ID)
+
+	u := NewProjectMemberUpdate()
+	u.UpdatePosition(in.Position)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
 }

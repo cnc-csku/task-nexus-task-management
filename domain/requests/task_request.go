@@ -9,6 +9,19 @@ type CreateTaskRequest struct {
 	SprintID    *string `json:"sprintId"`
 }
 
+type ListEpicTasksPathParam struct {
+	ProjectID string `param:"projectId" validate:"required"`
+}
+
+type SearchTaskParams struct {
+	ProjectID     string   `param:"projectId" validate:"required"`
+	SprintID      *string  `query:"sprintId"`
+	EpicTaskID    *string  `query:"epicTaskId"`
+	UserIDs       []string `query:"userIds"`
+	Statuses      []string `query:"statuses"`
+	SearchKeyword *string  `query:"searchKeyword"`
+}
+
 type GetTaskDetailPathParam struct {
 	TaskRef string `param:"taskRef" validate:"required"`
 }

@@ -1,6 +1,9 @@
 package mongo
 
-import "go.mongodb.org/mongo-driver/v2/bson"
+import (
+	"github.com/cnc-csku/task-nexus/task-management/domain/models"
+	"go.mongodb.org/mongo-driver/v2/bson"
+)
 
 type projectFilter bson.M
 
@@ -71,5 +74,11 @@ func (u projectUpdate) IncrementTaskRunningNumber() {
 func (u projectUpdate) UpdateAttributeTemplates(attributeTemplates []bson.M) {
 	u["$set"] = bson.M{
 		"attributes_templates": attributeTemplates,
+	}
+}
+
+func (u projectUpdate) UpdateSetupStatus(setupStatus models.ProjectSetupStatus) {
+	u["$set"] = bson.M{
+		"setup_status": setupStatus,
 	}
 }

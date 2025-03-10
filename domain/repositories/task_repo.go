@@ -10,6 +10,7 @@ import (
 type TaskRepository interface {
 	Create(ctx context.Context, task *CreateTaskRequest) (*models.Task, error)
 	FindByID(ctx context.Context, id bson.ObjectID) (*models.Task, error)
+	FindByIDs(ctx context.Context, ids []bson.ObjectID) ([]*models.Task, error)
 	FindByTaskRef(ctx context.Context, taskRef string) (*models.Task, error)
 	UpdateDetail(ctx context.Context, in *UpdateTaskDetailRequest) (*models.Task, error)
 	UpdateStatus(ctx context.Context, in *UpdateTaskStatusRequest) (*models.Task, error)
@@ -21,6 +22,8 @@ type TaskRepository interface {
 	UpdateHasChildren(ctx context.Context, in *UpdateTaskHasChildrenRequest) (*models.Task, error)
 	FindByParentID(ctx context.Context, parentID bson.ObjectID) ([]*models.Task, error)
 	UpdateChildrenPoint(ctx context.Context, in *UpdateTaskChildrenPointRequest) (*models.Task, error)
+	FindByProjectIDAndType(ctx context.Context, projectID bson.ObjectID, taskType models.TaskType) ([]*models.Task, error)
+	Search(ctx context.Context, in *SearchTaskRequest) ([]*models.Task, error)
 }
 
 type CreateTaskRequest struct {
@@ -93,4 +96,15 @@ type UpdateTaskHasChildrenRequest struct {
 type UpdateTaskChildrenPointRequest struct {
 	ID            bson.ObjectID
 	ChildrenPoint int
+}
+
+type SearchTaskRequest struct {
+	ProjectID      bson.ObjectID
+	TaskTypes      []models.TaskType
+	SprintID       *bson.ObjectID
+	EpicTaskID     *bson.ObjectID
+	UserIDs        []bson.ObjectID
+	Statuses       []string
+	IsDoneStatuses []string
+	SearchKeyword  *string
 }

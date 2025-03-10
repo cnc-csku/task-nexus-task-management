@@ -19,3 +19,7 @@ type EditSprintRequest struct {
 	StartDate  *time.Time `json:"startDate"`
 	EndDate    *time.Time `json:"endDate"`
 }
+
+type ListSprintByProjectIDPathParam struct {
+	ProjectID string `param:"projectId" validate:"required"`
+}
