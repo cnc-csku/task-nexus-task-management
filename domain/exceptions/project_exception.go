@@ -10,6 +10,7 @@ var (
 	ErrInvalidAttributeType       = errors.New("invalid attribute type")
 	ErrNoDefaultWorkflow          = errors.New("no default workflow")
 	ErrMultipleDefaultWorkflow    = errors.New("multiple default workflow")
+	ErrNoIsDoneWorkflow           = errors.New("no is done workflow")
 	ErrNoPositionProvided         = errors.New("no position provided")
 	ErrNoWorkflowProvided         = errors.New("no workflow provided")
 	ErrPositionUsedByMember       = errors.New("position is used by member")
