@@ -12,6 +12,10 @@ func (f sprintFilter) WithID(id bson.ObjectID) {
 	f["_id"] = id
 }
 
+func (f sprintFilter) WithProjectID(projectID bson.ObjectID) {
+	f["project_id"] = projectID
+}
+
 type sprintUpdater bson.M
 
 func NewSprintUpdater() sprintUpdater {

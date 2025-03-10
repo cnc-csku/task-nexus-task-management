@@ -429,3 +429,18 @@ func (m *mongoProjectRepo) FindAttributeTemplatesByProjectID(ctx context.Context
 
 	return result.AttributeTemplates, nil
 }
+
+func (m *mongoProjectRepo) UpdateSetupStatus(ctx context.Context, in *repositories.UpdateProjectSetupStatus) (*models.Project, error) {
+	f := NewProjectFilter()
+	f.WithID(in.ProjectID)
+
+	u := NewProjectUpdate()
+	u.UpdateSetupStatus(in.SetupStatus)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByProjectID(ctx, in.ProjectID)
+}

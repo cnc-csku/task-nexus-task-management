@@ -18,9 +18,10 @@ import (
 )
 
 type ProjectService interface {
-	Create(ctx context.Context, req *requests.CreateProjectRequest, userId string) (*responses.CreateProjectResponse, *errutils.Error)
+	Create(ctx context.Context, req *requests.CreateProjectRequest, userID string) (*responses.CreateProjectResponse, *errutils.Error)
 	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]responses.ListProjectsResponse, *errutils.Error)
 	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetProjectDetailResponse, *errutils.Error)
+	UpdateSetupStatus(ctx context.Context, req *requests.UpdateSetupStatusRequest, userID string) (*models.Project, *errutils.Error)
 	UpdatePositions(ctx context.Context, req *requests.UpdatePositionsRequest, userID string) (*responses.UpdatePositionsResponse, *errutils.Error)
 	ListPositions(ctx context.Context, req *requests.ListPositionsPathParams) ([]string, *errutils.Error)
 	AddMembers(ctx context.Context, req *requests.AddProjectMembersRequest, userID string) (*responses.AddProjectMembersResponse, *errutils.Error)
@@ -61,8 +62,8 @@ func NewProjectService(
 	}
 }
 
-func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreateProjectRequest, userId string) (*responses.CreateProjectResponse, *errutils.Error) {
-	bsonUserId, err := bson.ObjectIDFromHex(userId)
+func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreateProjectRequest, userID string) (*responses.CreateProjectResponse, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
@@ -72,7 +73,7 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 	}
 
 	// Check if the creator is owner or moderator of the workspace
-	member, err := p.workspaceMemberRepo.FindByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonUserId)
+	member, err := p.workspaceMemberRepo.FindByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	} else if member == nil {
@@ -115,7 +116,7 @@ func (p *projectServiceImpl) Create(ctx context.Context, req *requests.CreatePro
 		Workflows:          models.GetDefaultWorkflows(),
 		Positions:          models.GetDefaultPositions(),
 		AttributeTemplates: []models.ProjectAttributeTemplate{},
-		CreatedBy:          bsonUserId,
+		CreatedBy:          bsonUserID,
 	}
 
 	createdProject, err := p.projectRepo.Create(ctx, project)
@@ -271,6 +272,42 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 		UpdatedAt:            project.UpdatedAt,
 		UpdatedBy:            project.UpdatedBy.Hex(),
 	}, nil
+}
+
+func (p *projectServiceImpl) UpdateSetupStatus(ctx context.Context, req *requests.UpdateSetupStatusRequest, userID string) (*models.Project, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	if !models.ProjectStatus(req.Status).IsValid() {
+		return nil, errutils.NewError(exceptions.ErrInvalidProjectSetupStatus, errutils.BadRequest).WithDebugMessage("Invalid project setup status")
+	}
+
+	// Check if the user is owner of the project
+	member, err := p.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.BadRequest).WithDebugMessage("User not found")
+	} else if member.Role != models.ProjectMemberRoleOwner {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("Requester is not owner of the project")
+	}
+
+	project, err := p.projectRepo.UpdateSetupStatus(ctx, &repositories.UpdateProjectSetupStatus{
+		ProjectID:   bsonProjectID,
+		SetupStatus: models.ProjectSetupStatus(req.Status),
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	return project, nil
 }
 
 func (p *projectServiceImpl) UpdatePositions(ctx context.Context, req *requests.UpdatePositionsRequest, userID string) (*responses.UpdatePositionsResponse, *errutils.Error) {

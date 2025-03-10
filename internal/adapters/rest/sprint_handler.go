@@ -14,6 +14,7 @@ type SprintHandler interface {
 	Create(c echo.Context) error
 	GetByID(c echo.Context) error
 	Edit(c echo.Context) error
+	ListByProjectID(c echo.Context) error
 }
 
 type sprintHandlerImpl struct {
@@ -80,4 +81,22 @@ func (h *sprintHandlerImpl) Edit(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, sprint)
+}
+
+func (h *sprintHandlerImpl) ListByProjectID(c echo.Context) error {
+	req := new(requests.ListSprintByProjectIDPathParam)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	sprints, err := h.sprintService.ListByProjectID(c.Request().Context(), req)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, sprints)
 }

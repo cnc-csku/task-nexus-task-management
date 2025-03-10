@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/cnc-csku/task-nexus-go-lib/utils/array"
+	"github.com/cnc-csku/task-nexus-go-lib/utils/conv"
 	"github.com/cnc-csku/task-nexus-go-lib/utils/errutils"
 	"github.com/cnc-csku/task-nexus/task-management/domain/exceptions"
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
@@ -17,6 +18,8 @@ import (
 type TaskService interface {
 	Create(ctx context.Context, req *requests.CreateTaskRequest, userID string) (*models.Task, *errutils.Error)
 	GetTaskDetail(ctx context.Context, req *requests.GetTaskDetailPathParam, userId string) (*responses.GetTaskDetailResponse, *errutils.Error)
+	ListEpicTasks(ctx context.Context, req *requests.ListEpicTasksPathParam, userId string) ([]*models.Task, *errutils.Error)
+	SearchTask(ctx context.Context, req *requests.SearchTaskParams, userId string) ([]responses.SearchTaskResponse, *errutils.Error)
 	UpdateDetail(ctx context.Context, req *requests.UpdateTaskDetailRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateStatus(ctx context.Context, req *requests.UpdateTaskStatusRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateApprovals(ctx context.Context, req *requests.UpdateTaskApprovalsRequest, userId string) (*models.Task, *errutils.Error)
@@ -294,6 +297,161 @@ func buildTaskComments(comments []*models.TaskComment, userMap map[string]string
 		})
 	}
 	return taskComments
+}
+
+func (s *taskServiceImpl) ListEpicTasks(ctx context.Context, req *requests.ListEpicTasksPathParam, userId string) ([]*models.Task, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
+	tasks, err := s.taskRepo.FindByProjectIDAndType(ctx, bsonProjectID, models.TaskTypeEpic)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	return tasks, nil
+}
+
+func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTaskParams, userId string) ([]responses.SearchTaskResponse, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	var bsonSprintID *bson.ObjectID
+	if req.SprintID != nil {
+		sprintID, err := bson.ObjectIDFromHex(*req.SprintID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		}
+		bsonSprintID = &sprintID
+	}
+
+	var bsonParentID *bson.ObjectID
+	if req.EpicTaskID != nil {
+		parentID, err := bson.ObjectIDFromHex(*req.EpicTaskID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		}
+		bsonParentID = &parentID
+
+		parentTask, err := s.taskRepo.FindByID(ctx, parentID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		} else if parentTask == nil {
+			return nil, errutils.NewError(exceptions.ErrParentTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task not found: %s", *req.EpicTaskID))
+		} else if parentTask.Type != models.TaskTypeEpic {
+			return nil, errutils.NewError(exceptions.ErrInvalidParentTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task type is not valid: %s", parentTask.Type))
+		}
+	}
+
+	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest)
+	}
+
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
+	userIDs := make([]bson.ObjectID, 0, len(req.UserIDs))
+	for _, userID := range req.UserIDs {
+		bsonUserID, err := bson.ObjectIDFromHex(userID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		}
+		userIDs = append(userIDs, bsonUserID)
+	}
+
+	tasks, err := s.taskRepo.Search(ctx, &repositories.SearchTaskRequest{
+		ProjectID:      bsonProjectID,
+		TaskTypes:      []models.TaskType{models.TaskTypeStory, models.TaskTypeTask, models.TaskTypeBug},
+		SprintID:       bsonSprintID,
+		EpicTaskID:     bsonParentID,
+		UserIDs:        userIDs,
+		Statuses:       req.Statuses,
+		IsDoneStatuses: getDoneStatuses(project),
+		SearchKeyword:  req.SearchKeyword,
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if len(tasks) == 0 {
+		return []responses.SearchTaskResponse{}, nil
+	}
+
+	parentTaskIDs := make([]bson.ObjectID, 0, len(tasks))
+	for _, task := range tasks {
+		if task.ParentID != nil {
+			parentTaskIDs = append(parentTaskIDs, *task.ParentID)
+		}
+	}
+
+	parentTasks, err := s.taskRepo.FindByIDs(ctx, parentTaskIDs)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	parentTasksMap := make(map[string]*string, len(parentTasks))
+	for _, parentTask := range parentTasks {
+		parentTasksMap[parentTask.ID.Hex()] = &parentTask.Title
+	}
+
+	response := make([]responses.SearchTaskResponse, 0, len(tasks))
+	for _, task := range tasks {
+		response = append(response, responses.SearchTaskResponse{
+			ID:       task.ID.Hex(),
+			TaskRef:  task.TaskRef,
+			Title:    task.Title,
+			ParentID: conv.BsonObjectIDPtrToStringPtr(task.ParentID),
+			ParentTitle: func() *string {
+				if task.ParentID == nil {
+					return nil
+				}
+				return parentTasksMap[task.ParentID.Hex()]
+			}(),
+			Type:          task.Type.String(),
+			Status:        task.Status,
+			Assignees:     task.Assignees,
+			ChildrenPoint: task.ChildrenPoint,
+			HasChildren:   task.HasChildren,
+			Sprint:        task.Sprint,
+		})
+	}
+
+	return response, nil
+}
+
+func getDoneStatuses(project *models.Project) []string {
+	isDoneStatuses := make([]string, 0)
+	for _, workflow := range project.Workflows {
+		if workflow.IsDone {
+			isDoneStatuses = append(isDoneStatuses, workflow.Status)
+		}
+	}
+	return isDoneStatuses
 }
 
 func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.UpdateTaskDetailRequest, userId string) (*models.Task, *errutils.Error) {

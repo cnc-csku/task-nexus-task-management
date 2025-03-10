@@ -7,15 +7,16 @@ import (
 
 type Router struct {
 	// Handlers
-	healthCheck rest.HealthCheckHandler
-	common      rest.CommonHandler
-	user        rest.UserHandler
-	project     rest.ProjectHandler
-	invitation  rest.InvitationHandler
-	workspace   rest.WorkspaceHandler
-	sprint      rest.SprintHandler
-	task        rest.TaskHandler
-	taskComment rest.TaskCommentHandler
+	healthCheck   rest.HealthCheckHandler
+	common        rest.CommonHandler
+	user          rest.UserHandler
+	project       rest.ProjectHandler
+	projectMember rest.ProjectMemberHandler
+	invitation    rest.InvitationHandler
+	workspace     rest.WorkspaceHandler
+	sprint        rest.SprintHandler
+	task          rest.TaskHandler
+	taskComment   rest.TaskCommentHandler
 
 	// Middlewares
 	authMiddleware middlewares.AuthMiddleware
@@ -27,6 +28,7 @@ func NewRouter(
 	common rest.CommonHandler,
 	user rest.UserHandler,
 	project rest.ProjectHandler,
+	projectMember rest.ProjectMemberHandler,
 	invitation rest.InvitationHandler,
 	workspace rest.WorkspaceHandler,
 	sprint rest.SprintHandler,
@@ -39,6 +41,7 @@ func NewRouter(
 		common:         common,
 		user:           user,
 		project:        project,
+		projectMember:  projectMember,
 		invitation:     invitation,
 		workspace:      workspace,
 		sprint:         sprint,

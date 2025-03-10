@@ -18,6 +18,7 @@ type Project struct {
 	Workflows           []ProjectWorkflow          `bson:"workflows" json:"workflows"`
 	AttributeTemplates  []ProjectAttributeTemplate `bson:"attributes_templates" json:"attributesTemplates"`
 	Positions           []string                   `bson:"positions" json:"positions"`
+	SetupStatus         ProjectStatus              `bson:"setup_status" json:"setupStatus"`
 	CreatedAt           time.Time                  `bson:"created_at" json:"createdAt"`
 	CreatedBy           bson.ObjectID              `bson:"created_by" json:"createdBy"`
 	UpdatedAt           time.Time                  `bson:"updated_at" json:"updatedAt"`
@@ -80,4 +81,27 @@ func GetDefaultPositions() []string {
 type ProjectAttributeTemplate struct {
 	Name string           `bson:"name" json:"name"`
 	Type KeyValuePairType `bson:"type" json:"type"`
+}
+
+type ProjectSetupStatus string
+
+const (
+	ProjectSetupStatusProjectCreated  ProjectSetupStatus = "PROJECT_CREATED"
+	ProjectSetupStatusPositionConfig  ProjectSetupStatus = "POSITION_CONFIGURATION"
+	ProjectSetupStatusOwnerConfig     ProjectSetupStatus = "OWNER_POSITION_CONFIGURATION"
+	ProjectSetupStatusWorkflowConfig  ProjectSetupStatus = "WORKFLOW_CONFIGURATION"
+	ProjectSetupStatusAttributeConfig ProjectSetupStatus = "ATTRIBUTE_TEMPLATE_CONFIGURATION"
+	ProjectSetupStatusCompleted       ProjectSetupStatus = "COMPLETED"
+)
+
+func (p ProjectSetupStatus) String() string {
+	return string(p)
+}
+
+func (p ProjectSetupStatus) IsValid() bool {
+	switch p {
+	case ProjectSetupStatusProjectCreated, ProjectSetupStatusPositionConfig, ProjectSetupStatusOwnerConfig, ProjectSetupStatusWorkflowConfig, ProjectSetupStatusAttributeConfig, ProjectSetupStatusCompleted:
+		return true
+	}
+	return false
 }

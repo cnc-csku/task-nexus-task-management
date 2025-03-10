@@ -40,3 +40,17 @@ type GetTaskDetailResponseTaskComment struct {
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
+
+type SearchTaskResponse struct {
+	ID            string                `json:"id"`
+	TaskRef       string                `json:"taskRef"`
+	Title         string                `json:"title"`
+	ParentID      *string               `json:"parentId"`
+	ParentTitle   *string               `json:"parentTitle"`
+	Type          string                `json:"type"`
+	Status        string                `json:"status"`
+	Assignees     []models.TaskAssignee `json:"assignees"`
+	ChildrenPoint int                   `json:"childrenPoint"`
+	HasChildren   bool                  `json:"hasChildren"`
+	Sprint        *models.TaskSprint    `json:"sprint"`
+}

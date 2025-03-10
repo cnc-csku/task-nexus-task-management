@@ -16,6 +16,7 @@ type SprintService interface {
 	Create(ctx context.Context, req *requests.CreateSprintRequest, userID string) (*responses.CreateSprintResponse, *errutils.Error)
 	GetByID(ctx context.Context, req *requests.GetSprintByIDRequest) (*models.Sprint, *errutils.Error)
 	Edit(ctx context.Context, req *requests.EditSprintRequest, userID string) (*responses.EditSprintResponse, *errutils.Error)
+	ListByProjectID(ctx context.Context, req *requests.ListSprintByProjectIDPathParam) ([]models.Sprint, *errutils.Error)
 }
 
 type sprintServiceImpl struct {
@@ -131,4 +132,18 @@ func (s *sprintServiceImpl) Edit(ctx context.Context, req *requests.EditSprintRe
 	return &responses.EditSprintResponse{
 		Message: "Sprint updated successfully",
 	}, nil
+}
+
+func (s *sprintServiceImpl) ListByProjectID(ctx context.Context, req *requests.ListSprintByProjectIDPathParam) ([]models.Sprint, *errutils.Error) {
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(err, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	sprints, err := s.sprintRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	return sprints, nil
 }

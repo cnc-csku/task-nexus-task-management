@@ -21,6 +21,8 @@ type Task struct {
 	ChildrenPoint int            `bson:"children_point" json:"childrenPoint"`
 	HasChildren   bool           `bson:"has_children" json:"hasChildren"`
 	Sprint        *TaskSprint    `bson:"sprint" json:"sprint"`
+	StartDate     *time.Time     `bson:"start_date" json:"startDate"`
+	DueDate       *time.Time     `bson:"due_date" json:"dueDate"`
 	CreatedAt     time.Time      `bson:"created_at" json:"createdAt"`
 	CreatedBy     bson.ObjectID  `bson:"created_by" json:"createdBy"`
 	UpdatedAt     time.Time      `bson:"updated_at" json:"updatedAt"`

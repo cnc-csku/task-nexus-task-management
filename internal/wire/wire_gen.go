@@ -38,6 +38,8 @@ func InitializeApp() *api.EchoAPI {
 	taskRepository := mongo.NewMongoTaskRepo(configConfig, client)
 	projectService := services.NewProjectService(userRepository, workspaceRepository, workspaceMemberRepository, projectRepository, projectMemberRepository, configConfig, taskRepository)
 	projectHandler := rest.NewProjectHandler(projectService)
+	projectMemberService := services.NewProjectMemberService(userRepository, projectRepository, projectMemberRepository)
+	projectMemberHandler := rest.NewProjectMemberHandler(projectMemberService)
 	invitationRepository := mongo.NewMongoInvitationRepo(configConfig, client)
 	invitationService := services.NewInvitationService(userRepository, workspaceRepository, invitationRepository, workspaceMemberRepository, configConfig)
 	invitationHandler := rest.NewInvitationHandler(invitationService)
@@ -51,7 +53,7 @@ func InitializeApp() *api.EchoAPI {
 	taskHandler := rest.NewTaskHandler(taskService)
 	taskCommentService := services.NewTaskCommentService(taskCommentRepository, taskRepository, projectRepository, projectMemberRepository)
 	taskCommentHandler := rest.NewTaskCommentHandler(taskCommentService)
-	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler, projectHandler, invitationHandler, workspaceHandler, sprintHandler, taskHandler, taskCommentHandler)
+	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler, projectHandler, projectMemberHandler, invitationHandler, workspaceHandler, sprintHandler, taskHandler, taskCommentHandler)
 	echoAPI := api.NewEchoAPI(context, configConfig, client, routerRouter)
 	return echoAPI
 }
