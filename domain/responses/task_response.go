@@ -16,7 +16,7 @@ type GetTaskDetailResponse struct {
 	ParentID           *bson.ObjectID                     `json:"parentId"`
 	Type               models.TaskType                    `json:"type"`
 	Status             string                             `json:"status"`
-	Priority           *models.TaskPriority               `json:"priority"`
+	Priority           models.TaskPriority                `json:"priority"`
 	Approvals          []models.TaskApproval              `json:"approvals"`
 	Assignees          []models.TaskAssignee              `json:"assignees"`
 	ChildrenPoint      int                                `json:"childrenPoint"`
