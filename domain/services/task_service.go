@@ -398,6 +398,7 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 		SprintID:       bsonSprintID,
 		EpicTaskID:     bsonParentID,
 		UserIDs:        userIDs,
+		Positions:      req.Positions,
 		Statuses:       req.Statuses,
 		IsDoneStatuses: getDoneStatuses(project),
 		SearchKeyword:  req.SearchKeyword,
