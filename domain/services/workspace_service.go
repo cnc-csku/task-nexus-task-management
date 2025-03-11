@@ -51,7 +51,7 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 	if isSetupWorkspace == nil {
 		err := w.globalSettingRepo.Set(ctx, &models.KeyValuePair{
 			Key:   constant.GlobalSettingKeyIsSetupWorkspace,
-			Type:  models.KeyValuePairTypeBool,
+			Type:  models.KeyValuePairTypeBoolean,
 			Value: false,
 		})
 
@@ -72,7 +72,7 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 	if isSetupOwner == nil {
 		err := w.globalSettingRepo.Set(ctx, &models.KeyValuePair{
 			Key:   constant.GlobalSettingKeyIsSetupOwner,
-			Type:  models.KeyValuePairTypeBool,
+			Type:  models.KeyValuePairTypeBoolean,
 			Value: false,
 		})
 
@@ -125,7 +125,7 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 	// Set is setup complete
 	err = w.globalSettingRepo.Set(ctx, &models.KeyValuePair{
 		Key:   constant.GlobalSettingKeyIsSetupWorkspace,
-		Type:  models.KeyValuePairTypeBool,
+		Type:  models.KeyValuePairTypeBoolean,
 		Value: true,
 	})
 	if err != nil {

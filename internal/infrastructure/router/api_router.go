@@ -81,6 +81,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		tasks.PUT("/:taskRef/approve", r.task.ApproveTask, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/assignees", r.task.UpdateAssignees, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/sprint", r.task.UpdateSprint, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/attributes", r.task.UpdateAttributes, r.authMiddleware.Middleware)
 
 		tasks.POST("/:taskRef/comments", r.taskComment.Create, r.authMiddleware.Middleware)
 	}

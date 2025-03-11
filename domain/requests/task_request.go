@@ -1,5 +1,7 @@
 package requests
 
+import "time"
+
 type CreateTaskRequest struct {
 	ProjectID   string  `json:"projectId" validate:"required"`
 	Title       string  `json:"title" validate:"required"`
@@ -18,6 +20,7 @@ type SearchTaskParams struct {
 	SprintID      *string  `query:"sprintId"`
 	EpicTaskID    *string  `query:"epicTaskId"`
 	UserIDs       []string `query:"userIds"`
+	Positions     []string `query:"positions"`
 	Statuses      []string `query:"statuses"`
 	SearchKeyword *string  `query:"searchKeyword"`
 }
@@ -27,11 +30,13 @@ type GetTaskDetailPathParam struct {
 }
 
 type UpdateTaskDetailRequest struct {
-	TaskRef     string  `param:"taskRef" validate:"required"`
-	Title       string  `json:"title" validate:"required"`
-	Description string  `json:"description"`
-	ParentID    *string `json:"parentId"`
-	Priority    string  `json:"priority"`
+	TaskRef     string     `param:"taskRef" validate:"required"`
+	Title       string     `json:"title" validate:"required"`
+	Description string     `json:"description"`
+	ParentID    *string    `json:"parentId"`
+	Priority    string     `json:"priority" validate:"required"`
+	StartDate   *time.Time `json:"startDate"`
+	DueDate     *time.Time `json:"dueDate"`
 }
 
 type UpdateTaskStatusRequest struct {
@@ -64,4 +69,14 @@ type UpdateTaskSprintRequest struct {
 	TaskRef           string   `param:"taskRef" validate:"required"`
 	CurrentSprintID   string   `json:"currentSprintId" validate:"required"`
 	PreviousSprintIDs []string `json:"previousSprintIds"`
+}
+
+type UpdateTaskAttributesRequest struct {
+	TaskRef    string                                 `param:"taskRef" validate:"required"`
+	Attributes []UpdateTaskAttributesRequestAttribute `json:"attributes" validate:"required,dive"`
+}
+
+type UpdateTaskAttributesRequestAttribute struct {
+	Key   string `json:"key" validate:"required"`
+	Value string `json:"value"`
 }

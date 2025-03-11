@@ -72,6 +72,12 @@ func (f taskFilter) WithUserIDs(userIDs []bson.ObjectID) {
 	}
 }
 
+func (f taskFilter) WithPositions(positions []string) {
+	f["assignees.position"] = bson.M{
+		"$in": positions,
+	}
+}
+
 func (f taskFilter) WithSearchKeyword(keyword string) {
 	f["$or"] = []bson.M{
 		{"task_ref": bson.M{"$regex": keyword, "$options": "i"}},
@@ -91,6 +97,8 @@ func (u taskUpdate) UpdateDetail(in *repositories.UpdateTaskDetailRequest) {
 		"description": in.Description,
 		"parent_id":   in.ParentID,
 		"priority":    in.Priority,
+		"start_date":  in.StartDate,
+		"due_date":    in.DueDate,
 		"updated_at":  time.Now(),
 		"updated_by":  in.UpdatedBy,
 	}
@@ -164,5 +172,21 @@ func (u taskUpdate) UpdateChildrenPoint(point int) {
 	u["$set"] = bson.M{
 		"children_point": point,
 		"updated_at":     time.Now(),
+	}
+}
+
+func (u taskUpdate) UpdateAttributes(in *repositories.UpdateTaskAttributesRequest) {
+	attrs := make([]bson.M, len(in.Attributes))
+	for i, a := range in.Attributes {
+		attrs[i] = bson.M{
+			"key":   a.Key,
+			"value": a.Value,
+		}
+	}
+
+	u["$set"] = bson.M{
+		"attributes": attrs,
+		"updated_at": time.Now(),
+		"updated_by": in.UpdatedBy,
 	}
 }

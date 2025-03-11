@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/cnc-csku/task-nexus-go-lib/utils/array"
 	"github.com/cnc-csku/task-nexus-go-lib/utils/conv"
@@ -26,6 +28,7 @@ type TaskService interface {
 	ApproveTask(ctx context.Context, req *requests.ApproveTaskRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateAssignees(ctx context.Context, req *requests.UpdateTaskAssigneesRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateSprint(ctx context.Context, req *requests.UpdateTaskSprintRequest, userId string) (*models.Task, *errutils.Error)
+	UpdateAttributes(ctx context.Context, req *requests.UpdateTaskAttributesRequest, userId string) (*models.Task, *errutils.Error)
 }
 
 type taskServiceImpl struct {
@@ -257,6 +260,9 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		ChildrenPoint:      task.ChildrenPoint,
 		HasChildren:        task.HasChildren,
 		Sprint:             task.Sprint,
+		Attributes:         task.Attributes,
+		StartDate:          task.StartDate,
+		DueDate:            task.DueDate,
 		CreatedAt:          task.CreatedAt,
 		CreatedBy:          task.CreatedBy.Hex(),
 		CreatorDisplayName: creator.DisplayName,
@@ -363,6 +369,15 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 		}
 	}
 
+	userIDs := make([]bson.ObjectID, 0, len(req.UserIDs))
+	for _, userID := range req.UserIDs {
+		bsonUserID, err := bson.ObjectIDFromHex(userID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		}
+		userIDs = append(userIDs, bsonUserID)
+	}
+
 	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
@@ -375,15 +390,6 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if member == nil {
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
-	}
-
-	userIDs := make([]bson.ObjectID, 0, len(req.UserIDs))
-	for _, userID := range req.UserIDs {
-		bsonUserID, err := bson.ObjectIDFromHex(userID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
-		}
-		userIDs = append(userIDs, bsonUserID)
 	}
 
 	tasks, err := s.taskRepo.Search(ctx, &repositories.SearchTaskRequest{
@@ -402,21 +408,9 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 		return []responses.SearchTaskResponse{}, nil
 	}
 
-	parentTaskIDs := make([]bson.ObjectID, 0, len(tasks))
-	for _, task := range tasks {
-		if task.ParentID != nil {
-			parentTaskIDs = append(parentTaskIDs, *task.ParentID)
-		}
-	}
-
-	parentTasks, err := s.taskRepo.FindByIDs(ctx, parentTaskIDs)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	}
-
-	parentTasksMap := make(map[string]*string, len(parentTasks))
-	for _, parentTask := range parentTasks {
-		parentTasksMap[parentTask.ID.Hex()] = &parentTask.Title
+	parentTasksMap, serviceErr := getParentTasksMap(ctx, s.taskRepo, tasks)
+	if serviceErr != nil {
+		return nil, serviceErr
 	}
 
 	response := make([]responses.SearchTaskResponse, 0, len(tasks))
@@ -454,6 +448,27 @@ func getDoneStatuses(project *models.Project) []string {
 	return isDoneStatuses
 }
 
+func getParentTasksMap(ctx context.Context, taskRepo repositories.TaskRepository, tasks []*models.Task) (map[string]*string, *errutils.Error) {
+	parentTaskIDs := make([]bson.ObjectID, 0, len(tasks))
+	for _, task := range tasks {
+		if task.ParentID != nil {
+			parentTaskIDs = append(parentTaskIDs, *task.ParentID)
+		}
+	}
+
+	parentTasks, err := taskRepo.FindByIDs(ctx, parentTaskIDs)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	parentTasksMap := make(map[string]*string, len(parentTasks))
+	for _, parentTask := range parentTasks {
+		parentTasksMap[parentTask.ID.Hex()] = &parentTask.Title
+	}
+
+	return parentTasksMap, nil
+}
+
 func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.UpdateTaskDetailRequest, userId string) (*models.Task, *errutils.Error) {
 	bsonUserID, err := bson.ObjectIDFromHex(userId)
 	if err != nil {
@@ -480,7 +495,7 @@ func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.Update
 	}
 
 	var (
-		nullableBsonTaskParentID *bson.ObjectID
+		nullableBsonTaskParentID = task.ParentID
 		isParentTaskChanged      = task.ParentID == nil && req.ParentID != nil || req.ParentID != nil && task.ParentID != nil && *req.ParentID != task.ParentID.Hex()
 		isParentTaskRemoved      = req.ParentID == nil && task.ParentID != nil
 	)
@@ -554,6 +569,8 @@ func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.Update
 		if serviceErr != nil {
 			return nil, serviceErr
 		}
+
+		nullableBsonTaskParentID = nil
 	}
 
 	updatedTask, err := s.taskRepo.UpdateDetail(ctx, &repositories.UpdateTaskDetailRequest{
@@ -562,6 +579,8 @@ func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.Update
 		Description: req.Description,
 		ParentID:    nullableBsonTaskParentID,
 		Priority:    req.Priority,
+		StartDate:   req.StartDate,
+		DueDate:     req.DueDate,
 		UpdatedBy:   bsonUserID,
 	})
 	if err != nil {
@@ -983,6 +1002,86 @@ func (s *taskServiceImpl) UpdateSprint(ctx context.Context, req *requests.Update
 		CurrentSprintID:   currentSprintID,
 		PreviousSprintIDs: previousSprintIDs,
 		UpdatedBy:         bsonUserID,
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	return updatedTask, nil
+}
+
+func (s *taskServiceImpl) UpdateAttributes(ctx context.Context, req *requests.UpdateTaskAttributesRequest, userId string) (*models.Task, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	task, err := s.taskRepo.FindByTaskRef(ctx, req.TaskRef)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if task == nil {
+		return nil, errutils.NewError(exceptions.ErrTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Task not found: %s", req.TaskRef))
+	}
+
+	project, err := s.projectRepo.FindByProjectID(ctx, task.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Project not found: %s", task.ProjectID.Hex()))
+	}
+
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, task.ProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
+	attributeTemplateMap := make(map[string]models.ProjectAttributeTemplate)
+	for _, attributeTemplate := range project.AttributeTemplates {
+		attributeTemplateMap[attributeTemplate.Name] = attributeTemplate
+	}
+
+	attributes := make([]models.TaskAttribute, 0, len(req.Attributes))
+	for _, attribute := range req.Attributes {
+		attributeTemplate, ok := attributeTemplateMap[attribute.Key]
+		if !ok {
+			return nil, errutils.NewError(exceptions.ErrInvalidAttributeKey, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid attribute key: %s", attribute.Key))
+		}
+
+		var value any
+		switch attributeTemplate.Type {
+		case models.KeyValuePairTypeString:
+			value = attribute.Value
+		case models.KeyValuePairTypeNumber:
+			value, err = strconv.Atoi(attribute.Value)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInvalidAttributeType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid attribute type: %s", attributeTemplate.Type))
+			}
+		case models.KeyValuePairTypeDate:
+			value, err = time.Parse(time.RFC3339, attribute.Value)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInvalidAttributeType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid attribute type: %s", attributeTemplate.Type))
+			}
+		case models.KeyValuePairTypeBoolean:
+			value, err = strconv.ParseBool(attribute.Value)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInvalidAttributeType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid attribute type: %s", attributeTemplate.Type))
+			}
+		default:
+			return nil, errutils.NewError(exceptions.ErrInvalidAttributeType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid attribute type: %s", attributeTemplate.Type))
+		}
+
+		attributes = append(attributes, models.TaskAttribute{
+			Key:   attribute.Key,
+			Value: value,
+		})
+	}
+
+	updatedTask, err := s.taskRepo.UpdateAttributes(ctx, &repositories.UpdateTaskAttributesRequest{
+		ID:         task.ID,
+		Attributes: attributes,
+		UpdatedBy:  bsonUserID,
 	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())

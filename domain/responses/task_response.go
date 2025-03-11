@@ -22,6 +22,9 @@ type GetTaskDetailResponse struct {
 	ChildrenPoint      int                                `json:"childrenPoint"`
 	HasChildren        bool                               `json:"hasChildren"`
 	Sprint             *models.TaskSprint                 `json:"sprint"`
+	Attributes         []models.TaskAttribute             `json:"attributes"`
+	StartDate          *time.Time                         `json:"startDate"`
+	DueDate            *time.Time                         `json:"dueDate"`
 	CreatedAt          time.Time                          `json:"createdAt"`
 	CreatedBy          string                             `json:"createdBy"`
 	CreatorDisplayName string                             `json:"creatorDisplayName"`
