@@ -9,10 +9,10 @@ type KeyValuePair struct {
 type KeyValuePairType string
 
 const (
-	KeyValuePairTypeString KeyValuePairType = "STRING"
-	KeyValuePairTypeNumber KeyValuePairType = "NUMBER"
-	KeyValuePairTypeBool   KeyValuePairType = "BOOLEAN"
-	KeyValuePairTypeDate   KeyValuePairType = "DATE"
+	KeyValuePairTypeString  KeyValuePairType = "STRING"
+	KeyValuePairTypeNumber  KeyValuePairType = "NUMBER"
+	KeyValuePairTypeBoolean KeyValuePairType = "BOOLEAN"
+	KeyValuePairTypeDate    KeyValuePairType = "DATE"
 )
 
 func (k KeyValuePairType) String() string {
@@ -21,7 +21,7 @@ func (k KeyValuePairType) String() string {
 
 func (k KeyValuePairType) IsValid() bool {
 	switch k {
-	case KeyValuePairTypeString, KeyValuePairTypeNumber, KeyValuePairTypeBool, KeyValuePairTypeDate:
+	case KeyValuePairTypeString, KeyValuePairTypeNumber, KeyValuePairTypeBoolean, KeyValuePairTypeDate:
 		return true
 	}
 	return false

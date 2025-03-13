@@ -22,6 +22,7 @@ type TaskHandler interface {
 	ApproveTask(c echo.Context) error
 	UpdateAssignees(c echo.Context) error
 	UpdateSprint(c echo.Context) error
+	UpdateAttributes(c echo.Context) error
 }
 
 type taskHandlerImpl struct {
@@ -217,6 +218,25 @@ func (h *taskHandlerImpl) UpdateSprint(c echo.Context) error {
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
 	resp, err := h.taskService.UpdateSprint(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) UpdateAttributes(c echo.Context) error {
+	req := new(requests.UpdateTaskAttributesRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.UpdateAttributes(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}

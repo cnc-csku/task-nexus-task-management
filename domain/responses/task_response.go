@@ -16,12 +16,15 @@ type GetTaskDetailResponse struct {
 	ParentID           *bson.ObjectID                     `json:"parentId"`
 	Type               models.TaskType                    `json:"type"`
 	Status             string                             `json:"status"`
-	Priority           *models.TaskPriority               `json:"priority"`
+	Priority           models.TaskPriority                `json:"priority"`
 	Approvals          []models.TaskApproval              `json:"approvals"`
 	Assignees          []models.TaskAssignee              `json:"assignees"`
 	ChildrenPoint      int                                `json:"childrenPoint"`
 	HasChildren        bool                               `json:"hasChildren"`
 	Sprint             *models.TaskSprint                 `json:"sprint"`
+	Attributes         []models.TaskAttribute             `json:"attributes"`
+	StartDate          *time.Time                         `json:"startDate"`
+	DueDate            *time.Time                         `json:"dueDate"`
 	CreatedAt          time.Time                          `json:"createdAt"`
 	CreatedBy          string                             `json:"createdBy"`
 	CreatorDisplayName string                             `json:"creatorDisplayName"`

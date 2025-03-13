@@ -7,26 +7,27 @@ import (
 )
 
 type Task struct {
-	ID            bson.ObjectID  `bson:"_id" json:"id"`
-	TaskRef       string         `bson:"task_ref" json:"taskRef"`
-	ProjectID     bson.ObjectID  `bson:"project_id" json:"projectId"`
-	Title         string         `bson:"title" json:"title"`
-	Description   string         `bson:"description" json:"description"`
-	ParentID      *bson.ObjectID `bson:"parent_id" json:"parentId"`
-	Type          TaskType       `bson:"type" json:"type"`
-	Status        string         `bson:"status" json:"status"`
-	Priority      *TaskPriority  `bson:"priority" json:"priority"`
-	Approvals     []TaskApproval `bson:"approvals" json:"approvals"`
-	Assignees     []TaskAssignee `bson:"assignees" json:"assignees"`
-	ChildrenPoint int            `bson:"children_point" json:"childrenPoint"`
-	HasChildren   bool           `bson:"has_children" json:"hasChildren"`
-	Sprint        *TaskSprint    `bson:"sprint" json:"sprint"`
-	StartDate     *time.Time     `bson:"start_date" json:"startDate"`
-	DueDate       *time.Time     `bson:"due_date" json:"dueDate"`
-	CreatedAt     time.Time      `bson:"created_at" json:"createdAt"`
-	CreatedBy     bson.ObjectID  `bson:"created_by" json:"createdBy"`
-	UpdatedAt     time.Time      `bson:"updated_at" json:"updatedAt"`
-	UpdatedBy     bson.ObjectID  `bson:"updated_by" json:"updatedBy"`
+	ID            bson.ObjectID   `bson:"_id" json:"id"`
+	TaskRef       string          `bson:"task_ref" json:"taskRef"`
+	ProjectID     bson.ObjectID   `bson:"project_id" json:"projectId"`
+	Title         string          `bson:"title" json:"title"`
+	Description   string          `bson:"description" json:"description"`
+	ParentID      *bson.ObjectID  `bson:"parent_id" json:"parentId"`
+	Type          TaskType        `bson:"type" json:"type"`
+	Status        string          `bson:"status" json:"status"`
+	Priority      TaskPriority    `bson:"priority" json:"priority"`
+	Approvals     []TaskApproval  `bson:"approvals" json:"approvals"`
+	Assignees     []TaskAssignee  `bson:"assignees" json:"assignees"`
+	ChildrenPoint int             `bson:"children_point" json:"childrenPoint"`
+	HasChildren   bool            `bson:"has_children" json:"hasChildren"`
+	Sprint        *TaskSprint     `bson:"sprint" json:"sprint"`
+	Attributes    []TaskAttribute `bson:"attributes" json:"attributes"`
+	StartDate     *time.Time      `bson:"start_date" json:"startDate"`
+	DueDate       *time.Time      `bson:"due_date" json:"dueDate"`
+	CreatedAt     time.Time       `bson:"created_at" json:"createdAt"`
+	CreatedBy     bson.ObjectID   `bson:"created_by" json:"createdBy"`
+	UpdatedAt     time.Time       `bson:"updated_at" json:"updatedAt"`
+	UpdatedBy     bson.ObjectID   `bson:"updated_by" json:"updatedBy"`
 }
 
 type TaskType string
@@ -86,4 +87,9 @@ type TaskAssignee struct {
 type TaskSprint struct {
 	PreviousSprintIDs []bson.ObjectID `bson:"previous_sprint_ids" json:"previousSprintIds"`
 	CurrentSprintID   bson.ObjectID   `bson:"current_sprint_id" json:"currentSprintId"`
+}
+
+type TaskAttribute struct {
+	Key   string `bson:"key" json:"key"`
+	Value any    `bson:"value" json:"value"`
 }

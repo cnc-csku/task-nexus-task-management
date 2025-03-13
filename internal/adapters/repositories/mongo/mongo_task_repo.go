@@ -36,6 +36,7 @@ func (m *mongoTaskRepo) Create(ctx context.Context, task *repositories.CreateTas
 		ParentID:    task.ParentID,
 		Type:        task.Type,
 		Status:      task.Status,
+		Priority:    models.TaskPriorityMedium,
 		Sprint:      task.Sprint,
 		CreatedAt:   time.Now(),
 		CreatedBy:   task.CreatedBy,
@@ -303,7 +304,11 @@ func (m *mongoTaskRepo) Search(ctx context.Context, in *repositories.SearchTaskR
 		f.WithUserIDs(in.UserIDs)
 	}
 
-	if in.Statuses != nil {
+	if len(in.Positions) > 0 {
+		f.WithPositions(in.Positions)
+	}
+
+	if len(in.Statuses) > 0 {
 		f.WithStatuses(in.Statuses)
 	}
 
@@ -322,4 +327,19 @@ func (m *mongoTaskRepo) Search(ctx context.Context, in *repositories.SearchTaskR
 	}
 
 	return tasks, nil
+}
+
+func (m *mongoTaskRepo) UpdateAttributes(ctx context.Context, in *repositories.UpdateTaskAttributesRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateAttributes(in)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
 }

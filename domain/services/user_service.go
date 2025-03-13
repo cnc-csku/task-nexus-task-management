@@ -267,7 +267,7 @@ func (u *userServiceImpl) SetupFirstUser(ctx context.Context, req *requests.Regi
 	if isSetupOwner == nil {
 		err := u.globalSettingRepo.Set(ctx, &models.KeyValuePair{
 			Key:   constant.GlobalSettingKeyIsSetupOwner,
-			Type:  models.KeyValuePairTypeBool,
+			Type:  models.KeyValuePairTypeBoolean,
 			Value: false,
 		})
 
@@ -288,7 +288,7 @@ func (u *userServiceImpl) SetupFirstUser(ctx context.Context, req *requests.Regi
 	// Set is setup owner
 	err = u.globalSettingRepo.Set(ctx, &models.KeyValuePair{
 		Key:   constant.GlobalSettingKeyIsSetupOwner,
-		Type:  models.KeyValuePairTypeBool,
+		Type:  models.KeyValuePairTypeBoolean,
 		Value: true,
 	})
 

@@ -10,4 +10,5 @@ var (
 	ErrInvalidTaskPriority              = errors.New("invalid task priority")
 	ErrInvalidTaskStatus                = errors.New("invalid task status")
 	ErrInvalidSearchTasksSearchFilterBy = errors.New("invalid search tasks search filter by")
+	ErrInvalidAttributeKey              = errors.New("invalid attribute key")
 )

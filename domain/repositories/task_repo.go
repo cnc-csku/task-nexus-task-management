@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"time"
 
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -24,6 +25,7 @@ type TaskRepository interface {
 	UpdateChildrenPoint(ctx context.Context, in *UpdateTaskChildrenPointRequest) (*models.Task, error)
 	FindByProjectIDAndType(ctx context.Context, projectID bson.ObjectID, taskType models.TaskType) ([]*models.Task, error)
 	Search(ctx context.Context, in *SearchTaskRequest) ([]*models.Task, error)
+	UpdateAttributes(ctx context.Context, in *UpdateTaskAttributesRequest) (*models.Task, error)
 }
 
 type CreateTaskRequest struct {
@@ -43,7 +45,9 @@ type UpdateTaskDetailRequest struct {
 	Title       string
 	Description string
 	ParentID    *bson.ObjectID
-	Priority    *string
+	Priority    string
+	StartDate   *time.Time
+	DueDate     *time.Time
 	UpdatedBy   bson.ObjectID
 }
 
@@ -104,7 +108,14 @@ type SearchTaskRequest struct {
 	SprintID       *bson.ObjectID
 	EpicTaskID     *bson.ObjectID
 	UserIDs        []bson.ObjectID
+	Positions      []string
 	Statuses       []string
 	IsDoneStatuses []string
 	SearchKeyword  *string
+}
+
+type UpdateTaskAttributesRequest struct {
+	ID         bson.ObjectID
+	Attributes []models.TaskAttribute
+	UpdatedBy  bson.ObjectID
 }
