@@ -24,7 +24,7 @@ type CreateSprintRequest struct {
 type UpdateSprintRequest struct {
 	ID         bson.ObjectID
 	Title      string
-	SprintGoal *string
+	SprintGoal string
 	StartDate  *time.Time
 	EndDate    *time.Time
 	UpdatedBy  bson.ObjectID

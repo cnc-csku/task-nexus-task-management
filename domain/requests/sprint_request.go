@@ -14,7 +14,7 @@ type EditSprintRequest struct {
 	ProjectID  string     `param:"projectId" validate:"required"`
 	SprintID   string     `param:"sprintId" validate:"required"`
 	Title      string     `json:"title" validate:"required"`
-	SprintGoal *string    `json:"sprintGoal"`
+	SprintGoal string     `json:"sprintGoal"`
 	Duration   *int       `json:"duration"`
 	StartDate  *time.Time `json:"startDate"`
 	EndDate    *time.Time `json:"endDate"`
