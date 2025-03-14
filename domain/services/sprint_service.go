@@ -55,7 +55,7 @@ func (s *sprintServiceImpl) Create(ctx context.Context, req *requests.CreateSpri
 	// should be in transaction, to be implemented
 	sprint := &repositories.CreateSprintRequest{
 		ProjectID: bsonProjectID,
-		Title:     fmt.Sprintf("Sprint %d", project.SprintRunningNumber),
+		Title:     fmt.Sprintf("%s Sprint %d", project.Name, project.SprintRunningNumber),
 		CreatedBy: bsonUserID,
 	}
 
