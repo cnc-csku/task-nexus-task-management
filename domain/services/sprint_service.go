@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/cnc-csku/task-nexus-go-lib/utils/errutils"
+	"github.com/cnc-csku/task-nexus/task-management/domain/exceptions"
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
 	"github.com/cnc-csku/task-nexus/task-management/domain/requests"
@@ -37,35 +38,35 @@ func NewSprintService(
 func (s *sprintServiceImpl) Create(ctx context.Context, req *requests.CreateSprintRequest, userID string) (*responses.CreateSprintResponse, *errutils.Error) {
 	bsonUserID, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.BadRequest).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.BadRequest).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
 	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if project == nil {
-		return nil, errutils.NewError(fmt.Errorf("project not found"), errutils.NotFound).WithDebugMessage("project not found")
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest).WithDebugMessage("project not found")
 	}
 
 	// should be in transaction, to be implemented
 	sprint := &repositories.CreateSprintRequest{
 		ProjectID: bsonProjectID,
-		Title:     fmt.Sprintf("Sprint %d", project.SprintRunningNumber),
+		Title:     fmt.Sprintf("%s Sprint %d", project.Name, project.SprintRunningNumber),
 		CreatedBy: bsonUserID,
 	}
 
 	createdSprint, err := s.sprintRepo.Create(ctx, sprint)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
 	err = s.projectRepo.IncrementSprintRunningNumber(ctx, bsonProjectID)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
 	return &responses.CreateSprintResponse{
@@ -80,14 +81,14 @@ func (s *sprintServiceImpl) Create(ctx context.Context, req *requests.CreateSpri
 func (s *sprintServiceImpl) GetByID(ctx context.Context, req *requests.GetSprintByIDRequest) (*models.Sprint, *errutils.Error) {
 	bsonSprintID, err := bson.ObjectIDFromHex(req.SprintID)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.BadRequest).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
 	sprint, err := s.sprintRepo.FindByID(ctx, bsonSprintID)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if sprint == nil {
-		return nil, errutils.NewError(fmt.Errorf("sprint not found"), errutils.NotFound).WithDebugMessage("sprint not found")
+		return nil, errutils.NewError(exceptions.ErrSprintNotFound, errutils.NotFound).WithDebugMessage("sprint not found")
 	}
 
 	return sprint, nil
@@ -96,11 +97,18 @@ func (s *sprintServiceImpl) GetByID(ctx context.Context, req *requests.GetSprint
 func (s *sprintServiceImpl) Edit(ctx context.Context, req *requests.EditSprintRequest, userID string) (*responses.EditSprintResponse, *errutils.Error) {
 	bsonUserID, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.BadRequest).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 	bsonSprintID, err := bson.ObjectIDFromHex(req.SprintID)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.BadRequest).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	sprint, err := s.sprintRepo.FindByID(ctx, bsonSprintID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if sprint == nil {
+		return nil, errutils.NewError(exceptions.ErrSprintNotFound, errutils.NotFound).WithDebugMessage("sprint not found")
 	}
 
 	var (
@@ -109,7 +117,7 @@ func (s *sprintServiceImpl) Edit(ctx context.Context, req *requests.EditSprintRe
 	)
 	if req.Duration != nil {
 		if req.StartDate == nil {
-			return nil, errutils.NewError(fmt.Errorf("start date is required when duration is provided"), errutils.BadRequest).WithDebugMessage("start date is required when duration is provided")
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage("start date is required")
 		}
 		computedEndDate := req.StartDate.AddDate(0, 0, int(*req.Duration))
 		endDate = &computedEndDate
@@ -126,7 +134,7 @@ func (s *sprintServiceImpl) Edit(ctx context.Context, req *requests.EditSprintRe
 
 	err = s.sprintRepo.Update(ctx, sprintUpdateRequest)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
 	return &responses.EditSprintResponse{
@@ -137,12 +145,19 @@ func (s *sprintServiceImpl) Edit(ctx context.Context, req *requests.EditSprintRe
 func (s *sprintServiceImpl) ListByProjectID(ctx context.Context, req *requests.ListSprintByProjectIDPathParam) ([]models.Sprint, *errutils.Error) {
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.BadRequest).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest).WithDebugMessage("project not found")
 	}
 
 	sprints, err := s.sprintRepo.FindByProjectID(ctx, bsonProjectID)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
 	return sprints, nil
