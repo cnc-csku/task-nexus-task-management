@@ -67,13 +67,13 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.PUT("/:projectId/members/position", r.projectMember.UpdatePosition, r.authMiddleware.Middleware)
 	}
 
-	tasks := api.Group("/tasks/v1")
+	tasks := api.Group("/projects/v1/:projectId/tasks/v1")
 	{
 		tasks.POST("", r.task.Create, r.authMiddleware.Middleware)
 		tasks.GET("/:taskRef", r.task.GetTaskDetail, r.authMiddleware.Middleware)
 
-		tasks.GET("/projects/:projectId/epic", r.task.ListEpicTasks, r.authMiddleware.Middleware)
-		tasks.GET("/projects/:projectId", r.task.SearchTask, r.authMiddleware.Middleware)
+		tasks.GET("/epic", r.task.ListEpicTasks, r.authMiddleware.Middleware)
+		tasks.GET("", r.task.SearchTask, r.authMiddleware.Middleware)
 
 		tasks.PUT("/:taskRef/detail", r.task.UpdateDetail, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/status", r.task.UpdateStatus, r.authMiddleware.Middleware)

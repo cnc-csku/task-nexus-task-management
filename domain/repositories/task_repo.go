@@ -13,6 +13,7 @@ type TaskRepository interface {
 	FindByID(ctx context.Context, id bson.ObjectID) (*models.Task, error)
 	FindByIDs(ctx context.Context, ids []bson.ObjectID) ([]*models.Task, error)
 	FindByTaskRef(ctx context.Context, taskRef string) (*models.Task, error)
+	FindByTaskRefAndProjectID(ctx context.Context, taskRef string, projectID bson.ObjectID) (*models.Task, error)
 	UpdateDetail(ctx context.Context, in *UpdateTaskDetailRequest) (*models.Task, error)
 	UpdateStatus(ctx context.Context, in *UpdateTaskStatusRequest) (*models.Task, error)
 	UpdateApprovals(ctx context.Context, in *UpdateTaskApprovalsRequest) (*models.Task, error)

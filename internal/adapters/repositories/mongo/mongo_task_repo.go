@@ -105,6 +105,24 @@ func (m *mongoTaskRepo) FindByTaskRef(ctx context.Context, taskRef string) (*mod
 	return task, nil
 }
 
+func (m *mongoTaskRepo) FindByTaskRefAndProjectID(ctx context.Context, taskRef string, projectID bson.ObjectID) (*models.Task, error) {
+	task := new(models.Task)
+
+	f := NewTaskFilter()
+	f.WithTaskRef(taskRef)
+	f.WithProjectID(projectID)
+
+	err := m.collection.FindOne(ctx, f).Decode(task)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return task, nil
+}
+
 func (m *mongoTaskRepo) UpdateDetail(ctx context.Context, in *repositories.UpdateTaskDetailRequest) (*models.Task, error) {
 	f := NewTaskFilter()
 	f.WithID(in.ID)
