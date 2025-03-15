@@ -350,13 +350,20 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
-	var bsonSprintID *bson.ObjectID
+	var (
+		bsonSprintID       *bson.ObjectID
+		isTaskWithNoSprint bool
+	)
 	if req.SprintID != nil {
-		sprintID, err := bson.ObjectIDFromHex(*req.SprintID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		if *req.SprintID == constant.SearchTaskParamsTaskBacklog {
+			isTaskWithNoSprint = true
+		} else {
+			sprintID, err := bson.ObjectIDFromHex(*req.SprintID)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+			}
+			bsonSprintID = &sprintID
 		}
-		bsonSprintID = &sprintID
 	}
 
 	var (
@@ -408,16 +415,17 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 	}
 
 	tasks, err := s.taskRepo.Search(ctx, &repositories.SearchTaskRequest{
-		ProjectID:        bsonProjectID,
-		TaskTypes:        []models.TaskType{models.TaskTypeStory, models.TaskTypeTask, models.TaskTypeBug},
-		SprintID:         bsonSprintID,
-		EpicTaskID:       bsonParentID,
-		IsTaskWithNoEpic: isTaskWithNoEpic,
-		UserIDs:          userIDs,
-		Positions:        req.Positions,
-		Statuses:         req.Statuses,
-		IsDoneStatuses:   getDoneStatuses(project),
-		SearchKeyword:    req.SearchKeyword,
+		ProjectID:          bsonProjectID,
+		TaskTypes:          []models.TaskType{models.TaskTypeStory, models.TaskTypeTask, models.TaskTypeBug},
+		SprintID:           bsonSprintID,
+		IsTaskWithNoSprint: isTaskWithNoSprint,
+		EpicTaskID:         bsonParentID,
+		IsTaskWithNoEpic:   isTaskWithNoEpic,
+		UserIDs:            userIDs,
+		Positions:          req.Positions,
+		Statuses:           req.Statuses,
+		IsDoneStatuses:     getDoneStatuses(project),
+		SearchKeyword:      req.SearchKeyword,
 	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())

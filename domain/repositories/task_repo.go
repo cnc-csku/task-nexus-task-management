@@ -117,16 +117,17 @@ type UpdateTaskChildrenPointRequest struct {
 }
 
 type SearchTaskRequest struct {
-	ProjectID        bson.ObjectID
-	TaskTypes        []models.TaskType
-	SprintID         *bson.ObjectID
-	EpicTaskID       *bson.ObjectID
-	IsTaskWithNoEpic bool
-	UserIDs          []bson.ObjectID
-	Positions        []string
-	Statuses         []string
-	IsDoneStatuses   []string
-	SearchKeyword    *string
+	ProjectID          bson.ObjectID
+	TaskTypes          []models.TaskType
+	SprintID           *bson.ObjectID
+	IsTaskWithNoSprint bool
+	EpicTaskID         *bson.ObjectID
+	IsTaskWithNoEpic   bool
+	UserIDs            []bson.ObjectID
+	Positions          []string
+	Statuses           []string
+	IsDoneStatuses     []string
+	SearchKeyword      *string
 }
 
 type UpdateTaskAttributesRequest struct {
