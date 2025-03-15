@@ -46,7 +46,7 @@ func InitializeApp() *api.EchoAPI {
 	workspaceService := services.NewWorkspaceService(workspaceRepository, globalSettingRepository, userRepository, workspaceMemberRepository)
 	workspaceHandler := rest.NewWorkspaceHandler(workspaceService)
 	sprintRepository := mongo.NewMongoSprintRepo(configConfig, client)
-	sprintService := services.NewSprintService(sprintRepository, projectRepository)
+	sprintService := services.NewSprintService(sprintRepository, projectRepository, taskRepository)
 	sprintHandler := rest.NewSprintHandler(sprintService)
 	taskCommentRepository := mongo.NewMongoTaskCommentRepo(configConfig, client)
 	taskService := services.NewTaskService(taskRepository, projectRepository, projectMemberRepository, sprintRepository, taskCommentRepository, userRepository)

@@ -341,7 +341,7 @@ func (m *mongoTaskRepo) Search(ctx context.Context, in *repositories.SearchTaskR
 	f.WithTypes(in.TaskTypes)
 
 	if in.SprintID != nil {
-		f.WithSprintID(*in.SprintID)
+		f.WithCurrentSprintID(*in.SprintID)
 	}
 
 	if in.IsTaskWithNoSprint {
@@ -398,4 +398,23 @@ func (m *mongoTaskRepo) UpdateAttributes(ctx context.Context, in *repositories.U
 	}
 
 	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) FindBySprintID(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithCurrentSprintID(sprintID)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }

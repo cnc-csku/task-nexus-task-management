@@ -1112,25 +1112,10 @@ func (s *taskServiceImpl) UpdateSprint(ctx context.Context, req *requests.Update
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
-	previousSprintIDs := make([]bson.ObjectID, 0, len(req.PreviousSprintIDs))
-	for _, previousSprintID := range req.PreviousSprintIDs {
-		bsonPreviousSprintID, err := bson.ObjectIDFromHex(previousSprintID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
-		}
-
-		previousSprintIDs = append(previousSprintIDs, bsonPreviousSprintID)
-	}
-
-	if task.Sprint == nil {
-
-	}
-
 	updatedTask, err := s.taskRepo.UpdateSprint(ctx, &repositories.UpdateTaskSprintRequest{
-		ID:                task.ID,
-		CurrentSprintID:   currentSprintID,
-		PreviousSprintIDs: previousSprintIDs,
-		UpdatedBy:         bsonUserID,
+		ID:              task.ID,
+		CurrentSprintID: currentSprintID,
+		UpdatedBy:       bsonUserID,
 	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
@@ -1139,8 +1124,8 @@ func (s *taskServiceImpl) UpdateSprint(ctx context.Context, req *requests.Update
 	return updatedTask, nil
 }
 
-func (s *taskServiceImpl) UpdateAttributes(ctx context.Context, req *requests.UpdateTaskAttributesRequest, userId string) (*models.Task, *errutils.Error) {
-	bsonUserID, err := bson.ObjectIDFromHex(userId)
+func (s *taskServiceImpl) UpdateAttributes(ctx context.Context, req *requests.UpdateTaskAttributesRequest, userID string) (*models.Task, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}

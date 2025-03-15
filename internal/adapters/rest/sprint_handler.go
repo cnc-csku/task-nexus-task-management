@@ -3,6 +3,7 @@ package rest
 import (
 	"net/http"
 
+	"github.com/cnc-csku/task-nexus-go-lib/utils/errutils"
 	"github.com/cnc-csku/task-nexus-go-lib/utils/tokenutils"
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/requests"
@@ -15,6 +16,7 @@ type SprintHandler interface {
 	GetByID(c echo.Context) error
 	Edit(c echo.Context) error
 	List(c echo.Context) error
+	CompleteSprint(c echo.Context) error
 }
 
 type sprintHandlerImpl struct {
@@ -99,4 +101,23 @@ func (h *sprintHandlerImpl) List(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, sprints)
+}
+
+func (h *sprintHandlerImpl) CompleteSprint(c echo.Context) error {
+	req := new(requests.CompleteSprintRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.sprintService.CompleteSprint(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }

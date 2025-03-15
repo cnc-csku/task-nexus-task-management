@@ -29,6 +29,7 @@ type TaskRepository interface {
 	FindByProjectIDAndType(ctx context.Context, projectID bson.ObjectID, taskType models.TaskType) ([]*models.Task, error)
 	Search(ctx context.Context, in *SearchTaskRequest) ([]*models.Task, error)
 	UpdateAttributes(ctx context.Context, in *UpdateTaskAttributesRequest) (*models.Task, error)
+	FindBySprintID(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error)
 }
 
 type CreateTaskRequest struct {
@@ -100,10 +101,9 @@ type UpdateTaskAssigneesRequestAssignee struct {
 }
 
 type UpdateTaskSprintRequest struct {
-	ID                bson.ObjectID
-	CurrentSprintID   bson.ObjectID
-	PreviousSprintIDs []bson.ObjectID
-	UpdatedBy         bson.ObjectID
+	ID              bson.ObjectID
+	CurrentSprintID bson.ObjectID
+	UpdatedBy       bson.ObjectID
 }
 
 type UpdateTaskHasChildrenRequest struct {

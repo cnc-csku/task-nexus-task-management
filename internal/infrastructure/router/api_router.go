@@ -57,6 +57,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.GET("/:projectId/sprints/:sprintId", r.sprint.GetByID, r.authMiddleware.Middleware)
 		projects.PUT("/:projectId/sprints/:sprintId", r.sprint.Edit, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/sprints", r.sprint.List, r.authMiddleware.Middleware)
+		projects.PUT("/:projectId/sprints/:currentSprintId/complete", r.sprint.CompleteSprint, r.authMiddleware.Middleware)
 
 		// Attribute Templates
 		projects.PUT("/:projectId/attribute-templates", r.project.UpdateAttributeTemplates, r.authMiddleware.Middleware)
