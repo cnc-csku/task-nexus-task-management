@@ -26,6 +26,10 @@ const (
 	InvitationActionDecline = "DECLINE"
 )
 
+const (
+	SearchTaskParamsTaskWithNoEpicFilter = "WITH_NO_EPIC"
+)
+
 // Field names
 const (
 	UserFieldEmail       = "email"

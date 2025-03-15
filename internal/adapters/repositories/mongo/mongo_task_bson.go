@@ -52,6 +52,12 @@ func (f taskFilter) WithParentID(parentID bson.ObjectID) {
 	f["parent_id"] = parentID
 }
 
+func (f taskFilter) WithNoParentID() {
+	f["parent_id"] = bson.M{
+		"$eq": nil,
+	}
+}
+
 func (f taskFilter) WithType(taskType models.TaskType) {
 	f["type"] = taskType
 }

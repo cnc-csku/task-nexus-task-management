@@ -17,7 +17,7 @@ type SprintService interface {
 	Create(ctx context.Context, req *requests.CreateSprintRequest, userID string) (*responses.CreateSprintResponse, *errutils.Error)
 	GetByID(ctx context.Context, req *requests.GetSprintByIDRequest) (*models.Sprint, *errutils.Error)
 	Edit(ctx context.Context, req *requests.EditSprintRequest, userID string) (*responses.EditSprintResponse, *errutils.Error)
-	ListByProjectID(ctx context.Context, req *requests.ListSprintByProjectIDPathParam) ([]models.Sprint, *errutils.Error)
+	List(ctx context.Context, req *requests.ListSprintPathParam) ([]models.Sprint, *errutils.Error)
 }
 
 type sprintServiceImpl struct {
@@ -142,7 +142,7 @@ func (s *sprintServiceImpl) Edit(ctx context.Context, req *requests.EditSprintRe
 	}, nil
 }
 
-func (s *sprintServiceImpl) ListByProjectID(ctx context.Context, req *requests.ListSprintByProjectIDPathParam) ([]models.Sprint, *errutils.Error) {
+func (s *sprintServiceImpl) List(ctx context.Context, req *requests.ListSprintPathParam) ([]models.Sprint, *errutils.Error) {
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -155,7 +155,10 @@ func (s *sprintServiceImpl) ListByProjectID(ctx context.Context, req *requests.L
 		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest).WithDebugMessage("project not found")
 	}
 
-	sprints, err := s.sprintRepo.FindByProjectID(ctx, bsonProjectID)
+	sprints, err := s.sprintRepo.List(ctx, &repositories.ListSprintFilter{
+		ProjectID: bsonProjectID,
+		IsActive:  req.IsActive,
+	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}

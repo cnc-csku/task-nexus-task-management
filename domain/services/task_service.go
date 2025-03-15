@@ -9,6 +9,7 @@ import (
 	"github.com/cnc-csku/task-nexus-go-lib/utils/array"
 	"github.com/cnc-csku/task-nexus-go-lib/utils/conv"
 	"github.com/cnc-csku/task-nexus-go-lib/utils/errutils"
+	"github.com/cnc-csku/task-nexus/task-management/domain/constant"
 	"github.com/cnc-csku/task-nexus/task-management/domain/exceptions"
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
@@ -356,21 +357,28 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 		bsonSprintID = &sprintID
 	}
 
-	var bsonParentID *bson.ObjectID
+	var (
+		bsonParentID     *bson.ObjectID
+		isTaskWithNoEpic bool
+	)
 	if req.EpicTaskID != nil {
-		parentID, err := bson.ObjectIDFromHex(*req.EpicTaskID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
-		}
-		bsonParentID = &parentID
+		if *req.EpicTaskID == constant.SearchTaskParamsTaskWithNoEpicFilter {
+			isTaskWithNoEpic = true
+		} else {
+			parentID, err := bson.ObjectIDFromHex(*req.EpicTaskID)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+			}
+			bsonParentID = &parentID
 
-		parentTask, err := s.taskRepo.FindByID(ctx, parentID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-		} else if parentTask == nil {
-			return nil, errutils.NewError(exceptions.ErrParentTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task not found: %s", *req.EpicTaskID))
-		} else if parentTask.Type != models.TaskTypeEpic {
-			return nil, errutils.NewError(exceptions.ErrInvalidParentTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task type is not valid: %s", parentTask.Type))
+			parentTask, err := s.taskRepo.FindByID(ctx, parentID)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			} else if parentTask == nil {
+				return nil, errutils.NewError(exceptions.ErrParentTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task not found: %s", *req.EpicTaskID))
+			} else if parentTask.Type != models.TaskTypeEpic {
+				return nil, errutils.NewError(exceptions.ErrInvalidParentTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task type is not valid: %s", parentTask.Type))
+			}
 		}
 	}
 
@@ -398,15 +406,16 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 	}
 
 	tasks, err := s.taskRepo.Search(ctx, &repositories.SearchTaskRequest{
-		ProjectID:      bsonProjectID,
-		TaskTypes:      []models.TaskType{models.TaskTypeStory, models.TaskTypeTask, models.TaskTypeBug},
-		SprintID:       bsonSprintID,
-		EpicTaskID:     bsonParentID,
-		UserIDs:        userIDs,
-		Positions:      req.Positions,
-		Statuses:       req.Statuses,
-		IsDoneStatuses: getDoneStatuses(project),
-		SearchKeyword:  req.SearchKeyword,
+		ProjectID:        bsonProjectID,
+		TaskTypes:        []models.TaskType{models.TaskTypeStory, models.TaskTypeTask, models.TaskTypeBug},
+		SprintID:         bsonSprintID,
+		EpicTaskID:       bsonParentID,
+		IsTaskWithNoEpic: isTaskWithNoEpic,
+		UserIDs:          userIDs,
+		Positions:        req.Positions,
+		Statuses:         req.Statuses,
+		IsDoneStatuses:   getDoneStatuses(project),
+		SearchKeyword:    req.SearchKeyword,
 	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())

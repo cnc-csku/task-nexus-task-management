@@ -107,3 +107,32 @@ func (m *mongoSprintRepo) FindByProjectID(ctx context.Context, projectID bson.Ob
 
 	return sprints, nil
 }
+
+func (m *mongoSprintRepo) List(ctx context.Context, filter *repositories.ListSprintFilter) ([]models.Sprint, error) {
+	sprints := make([]models.Sprint, 0)
+
+	f := NewSprintFilter()
+	f.WithProjectID(filter.ProjectID)
+
+	if filter.IsActive != nil && *filter.IsActive {
+		f.WithEndDateGreaterThanOrEqualNowOrIsNull()
+	}
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var sprint models.Sprint
+		err := cursor.Decode(&sprint)
+		if err != nil {
+			return nil, err
+		}
+
+		sprints = append(sprints, sprint)
+	}
+
+	return sprints, nil
+}

@@ -318,6 +318,10 @@ func (m *mongoTaskRepo) Search(ctx context.Context, in *repositories.SearchTaskR
 		f.WithParentID(*in.EpicTaskID)
 	}
 
+	if in.IsTaskWithNoEpic {
+		f.WithNoParentID()
+	}
+
 	if len(in.UserIDs) > 0 {
 		f.WithUserIDs(in.UserIDs)
 	}

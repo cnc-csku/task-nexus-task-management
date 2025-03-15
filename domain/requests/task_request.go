@@ -25,7 +25,7 @@ type ListEpicTasksPathParam struct {
 type SearchTaskParams struct {
 	ProjectID     string   `param:"projectId" validate:"required"`
 	SprintID      *string  `query:"sprintId"`
-	EpicTaskID    *string  `query:"epicTaskId"`
+	EpicTaskID    *string  `query:"epicTaskId"` // Parent_id or WITH_NO_EPIC
 	UserIDs       []string `query:"userIds"`
 	Positions     []string `query:"positions"`
 	Statuses      []string `query:"statuses"`
