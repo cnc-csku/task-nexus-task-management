@@ -101,12 +101,27 @@ func (u taskUpdate) UpdateDetail(in *repositories.UpdateTaskDetailRequest) {
 	u["$set"] = bson.M{
 		"title":       in.Title,
 		"description": in.Description,
-		"parent_id":   in.ParentID,
 		"priority":    in.Priority,
 		"start_date":  in.StartDate,
 		"due_date":    in.DueDate,
 		"updated_at":  time.Now(),
 		"updated_by":  in.UpdatedBy,
+	}
+}
+
+func (u taskUpdate) UpdateTitle(in *repositories.UpdateTaskTitleRequest) {
+	u["$set"] = bson.M{
+		"title":      in.Title,
+		"updated_at": time.Now(),
+		"updated_by": in.UpdatedBy,
+	}
+}
+
+func (u taskUpdate) UpdateParentID(in *repositories.UpdateTaskParentIDRequest) {
+	u["$set"] = bson.M{
+		"parent_id":  in.ParentID,
+		"updated_at": time.Now(),
+		"updated_by": in.UpdatedBy,
 	}
 }
 

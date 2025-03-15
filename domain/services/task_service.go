@@ -24,6 +24,8 @@ type TaskService interface {
 	ListEpicTasks(ctx context.Context, req *requests.ListEpicTasksPathParam, userId string) ([]*models.Task, *errutils.Error)
 	SearchTask(ctx context.Context, req *requests.SearchTaskParams, userId string) ([]responses.SearchTaskResponse, *errutils.Error)
 	UpdateDetail(ctx context.Context, req *requests.UpdateTaskDetailRequest, userId string) (*models.Task, *errutils.Error)
+	UpdateTitle(ctx context.Context, req *requests.UpdateTaskTitleRequest, userId string) (*models.Task, *errutils.Error)
+	UpdateParentID(ctx context.Context, req *requests.UpdateTaskParentIdRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateStatus(ctx context.Context, req *requests.UpdateTaskStatusRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateApprovals(ctx context.Context, req *requests.UpdateTaskApprovalsRequest, userId string) (*models.Task, *errutils.Error)
 	ApproveTask(ctx context.Context, req *requests.ApproveTaskRequest, userId string) (*models.Task, *errutils.Error)
@@ -178,7 +180,7 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 func validateParentTaskType(childTaskType string, parentTaskType models.TaskType) *errutils.Error {
 	switch childTaskType {
 	case models.TaskTypeEpic.String():
-		return nil
+		return errutils.NewError(exceptions.ErrInvalidParentTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task type is not valid: %s", parentTaskType))
 	case models.TaskTypeStory.String(), models.TaskTypeTask.String(), models.TaskTypeBug.String():
 		if parentTaskType != models.TaskTypeEpic {
 			return errutils.NewError(exceptions.ErrInvalidParentTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task type is not valid: %s", parentTaskType))
@@ -515,9 +517,87 @@ func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.Update
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
 	}
 
+	updatedTask, err := s.taskRepo.UpdateDetail(ctx, &repositories.UpdateTaskDetailRequest{
+		ID:          task.ID,
+		Title:       req.Title,
+		Description: req.Description,
+		Priority:    req.Priority,
+		StartDate:   req.StartDate,
+		DueDate:     req.DueDate,
+		UpdatedBy:   bsonUserID,
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	return updatedTask, nil
+}
+
+func (s *taskServiceImpl) UpdateTitle(ctx context.Context, req *requests.UpdateTaskTitleRequest, userId string) (*models.Task, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	task, err := s.taskRepo.FindByTaskRefAndProjectID(ctx, req.TaskRef, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if task == nil {
+		return nil, errutils.NewError(exceptions.ErrTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Task not found: %s", req.TaskRef))
+	}
+
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, task.ProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
+	updatedTask, err := s.taskRepo.UpdateTitle(ctx, &repositories.UpdateTaskTitleRequest{
+		ID:        task.ID,
+		Title:     req.Title,
+		UpdatedBy: bsonUserID,
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	return updatedTask, nil
+}
+
+func (s *taskServiceImpl) UpdateParentID(ctx context.Context, req *requests.UpdateTaskParentIdRequest, userID string) (*models.Task, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	task, err := s.taskRepo.FindByTaskRefAndProjectID(ctx, req.TaskRef, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if task == nil {
+		return nil, errutils.NewError(exceptions.ErrTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Task not found: %s", req.TaskRef))
+	}
+
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, task.ProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
 	var (
 		nullableBsonTaskParentID = task.ParentID
-		isParentTaskChanged      = task.ParentID == nil && req.ParentID != nil || req.ParentID != nil && task.ParentID != nil && *req.ParentID != task.ParentID.Hex()
+		isParentTaskChanged      = (task.ParentID == nil && req.ParentID != nil) || (req.ParentID != nil && task.ParentID != nil && *req.ParentID != task.ParentID.Hex())
 		isParentTaskRemoved      = req.ParentID == nil && task.ParentID != nil
 	)
 	if isParentTaskChanged {
@@ -594,15 +674,10 @@ func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.Update
 		nullableBsonTaskParentID = nil
 	}
 
-	updatedTask, err := s.taskRepo.UpdateDetail(ctx, &repositories.UpdateTaskDetailRequest{
-		ID:          task.ID,
-		Title:       req.Title,
-		Description: req.Description,
-		ParentID:    nullableBsonTaskParentID,
-		Priority:    req.Priority,
-		StartDate:   req.StartDate,
-		DueDate:     req.DueDate,
-		UpdatedBy:   bsonUserID,
+	updatedTask, err := s.taskRepo.UpdateParentID(ctx, &repositories.UpdateTaskParentIDRequest{
+		ID:        task.ID,
+		ParentID:  nullableBsonTaskParentID,
+		UpdatedBy: bsonUserID,
 	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())

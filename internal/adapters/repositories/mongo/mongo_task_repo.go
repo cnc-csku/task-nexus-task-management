@@ -138,6 +138,36 @@ func (m *mongoTaskRepo) UpdateDetail(ctx context.Context, in *repositories.Updat
 	return m.FindByID(ctx, in.ID)
 }
 
+func (m *mongoTaskRepo) UpdateTitle(ctx context.Context, in *repositories.UpdateTaskTitleRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateTitle(in)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) UpdateParentID(ctx context.Context, in *repositories.UpdateTaskParentIDRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateParentID(in)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
+
 func (m *mongoTaskRepo) UpdateStatus(ctx context.Context, in *repositories.UpdateTaskStatusRequest) (*models.Task, error) {
 	f := NewTaskFilter()
 	f.WithID(in.ID)

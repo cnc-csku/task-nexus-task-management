@@ -37,10 +37,21 @@ type UpdateTaskDetailRequest struct {
 	TaskRef     string     `param:"taskRef" validate:"required"`
 	Title       string     `json:"title" validate:"required"`
 	Description string     `json:"description"`
-	ParentID    *string    `json:"parentId"`
 	Priority    string     `json:"priority" validate:"required"`
 	StartDate   *time.Time `json:"startDate"`
 	DueDate     *time.Time `json:"dueDate"`
+}
+
+type UpdateTaskTitleRequest struct {
+	ProjectID string `param:"projectId" validate:"required"`
+	TaskRef   string `param:"taskRef" validate:"required"`
+	Title     string `json:"title" validate:"required"`
+}
+
+type UpdateTaskParentIdRequest struct {
+	ProjectID string  `param:"projectId" validate:"required"`
+	TaskRef   string  `param:"taskRef" validate:"required"`
+	ParentID  *string `json:"parentId"`
 }
 
 type UpdateTaskStatusRequest struct {

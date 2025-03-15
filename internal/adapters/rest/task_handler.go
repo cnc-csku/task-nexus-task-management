@@ -17,6 +17,8 @@ type TaskHandler interface {
 	ListEpicTasks(c echo.Context) error
 	SearchTask(c echo.Context) error
 	UpdateDetail(c echo.Context) error
+	UpdateTitle(c echo.Context) error
+	UpdateParentID(c echo.Context) error
 	UpdateStatus(c echo.Context) error
 	UpdateApprovals(c echo.Context) error
 	ApproveTask(c echo.Context) error
@@ -123,6 +125,44 @@ func (h *taskHandlerImpl) UpdateDetail(c echo.Context) error {
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
 	resp, err := h.taskService.UpdateDetail(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) UpdateTitle(c echo.Context) error {
+	req := new(requests.UpdateTaskTitleRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.UpdateTitle(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) UpdateParentID(c echo.Context) error {
+	req := new(requests.UpdateTaskParentIdRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.UpdateParentID(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}
