@@ -24,3 +24,8 @@ type ListSprintPathParam struct {
 	ProjectID string `param:"projectId" validate:"required"`
 	IsActive  *bool  `query:"isActive"`
 }
+
+type CompleteSprintRequest struct {
+	ProjectID       string `param:"projectId" validate:"required"`
+	CurrentSprintID string `param:"currentSprintId" validate:"required"`
+}

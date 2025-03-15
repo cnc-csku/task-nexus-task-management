@@ -86,10 +86,9 @@ type UpdateTaskAssigneesRequestAssignee struct {
 }
 
 type UpdateTaskSprintRequest struct {
-	ProjectID         string   `param:"projectId" validate:"required"`
-	TaskRef           string   `param:"taskRef" validate:"required"`
-	CurrentSprintID   string   `json:"currentSprintId" validate:"required"`
-	PreviousSprintIDs []string `json:"previousSprintIds"`
+	ProjectID       string `param:"projectId" validate:"required"`
+	TaskRef         string `param:"taskRef" validate:"required"`
+	CurrentSprintID string `json:"currentSprintId" validate:"required"`
 }
 
 type UpdateTaskAttributesRequest struct {

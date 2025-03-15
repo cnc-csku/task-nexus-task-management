@@ -68,7 +68,7 @@ func (f taskFilter) WithTypes(taskTypes []models.TaskType) {
 	}
 }
 
-func (f taskFilter) WithSprintID(sprintID bson.ObjectID) {
+func (f taskFilter) WithCurrentSprintID(sprintID bson.ObjectID) {
 	f["sprint.current_sprint_id"] = sprintID
 }
 
@@ -181,8 +181,7 @@ func (u taskUpdate) UpdateAssignees(in *repositories.UpdateTaskAssigneesRequest)
 func (u taskUpdate) UpdateSprint(in *repositories.UpdateTaskSprintRequest) {
 	u["$set"] = bson.M{
 		"sprint": bson.M{
-			"current_sprint_id":   in.CurrentSprintID,
-			"previous_sprint_ids": in.PreviousSprintIDs,
+			"current_sprint_id": in.CurrentSprintID,
 		},
 		"updated_at": time.Now(),
 		"updated_by": in.UpdatedBy,

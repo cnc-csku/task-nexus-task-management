@@ -13,3 +13,7 @@ type CreateSprintResponse struct {
 type EditSprintResponse struct {
 	Message string `json:"message"`
 }
+
+type CompleteSprintResponse struct {
+	Message string `json:"message"`
+}
