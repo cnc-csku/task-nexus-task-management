@@ -70,6 +70,13 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
+	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest)
+	}
+
 	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
@@ -118,13 +125,6 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		}
 
 		nullableBsonTaskParentID = &bsonTaskParentID
-	}
-
-	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if project == nil {
-		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest)
 	}
 
 	var taskSprint *models.TaskSprint
@@ -444,6 +444,7 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 			Type:          task.Type.String(),
 			Status:        task.Status,
 			Assignees:     task.Assignees,
+			Approvals:     task.Approvals,
 			ChildrenPoint: task.ChildrenPoint,
 			HasChildren:   task.HasChildren,
 			Sprint:        task.Sprint,

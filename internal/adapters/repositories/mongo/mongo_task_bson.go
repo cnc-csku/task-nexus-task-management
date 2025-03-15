@@ -29,7 +29,7 @@ func (f taskFilter) WithTaskRef(taskRef string) {
 }
 
 func (f taskFilter) WithUserApproval(userID bson.ObjectID) {
-	f["approval.user_id"] = userID
+	f["approvals.user_id"] = userID
 }
 
 func (f taskFilter) WithProjectID(projectID bson.ObjectID) {
@@ -119,15 +119,15 @@ func (u taskUpdate) UpdateStatus(in *repositories.UpdateTaskStatusRequest) {
 }
 
 func (u taskUpdate) UpdateApprovals(in *repositories.UpdateTaskApprovalsRequest) {
-	approval := make([]bson.M, len(in.Approval))
+	approvals := make([]bson.M, len(in.Approval))
 	for i, a := range in.Approval {
-		approval[i] = bson.M{
+		approvals[i] = bson.M{
 			"user_id": a.UserID,
 		}
 	}
 
 	u["$set"] = bson.M{
-		"approval":   approval,
+		"approvals":  approvals,
 		"updated_at": time.Now(),
 		"updated_by": in.UpdatedBy,
 	}
@@ -135,7 +135,8 @@ func (u taskUpdate) UpdateApprovals(in *repositories.UpdateTaskApprovalsRequest)
 
 func (u taskUpdate) ApproveTask(reason string) {
 	u["$set"] = bson.M{
-		"approval.$.reason": reason,
+		"approvals.$.is_approved": true,
+		"approvals.$.reason":      reason,
 	}
 }
 
