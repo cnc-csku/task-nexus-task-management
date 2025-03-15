@@ -13,6 +13,7 @@ type SprintRepository interface {
 	FindByID(ctx context.Context, sprintID bson.ObjectID) (*models.Sprint, error)
 	Update(ctx context.Context, sprint *UpdateSprintRequest) error
 	FindByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.Sprint, error)
+	List(ctx context.Context, filter *ListSprintFilter) ([]models.Sprint, error)
 }
 
 type CreateSprintRequest struct {
@@ -28,4 +29,9 @@ type UpdateSprintRequest struct {
 	StartDate  *time.Time
 	EndDate    *time.Time
 	UpdatedBy  bson.ObjectID
+}
+
+type ListSprintFilter struct {
+	ProjectID bson.ObjectID
+	IsActive  *bool
 }

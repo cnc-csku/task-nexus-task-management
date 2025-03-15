@@ -29,7 +29,7 @@ func (f taskFilter) WithTaskRef(taskRef string) {
 }
 
 func (f taskFilter) WithUserApproval(userID bson.ObjectID) {
-	f["approval.user_id"] = userID
+	f["approvals.user_id"] = userID
 }
 
 func (f taskFilter) WithProjectID(projectID bson.ObjectID) {
@@ -50,6 +50,12 @@ func (f taskFilter) WithNotInStatuses(statuses []string) {
 
 func (f taskFilter) WithParentID(parentID bson.ObjectID) {
 	f["parent_id"] = parentID
+}
+
+func (f taskFilter) WithNoParentID() {
+	f["parent_id"] = bson.M{
+		"$eq": nil,
+	}
 }
 
 func (f taskFilter) WithType(taskType models.TaskType) {
@@ -95,12 +101,27 @@ func (u taskUpdate) UpdateDetail(in *repositories.UpdateTaskDetailRequest) {
 	u["$set"] = bson.M{
 		"title":       in.Title,
 		"description": in.Description,
-		"parent_id":   in.ParentID,
 		"priority":    in.Priority,
 		"start_date":  in.StartDate,
 		"due_date":    in.DueDate,
 		"updated_at":  time.Now(),
 		"updated_by":  in.UpdatedBy,
+	}
+}
+
+func (u taskUpdate) UpdateTitle(in *repositories.UpdateTaskTitleRequest) {
+	u["$set"] = bson.M{
+		"title":      in.Title,
+		"updated_at": time.Now(),
+		"updated_by": in.UpdatedBy,
+	}
+}
+
+func (u taskUpdate) UpdateParentID(in *repositories.UpdateTaskParentIDRequest) {
+	u["$set"] = bson.M{
+		"parent_id":  in.ParentID,
+		"updated_at": time.Now(),
+		"updated_by": in.UpdatedBy,
 	}
 }
 
@@ -113,15 +134,15 @@ func (u taskUpdate) UpdateStatus(in *repositories.UpdateTaskStatusRequest) {
 }
 
 func (u taskUpdate) UpdateApprovals(in *repositories.UpdateTaskApprovalsRequest) {
-	approval := make([]bson.M, len(in.Approval))
+	approvals := make([]bson.M, len(in.Approval))
 	for i, a := range in.Approval {
-		approval[i] = bson.M{
+		approvals[i] = bson.M{
 			"user_id": a.UserID,
 		}
 	}
 
 	u["$set"] = bson.M{
-		"approval":   approval,
+		"approvals":  approvals,
 		"updated_at": time.Now(),
 		"updated_by": in.UpdatedBy,
 	}
@@ -129,7 +150,8 @@ func (u taskUpdate) UpdateApprovals(in *repositories.UpdateTaskApprovalsRequest)
 
 func (u taskUpdate) ApproveTask(reason string) {
 	u["$set"] = bson.M{
-		"approval.$.reason": reason,
+		"approvals.$.is_approved": true,
+		"approvals.$.reason":      reason,
 	}
 }
 

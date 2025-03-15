@@ -56,7 +56,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.POST("/:projectId/sprints", r.sprint.Create, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/sprints/:sprintId", r.sprint.GetByID, r.authMiddleware.Middleware)
 		projects.PUT("/:projectId/sprints/:sprintId", r.sprint.Edit, r.authMiddleware.Middleware)
-		projects.GET("/:projectId/sprints", r.sprint.ListByProjectID, r.authMiddleware.Middleware)
+		projects.GET("/:projectId/sprints", r.sprint.List, r.authMiddleware.Middleware)
 
 		// Attribute Templates
 		projects.PUT("/:projectId/attribute-templates", r.project.UpdateAttributeTemplates, r.authMiddleware.Middleware)
@@ -76,6 +76,8 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		tasks.GET("", r.task.SearchTask, r.authMiddleware.Middleware)
 
 		tasks.PUT("/:taskRef/detail", r.task.UpdateDetail, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/title", r.task.UpdateTitle, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/parent", r.task.UpdateParentID, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/status", r.task.UpdateStatus, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/approvals", r.task.UpdateApprovals, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/approve", r.task.ApproveTask, r.authMiddleware.Middleware)

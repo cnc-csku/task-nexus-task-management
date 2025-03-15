@@ -53,6 +53,7 @@ type SearchTaskResponse struct {
 	Type          string                `json:"type"`
 	Status        string                `json:"status"`
 	Assignees     []models.TaskAssignee `json:"assignees"`
+	Approvals     []models.TaskApproval `json:"approvals"`
 	ChildrenPoint int                   `json:"childrenPoint"`
 	HasChildren   bool                  `json:"hasChildren"`
 	Sprint        *models.TaskSprint    `json:"sprint"`
