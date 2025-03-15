@@ -344,6 +344,10 @@ func (m *mongoTaskRepo) Search(ctx context.Context, in *repositories.SearchTaskR
 		f.WithSprintID(*in.SprintID)
 	}
 
+	if in.IsTaskWithNoSprint {
+		f.WithNoSprintID()
+	}
+
 	if in.EpicTaskID != nil {
 		f.WithParentID(*in.EpicTaskID)
 	}

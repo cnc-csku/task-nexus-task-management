@@ -72,6 +72,12 @@ func (f taskFilter) WithSprintID(sprintID bson.ObjectID) {
 	f["sprint.current_sprint_id"] = sprintID
 }
 
+func (f taskFilter) WithNoSprintID() {
+	f["sprint.current_sprint_id"] = bson.M{
+		"$eq": nil,
+	}
+}
+
 func (f taskFilter) WithUserIDs(userIDs []bson.ObjectID) {
 	f["assignees.user_id"] = bson.M{
 		"$in": userIDs,

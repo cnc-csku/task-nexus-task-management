@@ -27,6 +27,7 @@ const (
 )
 
 const (
+	SearchTaskParamsTaskBacklog          = "BACKLOG" // WITH_NO_SPRINT
 	SearchTaskParamsTaskWithNoEpicFilter = "WITH_NO_EPIC"
 )
 
