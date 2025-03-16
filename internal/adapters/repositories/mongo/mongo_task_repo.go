@@ -38,6 +38,8 @@ func (m *mongoTaskRepo) Create(ctx context.Context, task *repositories.CreateTas
 		Status:      task.Status,
 		Priority:    models.TaskPriorityMedium,
 		Sprint:      task.Sprint,
+		StartDate:   task.StartDate,
+		DueDate:     task.DueDate,
 		CreatedAt:   time.Now(),
 		CreatedBy:   task.CreatedBy,
 		UpdatedAt:   time.Now(),

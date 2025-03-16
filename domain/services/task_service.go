@@ -72,6 +72,12 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
+	if req.DueDate != nil && req.StartDate != nil {
+		if req.DueDate.Before(*req.StartDate) {
+			return nil, errutils.NewError(exceptions.ErrDueDateBeforeStartDate, errutils.BadRequest).WithDebugMessage("Due date is before start date")
+		}
+	}
+
 	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
@@ -163,6 +169,8 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		Type:        models.TaskType(req.Type),
 		Status:      defaultWorkflow.Status,
 		Sprint:      taskSprint,
+		StartDate:   req.StartDate,
+		DueDate:     req.DueDate,
 		CreatedBy:   bsonUserID,
 	})
 	if err != nil {

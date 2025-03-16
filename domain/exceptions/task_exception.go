@@ -12,4 +12,5 @@ var (
 	ErrInvalidSearchTasksSearchFilterBy = errors.New("invalid search tasks search filter by")
 	ErrInvalidAttributeKey              = errors.New("invalid attribute key")
 	ErrNotAllTasksIsDone                = errors.New("not all tasks is done")
+	ErrDueDateBeforeStartDate           = errors.New("due date before start date")
 )

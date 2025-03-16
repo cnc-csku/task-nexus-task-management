@@ -41,6 +41,8 @@ type CreateTaskRequest struct {
 	Type        models.TaskType
 	Status      string
 	Sprint      *models.TaskSprint
+	StartDate   *time.Time
+	DueDate     *time.Time
 	CreatedBy   bson.ObjectID
 }
 
