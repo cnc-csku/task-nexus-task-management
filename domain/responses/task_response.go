@@ -17,8 +17,8 @@ type GetTaskDetailResponse struct {
 	Type               models.TaskType                    `json:"type"`
 	Status             string                             `json:"status"`
 	Priority           models.TaskPriority                `json:"priority"`
-	Approvals          []models.TaskApproval              `json:"approvals"`
-	Assignees          []models.TaskAssignee              `json:"assignees"`
+	Approvals          []GetTaskDetailResponseApprovals   `json:"approvals"`
+	Assignees          []GetTaskDetailResponseAssignee    `json:"assignees"`
 	ChildrenPoint      int                                `json:"childrenPoint"`
 	HasChildren        bool                               `json:"hasChildren"`
 	Sprint             *models.TaskSprint                 `json:"sprint"`
@@ -34,6 +34,24 @@ type GetTaskDetailResponse struct {
 	TaskComments       []GetTaskDetailResponseTaskComment `json:"taskComments"`
 }
 
+type GetTaskDetailResponseApprovals struct {
+	UserID      string `json:"userId"`
+	Email       string `json:"email"`
+	DisplayName string `json:"displayName"`
+	ProfileUrl  string `json:"profileUrl"`
+	IsApproved  bool   `json:"isApproved"`
+	Reason      string `json:"reason"`
+}
+
+type GetTaskDetailResponseAssignee struct {
+	UserID      string `json:"userId"`
+	Email       string `json:"email"`
+	DisplayName string `json:"displayName"`
+	ProfileUrl  string `json:"profileUrl"`
+	Position    string `json:"position"`
+	Point       *int   `json:"point"`
+}
+
 type GetTaskDetailResponseTaskComment struct {
 	ID              string    `json:"id"`
 	Content         string    `json:"content"`
@@ -45,16 +63,25 @@ type GetTaskDetailResponseTaskComment struct {
 }
 
 type SearchTaskResponse struct {
-	ID            string                `json:"id"`
-	TaskRef       string                `json:"taskRef"`
-	Title         string                `json:"title"`
-	ParentID      *string               `json:"parentId"`
-	ParentTitle   *string               `json:"parentTitle"`
-	Type          string                `json:"type"`
-	Status        string                `json:"status"`
-	Assignees     []models.TaskAssignee `json:"assignees"`
-	Approvals     []models.TaskApproval `json:"approvals"`
-	ChildrenPoint int                   `json:"childrenPoint"`
-	HasChildren   bool                  `json:"hasChildren"`
-	Sprint        *models.TaskSprint    `json:"sprint"`
+	ID            string                       `json:"id"`
+	TaskRef       string                       `json:"taskRef"`
+	Title         string                       `json:"title"`
+	ParentID      *string                      `json:"parentId"`
+	ParentTitle   *string                      `json:"parentTitle"`
+	Type          string                       `json:"type"`
+	Status        string                       `json:"status"`
+	Assignees     []SearchTaskResponseAssignee `json:"assignees"`
+	Approvals     []models.TaskApproval        `json:"approvals"`
+	ChildrenPoint int                          `json:"childrenPoint"`
+	HasChildren   bool                         `json:"hasChildren"`
+	Sprint        *models.TaskSprint           `json:"sprint"`
+}
+
+type SearchTaskResponseAssignee struct {
+	UserID      string `json:"userId"`
+	Email       string `json:"email"`
+	DisplayName string `json:"displayName"`
+	ProfileUrl  string `json:"profileUrl"`
+	Position    string `json:"position"`
+	Point       *int   `json:"point"`
 }

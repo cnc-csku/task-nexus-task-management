@@ -219,6 +219,13 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
+	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest)
+	}
+
 	task, err := s.taskRepo.FindByTaskRefAndProjectID(ctx, req.TaskRef, bsonProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
@@ -231,6 +238,70 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if member == nil {
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
+	approvalUserIDs := make([]bson.ObjectID, 0, len(task.Approvals))
+	for _, approval := range task.Approvals {
+		approvalUserIDs = append(approvalUserIDs, approval.UserID)
+	}
+
+	approvals, err := s.userRepo.FindByIDs(ctx, approvalUserIDs)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	approvalMap := make(map[string]models.User, len(approvals))
+	for _, approval := range approvals {
+		approvalMap[approval.ID.Hex()] = approval
+	}
+
+	approvalResponses := make([]responses.GetTaskDetailResponseApprovals, len(task.Approvals))
+	for i, approval := range task.Approvals {
+		user, ok := approvalMap[approval.UserID.Hex()]
+		if !ok {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Approval not found")
+		}
+
+		approvalResponses[i] = responses.GetTaskDetailResponseApprovals{
+			UserID:      approval.UserID.Hex(),
+			Email:       user.Email,
+			DisplayName: user.DisplayName,
+			ProfileUrl:  user.ProfileUrl,
+			IsApproved:  approval.IsApproved,
+			Reason:      approval.Reason,
+		}
+	}
+
+	assigneeUserIDs := make([]bson.ObjectID, 0, len(task.Assignees))
+	for _, assignee := range task.Assignees {
+		assigneeUserIDs = append(assigneeUserIDs, assignee.UserID)
+	}
+
+	assignees, err := s.userRepo.FindByIDs(ctx, assigneeUserIDs)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	assigneeMap := make(map[string]models.User, len(assignees))
+	for _, assignee := range assignees {
+		assigneeMap[assignee.ID.Hex()] = assignee
+	}
+
+	assigneeResponses := make([]responses.GetTaskDetailResponseAssignee, len(task.Assignees))
+	for i, assignee := range task.Assignees {
+		user, ok := assigneeMap[assignee.UserID.Hex()]
+		if !ok {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Assignee not found")
+		}
+
+		assigneeResponses[i] = responses.GetTaskDetailResponseAssignee{
+			UserID:      assignee.UserID.Hex(),
+			Email:       user.Email,
+			DisplayName: user.DisplayName,
+			ProfileUrl:  user.ProfileUrl,
+			Position:    assignee.Position,
+			Point:       assignee.Point,
+		}
 	}
 
 	creator, err := s.userRepo.FindByID(ctx, task.CreatedBy)
@@ -271,8 +342,8 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		Type:               task.Type,
 		Status:             task.Status,
 		Priority:           task.Priority,
-		Approvals:          task.Approvals,
-		Assignees:          task.Assignees,
+		Approvals:          approvalResponses,
+		Assignees:          assigneeResponses,
 		ChildrenPoint:      task.ChildrenPoint,
 		HasChildren:        task.HasChildren,
 		Sprint:             task.Sprint,
@@ -448,20 +519,57 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 
 	response := make([]responses.SearchTaskResponse, 0, len(tasks))
 	for _, task := range tasks {
+		assigneesUserIDs := make([]bson.ObjectID, 0, len(task.Assignees))
+		for _, assignee := range task.Assignees {
+			assigneesUserIDs = append(assigneesUserIDs, assignee.UserID)
+		}
+
+		assignees, err := s.userRepo.FindByIDs(ctx, assigneesUserIDs)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+
+		assigneeMap := make(map[string]models.User, len(assignees))
+		for _, assignee := range assignees {
+			assigneeMap[assignee.ID.Hex()] = assignee
+		}
+
+		assigneeResponses := make([]responses.SearchTaskResponseAssignee, len(task.Assignees))
+		for i, assignee := range task.Assignees {
+			user, ok := assigneeMap[assignee.UserID.Hex()]
+			if !ok {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Assignee not found")
+			}
+
+			assigneeResponses[i] = responses.SearchTaskResponseAssignee{
+				UserID:      assignee.UserID.Hex(),
+				Email:       user.Email,
+				DisplayName: user.DisplayName,
+				ProfileUrl:  user.ProfileUrl,
+				Position:    assignee.Position,
+				Point:       assignee.Point,
+			}
+		}
+
+		var parentTitleResp *string
+		if task.ParentID != nil {
+			parentTitle, ok := parentTasksMap[task.ParentID.Hex()]
+			if !ok {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Parent task not found")
+			}
+
+			parentTitleResp = parentTitle
+		}
+
 		response = append(response, responses.SearchTaskResponse{
-			ID:       task.ID.Hex(),
-			TaskRef:  task.TaskRef,
-			Title:    task.Title,
-			ParentID: conv.BsonObjectIDPtrToStringPtr(task.ParentID),
-			ParentTitle: func() *string {
-				if task.ParentID == nil {
-					return nil
-				}
-				return parentTasksMap[task.ParentID.Hex()]
-			}(),
+			ID:            task.ID.Hex(),
+			TaskRef:       task.TaskRef,
+			Title:         task.Title,
+			ParentID:      conv.BsonObjectIDPtrToStringPtr(task.ParentID),
+			ParentTitle:   parentTitleResp,
 			Type:          task.Type.String(),
 			Status:        task.Status,
-			Assignees:     task.Assignees,
+			Assignees:     assigneeResponses,
 			Approvals:     task.Approvals,
 			ChildrenPoint: task.ChildrenPoint,
 			HasChildren:   task.HasChildren,
