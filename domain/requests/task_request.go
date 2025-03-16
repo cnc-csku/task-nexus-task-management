@@ -5,12 +5,14 @@ import (
 )
 
 type CreateTaskRequest struct {
-	ProjectID   string  `param:"projectId" validate:"required"`
-	Title       string  `json:"title" validate:"required"`
-	Description string  `json:"description"`
-	ParentID    *string `json:"parentId"`
-	Type        string  `json:"type" validate:"required"`
-	SprintID    *string `json:"sprintId"`
+	ProjectID   string     `param:"projectId" validate:"required"`
+	Title       string     `json:"title" validate:"required"`
+	Description string     `json:"description"`
+	ParentID    *string    `json:"parentId"`
+	Type        string     `json:"type" validate:"required"`
+	SprintID    *string    `json:"sprintId"`
+	StartDate   *time.Time `json:"startDate"`
+	DueDate     *time.Time `json:"dueDate"`
 }
 
 type GetTaskDetailPathParam struct {
