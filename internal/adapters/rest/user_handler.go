@@ -14,9 +14,10 @@ import (
 type UserHandler interface {
 	Register(c echo.Context) error
 	Login(c echo.Context) error
-	GetUserProfile(c echo.Context) error
+	GetMyProfile(c echo.Context) error
 	SearchUser(c echo.Context) error
 	SetupUser(c echo.Context) error
+	GetUserProfile(c echo.Context) error
 }
 
 type userHandlerImpl struct {
@@ -65,7 +66,7 @@ func (u *userHandlerImpl) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-func (u *userHandlerImpl) GetUserProfile(c echo.Context) error {
+func (u *userHandlerImpl) GetMyProfile(c echo.Context) error {
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
 	user, err := u.userService.FindUserByEmail(c.Request().Context(), userClaims.Email)
 	if err != nil {
@@ -105,6 +106,25 @@ func (u *userHandlerImpl) SetupUser(c echo.Context) error {
 	}
 
 	user, err := u.userService.SetupFirstUser(c.Request().Context(), req)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, user)
+}
+
+func (u *userHandlerImpl) GetUserProfile(c echo.Context) error {
+	req := new(requests.GetUserProfileRequest)
+
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	user, err := u.userService.GetUserProfile(c.Request().Context(), req)
 	if err != nil {
 		return err.ToEchoError()
 	}

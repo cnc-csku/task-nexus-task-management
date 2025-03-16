@@ -15,3 +15,7 @@ type SearchUserParams struct {
 	Keyword string `query:"keyword"`
 	PaginationRequest
 }
+
+type GetUserProfileRequest struct {
+	UserID string `param:"userId" validate:"required"`
+}

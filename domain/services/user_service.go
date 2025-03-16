@@ -15,6 +15,7 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/domain/requests"
 	"github.com/cnc-csku/task-nexus/task-management/domain/responses"
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -24,6 +25,7 @@ type UserService interface {
 	FindUserByEmail(ctx context.Context, email string) (*responses.UserResponse, *errutils.Error)
 	Search(ctx context.Context, req *requests.SearchUserParams, searcherUserId string) (*responses.ListUserResponse, *errutils.Error)
 	SetupFirstUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error)
+	GetUserProfile(ctx context.Context, req *requests.GetUserProfileRequest) (*responses.UserResponse, *errutils.Error)
 }
 
 type userServiceImpl struct {
@@ -297,4 +299,28 @@ func (u *userServiceImpl) SetupFirstUser(ctx context.Context, req *requests.Regi
 	}
 
 	return newUser, nil
+}
+
+func (u *userServiceImpl) GetUserProfile(ctx context.Context, req *requests.GetUserProfileRequest) (*responses.UserResponse, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(req.UserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	user, err := u.userRepo.FindByID(ctx, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if user == nil {
+		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.NotFound).WithDebugMessage("user not found")
+	}
+
+	return &responses.UserResponse{
+		ID:          user.ID.Hex(),
+		Email:       user.Email,
+		FullName:    user.FullName,
+		DisplayName: user.DisplayName,
+		ProfileUrl:  user.ProfileUrl,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+	}, nil
 }

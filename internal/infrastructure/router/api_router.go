@@ -13,8 +13,13 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	{
 		auth.POST("/register", r.user.Register)
 		auth.POST("/login", r.user.Login)
-		auth.GET("/profile", r.user.GetUserProfile, r.authMiddleware.Middleware)
+		auth.GET("/profile", r.user.GetMyProfile, r.authMiddleware.Middleware)
 		auth.GET("/search", r.user.SearchUser, r.authMiddleware.Middleware)
+	}
+
+	users := api.Group("/users/v1")
+	{
+		users.GET("/:userId/profile", r.user.GetUserProfile, r.authMiddleware.Middleware)
 	}
 
 	workspaces := api.Group("/workspaces/v1")

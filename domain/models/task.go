@@ -80,9 +80,9 @@ type TaskApproval struct {
 }
 
 type TaskAssignee struct {
-	Postion string        `bson:"position" json:"position"`
-	UserID  bson.ObjectID `bson:"user_id" json:"userId"`
-	Point   *int          `bson:"point" json:"point"`
+	Position string        `bson:"position" json:"position"`
+	UserID   bson.ObjectID `bson:"user_id" json:"userId"`
+	Point    *int          `bson:"point" json:"point"`
 }
 
 type TaskSprint struct {
