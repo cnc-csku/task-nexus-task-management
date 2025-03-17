@@ -304,10 +304,10 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		}
 	}
 
-	creator, err := s.userRepo.FindByID(ctx, task.CreatedBy)
+	reporter, err := s.userRepo.FindByID(ctx, task.CreatedBy)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if creator == nil {
+	} else if reporter == nil {
 		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.InternalServerError).WithDebugMessage(fmt.Sprintf("User not found: %s", task.CreatedBy.Hex()))
 	}
 
@@ -333,30 +333,31 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 	commentsUsersMap := mapUsersByID(commentsUsers)
 
 	return &responses.GetTaskDetailResponse{
-		ID:                 task.ID.Hex(),
-		TaskRef:            task.TaskRef,
-		ProjectID:          task.ProjectID.Hex(),
-		Title:              task.Title,
-		Description:        task.Description,
-		ParentID:           task.ParentID,
-		Type:               task.Type,
-		Status:             task.Status,
-		Priority:           task.Priority,
-		Approvals:          approvalResponses,
-		Assignees:          assigneeResponses,
-		ChildrenPoint:      task.ChildrenPoint,
-		HasChildren:        task.HasChildren,
-		Sprint:             task.Sprint,
-		Attributes:         task.Attributes,
-		StartDate:          task.StartDate,
-		DueDate:            task.DueDate,
-		CreatedAt:          task.CreatedAt,
-		CreatedBy:          task.CreatedBy.Hex(),
-		CreatorDisplayName: creator.DisplayName,
-		UpdatedAt:          task.UpdatedAt,
-		UpdatedBy:          task.UpdatedBy.Hex(),
-		UpdaterDisplayName: updater.DisplayName,
-		TaskComments:       buildTaskComments(comments, commentsUsersMap),
+		ID:                  task.ID.Hex(),
+		TaskRef:             task.TaskRef,
+		ProjectID:           task.ProjectID.Hex(),
+		Title:               task.Title,
+		Description:         task.Description,
+		ParentID:            task.ParentID,
+		Type:                task.Type,
+		Status:              task.Status,
+		Priority:            task.Priority,
+		Approvals:           approvalResponses,
+		Assignees:           assigneeResponses,
+		ChildrenPoint:       task.ChildrenPoint,
+		HasChildren:         task.HasChildren,
+		Sprint:              task.Sprint,
+		Attributes:          task.Attributes,
+		StartDate:           task.StartDate,
+		DueDate:             task.DueDate,
+		CreatedAt:           task.CreatedAt,
+		ReporterUserID:      task.CreatedBy.Hex(),
+		ReporterDisplayName: reporter.DisplayName,
+		ReporterProfileUrl:  reporter.ProfileUrl,
+		UpdatedAt:           task.UpdatedAt,
+		UpdatedBy:           task.UpdatedBy.Hex(),
+		UpdaterDisplayName:  updater.DisplayName,
+		TaskComments:        buildTaskComments(comments, commentsUsersMap),
 	}, nil
 }
 
