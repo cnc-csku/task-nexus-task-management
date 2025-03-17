@@ -13,6 +13,7 @@ import (
 
 type TaskCommentHandler interface {
 	Create(c echo.Context) error
+	List(c echo.Context) error
 }
 
 type taskCommentHandlerImpl struct {
@@ -44,4 +45,23 @@ func (h *taskCommentHandlerImpl) Create(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, taskComment)
+}
+
+func (h *taskCommentHandlerImpl) List(c echo.Context) error {
+	req := new(requests.ListTaskCommentPathParams)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	taskComments, err := h.taskCommentService.List(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, taskComments)
 }
