@@ -304,10 +304,10 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		}
 	}
 
-	creator, err := s.userRepo.FindByID(ctx, task.CreatedBy)
+	reporter, err := s.userRepo.FindByID(ctx, task.CreatedBy)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if creator == nil {
+	} else if reporter == nil {
 		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.InternalServerError).WithDebugMessage(fmt.Sprintf("User not found: %s", task.CreatedBy.Hex()))
 	}
 
@@ -318,78 +318,32 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.InternalServerError).WithDebugMessage(fmt.Sprintf("User not found: %s", task.UpdatedBy.Hex()))
 	}
 
-	comments, err := s.taskCommentRepo.FindByTaskID(ctx, task.ID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	}
-
-	commentsUserIDs := extractUserIDsFromComments(comments)
-
-	commentsUsers, err := s.userRepo.FindByIDs(ctx, commentsUserIDs)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	}
-
-	commentsUsersMap := mapUsersByID(commentsUsers)
-
 	return &responses.GetTaskDetailResponse{
-		ID:                 task.ID.Hex(),
-		TaskRef:            task.TaskRef,
-		ProjectID:          task.ProjectID.Hex(),
-		Title:              task.Title,
-		Description:        task.Description,
-		ParentID:           task.ParentID,
-		Type:               task.Type,
-		Status:             task.Status,
-		Priority:           task.Priority,
-		Approvals:          approvalResponses,
-		Assignees:          assigneeResponses,
-		ChildrenPoint:      task.ChildrenPoint,
-		HasChildren:        task.HasChildren,
-		Sprint:             task.Sprint,
-		Attributes:         task.Attributes,
-		StartDate:          task.StartDate,
-		DueDate:            task.DueDate,
-		CreatedAt:          task.CreatedAt,
-		CreatedBy:          task.CreatedBy.Hex(),
-		CreatorDisplayName: creator.DisplayName,
-		UpdatedAt:          task.UpdatedAt,
-		UpdatedBy:          task.UpdatedBy.Hex(),
-		UpdaterDisplayName: updater.DisplayName,
-		TaskComments:       buildTaskComments(comments, commentsUsersMap),
+		ID:                  task.ID.Hex(),
+		TaskRef:             task.TaskRef,
+		ProjectID:           task.ProjectID.Hex(),
+		Title:               task.Title,
+		Description:         task.Description,
+		ParentID:            task.ParentID,
+		Type:                task.Type,
+		Status:              task.Status,
+		Priority:            task.Priority,
+		Approvals:           approvalResponses,
+		Assignees:           assigneeResponses,
+		ChildrenPoint:       task.ChildrenPoint,
+		HasChildren:         task.HasChildren,
+		Sprint:              task.Sprint,
+		Attributes:          task.Attributes,
+		StartDate:           task.StartDate,
+		DueDate:             task.DueDate,
+		CreatedAt:           task.CreatedAt,
+		ReporterUserID:      task.CreatedBy.Hex(),
+		ReporterDisplayName: reporter.DisplayName,
+		ReporterProfileUrl:  reporter.ProfileUrl,
+		UpdatedAt:           task.UpdatedAt,
+		UpdatedBy:           task.UpdatedBy.Hex(),
+		UpdaterDisplayName:  updater.DisplayName,
 	}, nil
-}
-
-func extractUserIDsFromComments(comments []*models.TaskComment) []bson.ObjectID {
-	userIDs := make([]bson.ObjectID, 0, len(comments))
-	for _, comment := range comments {
-		userIDs = append(userIDs, comment.UserID)
-	}
-	return userIDs
-}
-
-func mapUsersByID(users []models.User) map[string]string {
-	userMap := make(map[string]string, len(users))
-	for _, user := range users {
-		userMap[user.ID.Hex()] = user.DisplayName
-	}
-	return userMap
-}
-
-func buildTaskComments(comments []*models.TaskComment, userMap map[string]string) []responses.GetTaskDetailResponseTaskComment {
-	taskComments := make([]responses.GetTaskDetailResponseTaskComment, 0, len(comments))
-	for _, comment := range comments {
-		taskComments = append(taskComments, responses.GetTaskDetailResponseTaskComment{
-			ID:              comment.ID.Hex(),
-			Content:         comment.Content,
-			UserID:          comment.UserID.Hex(),
-			UserDisplayName: userMap[comment.UserID.Hex()],
-			TaskID:          comment.TaskID.Hex(),
-			CreatedAt:       comment.CreatedAt,
-			UpdatedAt:       comment.UpdatedAt,
-		})
-	}
-	return taskComments
 }
 
 func (s *taskServiceImpl) ListEpicTasks(ctx context.Context, req *requests.ListEpicTasksPathParam, userId string) ([]*models.Task, *errutils.Error) {
