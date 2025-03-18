@@ -14,6 +14,8 @@ type SprintRepository interface {
 	Update(ctx context.Context, sprint *UpdateSprintRequest) error
 	FindByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.Sprint, error)
 	List(ctx context.Context, filter *ListSprintFilter) ([]models.Sprint, error)
+	UpdateStatus(ctx context.Context, req *UpdateSprintStatusRequest) (*models.Sprint, error)
+	Delete(ctx context.Context, sprintID bson.ObjectID) error
 }
 
 type CreateSprintRequest struct {
@@ -34,4 +36,10 @@ type UpdateSprintRequest struct {
 type ListSprintFilter struct {
 	ProjectID bson.ObjectID
 	IsActive  *bool
+}
+
+type UpdateSprintStatusRequest struct {
+	ID        bson.ObjectID
+	Status    models.SprintStatus
+	UpdatedBy bson.ObjectID
 }

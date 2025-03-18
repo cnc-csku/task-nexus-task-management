@@ -32,6 +32,7 @@ type TaskService interface {
 	UpdateAssignees(ctx context.Context, req *requests.UpdateTaskAssigneesRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateSprint(ctx context.Context, req *requests.UpdateTaskSprintRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateAttributes(ctx context.Context, req *requests.UpdateTaskAttributesRequest, userId string) (*models.Task, *errutils.Error)
+	GenerateDescription(ctx context.Context, req *requests.GenerateDescriptionRequest, userId string) (*responses.GenerateDescriptionResponse, *errutils.Error)
 }
 
 type taskServiceImpl struct {
@@ -41,6 +42,7 @@ type taskServiceImpl struct {
 	sprintRepo        repositories.SprintRepository
 	taskCommentRepo   repositories.TaskCommentRepository
 	userRepo          repositories.UserRepository
+	geminiRepo        repositories.GeminiRepository
 }
 
 func NewTaskService(
@@ -50,6 +52,7 @@ func NewTaskService(
 	sprintRepo repositories.SprintRepository,
 	taskCommentRepo repositories.TaskCommentRepository,
 	userRepo repositories.UserRepository,
+	geminiRepo repositories.GeminiRepository,
 ) TaskService {
 	return &taskServiceImpl{
 		taskRepo:          taskRepo,
@@ -58,6 +61,7 @@ func NewTaskService(
 		sprintRepo:        sprintRepo,
 		taskCommentRepo:   taskCommentRepo,
 		userRepo:          userRepo,
+		geminiRepo:        geminiRepo,
 	}
 }
 
@@ -90,6 +94,16 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if member == nil {
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
+	var priority models.TaskPriority
+	if req.Priority != nil {
+		priority = models.TaskPriority(*req.Priority)
+		if !priority.IsValid() {
+			return nil, errutils.NewError(exceptions.ErrInvalidTaskPriority, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid task priority: %s", *req.Priority))
+		}
+	} else {
+		priority = models.TaskPriorityMedium
 	}
 
 	var bsonSprintID *bson.ObjectID
@@ -145,7 +159,7 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		}
 
 		taskSprint = &models.TaskSprint{
-			CurrentSprintID: *bsonSprintID,
+			CurrentSprintID: bsonSprintID,
 		}
 	}
 
@@ -168,6 +182,7 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		ParentID:    nullableBsonTaskParentID,
 		Type:        models.TaskType(req.Type),
 		Status:      defaultWorkflow.Status,
+		Priority:    priority,
 		Sprint:      taskSprint,
 		StartDate:   req.StartDate,
 		DueDate:     req.DueDate,
@@ -1177,14 +1192,25 @@ func (s *taskServiceImpl) UpdateSprint(ctx context.Context, req *requests.Update
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
 	}
 
-	currentSprintID, err := bson.ObjectIDFromHex(req.CurrentSprintID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	var bsonCurrentSprintID *bson.ObjectID
+	if req.CurrentSprintID != nil {
+		currentSprintID, err := bson.ObjectIDFromHex(*req.CurrentSprintID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		}
+		bsonCurrentSprintID = &currentSprintID
+
+		sprint, err := s.sprintRepo.FindByID(ctx, *bsonCurrentSprintID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		} else if sprint == nil {
+			return nil, errutils.NewError(exceptions.ErrSprintNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Sprint not found: %s", *req.CurrentSprintID))
+		}
 	}
 
-	updatedTask, err := s.taskRepo.UpdateSprint(ctx, &repositories.UpdateTaskSprintRequest{
+	updatedTask, err := s.taskRepo.UpdateCurrentSprintID(ctx, &repositories.UpdateTaskCurrentSprintIDRequest{
 		ID:              task.ID,
-		CurrentSprintID: currentSprintID,
+		CurrentSprintID: bsonCurrentSprintID,
 		UpdatedBy:       bsonUserID,
 	})
 	if err != nil {
@@ -1277,4 +1303,16 @@ func (s *taskServiceImpl) UpdateAttributes(ctx context.Context, req *requests.Up
 	}
 
 	return updatedTask, nil
+}
+
+// To be further implemented (prompt)
+func (s *taskServiceImpl) GenerateDescription(ctx context.Context, req *requests.GenerateDescriptionRequest, userId string) (*responses.GenerateDescriptionResponse, *errutils.Error) {
+	resp, err := s.geminiRepo.GenerateTaskDescription(ctx, req.Prompt)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	return &responses.GenerateDescriptionResponse{
+		Description: resp,
+	}, nil
 }

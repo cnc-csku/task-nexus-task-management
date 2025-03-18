@@ -29,3 +29,14 @@ type CompleteSprintRequest struct {
 	ProjectID       string `param:"projectId" validate:"required"`
 	CurrentSprintID string `param:"currentSprintId" validate:"required"`
 }
+
+type UpdateSprintStatusRequest struct {
+	ProjectID string `param:"projectId" validate:"required"`
+	SprintID  string `param:"sprintId" validate:"required"`
+	Status    string `json:"status" validate:"required"`
+}
+
+type DeleteSprintRequest struct {
+	ProjectID string `param:"projectId" validate:"required"`
+	SprintID  string `param:"sprintId" validate:"required"`
+}

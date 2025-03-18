@@ -21,7 +21,8 @@ type TaskRepository interface {
 	UpdateApprovals(ctx context.Context, in *UpdateTaskApprovalsRequest) (*models.Task, error)
 	ApproveTask(ctx context.Context, in *ApproveTaskRequest) (*models.Task, error)
 	UpdateAssignees(ctx context.Context, in *UpdateTaskAssigneesRequest) (*models.Task, error)
-	UpdateSprint(ctx context.Context, in *UpdateTaskSprintRequest) (*models.Task, error)
+	UpdateCurrentSprintID(ctx context.Context, in *UpdateTaskCurrentSprintIDRequest) (*models.Task, error)
+	UpdatePreviousSprintIDs(ctx context.Context, in *UpdateTaskPreviousSprintIDsRequest) (*models.Task, error)
 	FindByProjectIDAndStatuses(ctx context.Context, projectID bson.ObjectID, statuses []string) ([]*models.Task, error)
 	UpdateHasChildren(ctx context.Context, in *UpdateTaskHasChildrenRequest) (*models.Task, error)
 	FindByParentID(ctx context.Context, parentID bson.ObjectID) ([]*models.Task, error)
@@ -29,7 +30,9 @@ type TaskRepository interface {
 	FindByProjectIDAndType(ctx context.Context, projectID bson.ObjectID, taskType models.TaskType) ([]*models.Task, error)
 	Search(ctx context.Context, in *SearchTaskRequest) ([]*models.Task, error)
 	UpdateAttributes(ctx context.Context, in *UpdateTaskAttributesRequest) (*models.Task, error)
-	FindBySprintID(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error)
+	FindByCurrentSprintID(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error)
+	FindByPreviousSprintID(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error)
+	FindByCurrentSprintIDAndPreviousSprintIDs(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error)
 }
 
 type CreateTaskRequest struct {
@@ -40,6 +43,7 @@ type CreateTaskRequest struct {
 	ParentID    *bson.ObjectID
 	Type        models.TaskType
 	Status      string
+	Priority    models.TaskPriority
 	Sprint      *models.TaskSprint
 	StartDate   *time.Time
 	DueDate     *time.Time
@@ -102,10 +106,16 @@ type UpdateTaskAssigneesRequestAssignee struct {
 	Point    *int
 }
 
-type UpdateTaskSprintRequest struct {
+type UpdateTaskCurrentSprintIDRequest struct {
 	ID              bson.ObjectID
-	CurrentSprintID bson.ObjectID
+	CurrentSprintID *bson.ObjectID
 	UpdatedBy       bson.ObjectID
+}
+
+type UpdateTaskPreviousSprintIDsRequest struct {
+	ID                bson.ObjectID
+	PreviousSprintIDs []bson.ObjectID
+	UpdatedBy         bson.ObjectID
 }
 
 type UpdateTaskHasChildrenRequest struct {

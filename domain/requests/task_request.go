@@ -10,6 +10,7 @@ type CreateTaskRequest struct {
 	Description string     `json:"description"`
 	ParentID    *string    `json:"parentId"`
 	Type        string     `json:"type" validate:"required"`
+	Priority    *string    `json:"priority"`
 	SprintID    *string    `json:"sprintId"`
 	StartDate   *time.Time `json:"startDate"`
 	DueDate     *time.Time `json:"dueDate"`
@@ -88,9 +89,9 @@ type UpdateTaskAssigneesRequestAssignee struct {
 }
 
 type UpdateTaskSprintRequest struct {
-	ProjectID       string `param:"projectId" validate:"required"`
-	TaskRef         string `param:"taskRef" validate:"required"`
-	CurrentSprintID string `json:"currentSprintId" validate:"required"`
+	ProjectID       string  `param:"projectId" validate:"required"`
+	TaskRef         string  `param:"taskRef" validate:"required"`
+	CurrentSprintID *string `json:"currentSprintId"`
 }
 
 type UpdateTaskAttributesRequest struct {
@@ -103,4 +104,10 @@ type UpdateTaskAttributesRequestAttribute struct {
 	ProjectID string `json:"projectId" validate:"required"`
 	Key       string `json:"key" validate:"required"`
 	Value     string `json:"value"`
+}
+
+type GenerateDescriptionRequest struct {
+	ProjectID string `param:"projectId" validate:"required"`
+	TaskRef   string `param:"taskRef" validate:"required"`
+	Prompt    string `json:"prompt" validate:"required"`
 }

@@ -9,10 +9,12 @@ package wire
 import (
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
+	llm2 "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/api"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/database"
+	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
 	"github.com/cnc-csku/task-nexus/task-management/middlewares"
 )
@@ -46,10 +48,12 @@ func InitializeApp() *api.EchoAPI {
 	workspaceService := services.NewWorkspaceService(workspaceRepository, globalSettingRepository, userRepository, workspaceMemberRepository)
 	workspaceHandler := rest.NewWorkspaceHandler(workspaceService)
 	sprintRepository := mongo.NewMongoSprintRepo(configConfig, client)
-	sprintService := services.NewSprintService(sprintRepository, projectRepository, taskRepository)
+	sprintService := services.NewSprintService(sprintRepository, projectRepository, projectMemberRepository, taskRepository)
 	sprintHandler := rest.NewSprintHandler(sprintService)
 	taskCommentRepository := mongo.NewMongoTaskCommentRepo(configConfig, client)
-	taskService := services.NewTaskService(taskRepository, projectRepository, projectMemberRepository, sprintRepository, taskCommentRepository, userRepository)
+	geminiClient := llm.NewGeminiClient(context, configConfig)
+	geminiRepository := llm2.NewGeminiRepo(geminiClient, configConfig)
+	taskService := services.NewTaskService(taskRepository, projectRepository, projectMemberRepository, sprintRepository, taskCommentRepository, userRepository, geminiRepository)
 	taskHandler := rest.NewTaskHandler(taskService)
 	taskCommentService := services.NewTaskCommentService(userRepository, taskCommentRepository, taskRepository, projectRepository, projectMemberRepository)
 	taskCommentHandler := rest.NewTaskCommentHandler(taskCommentService)
