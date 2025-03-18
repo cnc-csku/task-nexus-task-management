@@ -72,6 +72,10 @@ func (f taskFilter) WithCurrentSprintID(sprintID bson.ObjectID) {
 	f["sprint.current_sprint_id"] = sprintID
 }
 
+func (f taskFilter) WithPreviousSprintID(sprintID bson.ObjectID) {
+	f["sprint.previous_sprint_ids"] = sprintID
+}
+
 func (f taskFilter) WithNoSprintID() {
 	f["sprint.current_sprint_id"] = bson.M{
 		"$eq": nil,
@@ -94,6 +98,15 @@ func (f taskFilter) WithSearchKeyword(keyword string) {
 	f["$or"] = []bson.M{
 		{"task_ref": bson.M{"$regex": keyword, "$options": "i"}},
 		{"title": bson.M{"$regex": keyword, "$options": "i"}},
+	}
+}
+
+func (f taskFilter) WithCurrentSprintIDAndPreviousSprintIDs(sprintID bson.ObjectID) {
+	f["$or"] = []bson.M{
+		{"sprint.current_sprint_id": sprintID},
+		{"sprint.previous_sprint_ids": bson.M{
+			"$in": []bson.ObjectID{sprintID},
+		}},
 	}
 }
 
@@ -178,13 +191,21 @@ func (u taskUpdate) UpdateAssignees(in *repositories.UpdateTaskAssigneesRequest)
 	}
 }
 
-func (u taskUpdate) UpdateSprint(in *repositories.UpdateTaskSprintRequest) {
+func (u taskUpdate) UpdateCurrentSprintID(in *repositories.UpdateTaskCurrentSprintIDRequest) {
 	u["$set"] = bson.M{
 		"sprint": bson.M{
 			"current_sprint_id": in.CurrentSprintID,
 		},
 		"updated_at": time.Now(),
 		"updated_by": in.UpdatedBy,
+	}
+}
+
+func (u taskUpdate) UpdatePreviousSprintIDs(in *repositories.UpdateTaskPreviousSprintIDsRequest) {
+	u["$set"] = bson.M{
+		"sprint.previous_sprint_ids": in.PreviousSprintIDs,
+		"updated_at":                 time.Now(),
+		"updated_by":                 in.UpdatedBy,
 	}
 }
 

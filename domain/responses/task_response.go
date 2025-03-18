@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
+	"github.com/google/generative-ai-go/genai"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -74,4 +75,8 @@ type SearchTaskResponseAssignee struct {
 	ProfileUrl  string `json:"profileUrl"`
 	Position    string `json:"position"`
 	Point       *int   `json:"point"`
+}
+
+type GenerateDescriptionResponse struct {
+	Description []*genai.Content `json:"description"`
 }

@@ -87,7 +87,7 @@ type TaskAssignee struct {
 
 type TaskSprint struct {
 	PreviousSprintIDs []bson.ObjectID `bson:"previous_sprint_ids" json:"previousSprintIds"`
-	CurrentSprintID   bson.ObjectID   `bson:"current_sprint_id" json:"currentSprintId"`
+	CurrentSprintID   *bson.ObjectID  `bson:"current_sprint_id" json:"currentSprintId"`
 }
 
 type TaskAttribute struct {

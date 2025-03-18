@@ -16,6 +16,7 @@ type Config struct {
 	GrpcServer   GrpcServerConfig                `envPrefix:"GRPC_SERVER_"`
 	GrpcClient   coreGrpcClient.GrpcClientConfig `envPrefix:"GRPC_CLIENT_"`
 	OllamaClient OllamaClientConfig              `envPrefix:"OLLAMA_CLIENT_"`
+	GeminiClient GeminiClientConfig              `envPrefix:"GEMINI_CLIENT_"`
 	JWT          JWT                             `envPrefix:"JWT_"`
 	Redis        RedisConfig                     `envPrefix:"REDIS_"`
 	LogFormat    string                          `env:"LOG_FORMAT"`
@@ -35,6 +36,11 @@ type GrpcServerConfig struct {
 	MaxSendMsgSize int    `env:"MAX_SEND_MSG_SIZE"`
 	MaxRecvMsgSize int    `env:"MAX_RECV_MSG_SIZE"`
 	UseReflection  bool   `env:"USE_REFLECTION"`
+}
+
+type GeminiClientConfig struct {
+	ApiKey string `env:"API_KEY"`
+	Model  string `env:"MODEL"`
 }
 
 type OllamaClientConfig struct {

@@ -136,3 +136,30 @@ func (m *mongoSprintRepo) List(ctx context.Context, filter *repositories.ListSpr
 
 	return sprints, nil
 }
+
+func (m *mongoSprintRepo) UpdateStatus(ctx context.Context, req *repositories.UpdateSprintStatusRequest) (*models.Sprint, error) {
+	f := NewSprintFilter()
+	f.WithID(req.ID)
+
+	u := NewSprintUpdater()
+	u.UpdateStatus(req)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, req.ID)
+}
+
+func (m *mongoSprintRepo) Delete(ctx context.Context, sprintID bson.ObjectID) error {
+	f := NewSprintFilter()
+	f.WithID(sprintID)
+
+	_, err := m.collection.DeleteOne(ctx, f)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

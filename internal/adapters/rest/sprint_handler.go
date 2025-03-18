@@ -17,6 +17,8 @@ type SprintHandler interface {
 	Edit(c echo.Context) error
 	List(c echo.Context) error
 	CompleteSprint(c echo.Context) error
+	UpdateStatus(c echo.Context) error
+	Delete(c echo.Context) error
 }
 
 type sprintHandlerImpl struct {
@@ -115,6 +117,44 @@ func (h *sprintHandlerImpl) CompleteSprint(c echo.Context) error {
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
 	resp, err := h.sprintService.CompleteSprint(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *sprintHandlerImpl) UpdateStatus(c echo.Context) error {
+	req := new(requests.UpdateSprintStatusRequest)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.sprintService.UpdateStatus(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *sprintHandlerImpl) Delete(c echo.Context) error {
+	req := new(requests.DeleteSprintRequest)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.sprintService.Delete(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}

@@ -3,6 +3,7 @@ package mongo
 import (
 	"time"
 
+	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -31,4 +32,12 @@ type sprintUpdater bson.M
 
 func NewSprintUpdater() sprintUpdater {
 	return sprintUpdater{}
+}
+
+func (u sprintUpdater) UpdateStatus(in *repositories.UpdateSprintStatusRequest) {
+	u["$set"] = bson.M{
+		"status":     in.Status,
+		"updated_at": time.Now(),
+		"updated_by": in.UpdatedBy,
+	}
 }

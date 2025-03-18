@@ -36,7 +36,7 @@ func (m *mongoTaskRepo) Create(ctx context.Context, task *repositories.CreateTas
 		ParentID:    task.ParentID,
 		Type:        task.Type,
 		Status:      task.Status,
-		Priority:    models.TaskPriorityMedium,
+		Priority:    task.Priority,
 		Sprint:      task.Sprint,
 		StartDate:   task.StartDate,
 		DueDate:     task.DueDate,
@@ -231,12 +231,27 @@ func (m *mongoTaskRepo) UpdateAssignees(ctx context.Context, in *repositories.Up
 	return m.FindByID(ctx, in.ID)
 }
 
-func (m *mongoTaskRepo) UpdateSprint(ctx context.Context, in *repositories.UpdateTaskSprintRequest) (*models.Task, error) {
+func (m *mongoTaskRepo) UpdateCurrentSprintID(ctx context.Context, in *repositories.UpdateTaskCurrentSprintIDRequest) (*models.Task, error) {
 	f := NewTaskFilter()
 	f.WithID(in.ID)
 
 	u := NewTaskUpdate()
-	u.UpdateSprint(in)
+	u.UpdateCurrentSprintID(in)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) UpdatePreviousSprintIDs(ctx context.Context, in *repositories.UpdateTaskPreviousSprintIDsRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdatePreviousSprintIDs(in)
 
 	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
 	if err != nil {
@@ -402,11 +417,49 @@ func (m *mongoTaskRepo) UpdateAttributes(ctx context.Context, in *repositories.U
 	return m.FindByID(ctx, in.ID)
 }
 
-func (m *mongoTaskRepo) FindBySprintID(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error) {
+func (m *mongoTaskRepo) FindByCurrentSprintID(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error) {
 	tasks := make([]*models.Task, 0)
 
 	f := NewTaskFilter()
 	f.WithCurrentSprintID(sprintID)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+func (m *mongoTaskRepo) FindByPreviousSprintID(ctx context.Context, previousSprintID bson.ObjectID) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithPreviousSprintID(previousSprintID)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+func (m *mongoTaskRepo) FindByCurrentSprintIDAndPreviousSprintIDs(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithCurrentSprintIDAndPreviousSprintIDs(sprintID)
 
 	cursor, err := m.collection.Find(ctx, f)
 	if err != nil {

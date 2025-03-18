@@ -63,6 +63,8 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		projects.PUT("/:projectId/sprints/:sprintId", r.sprint.Edit, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/sprints", r.sprint.List, r.authMiddleware.Middleware)
 		projects.PUT("/:projectId/sprints/:currentSprintId/complete", r.sprint.CompleteSprint, r.authMiddleware.Middleware)
+		projects.PUT("/:projectId/sprints/:sprintId/status", r.sprint.UpdateStatus, r.authMiddleware.Middleware)
+		projects.DELETE("/:projectId/sprints/:sprintId", r.sprint.Delete, r.authMiddleware.Middleware)
 
 		// Attribute Templates
 		projects.PUT("/:projectId/attribute-templates", r.project.UpdateAttributeTemplates, r.authMiddleware.Middleware)
@@ -93,6 +95,9 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 
 		tasks.POST("/:taskRef/comments", r.taskComment.Create, r.authMiddleware.Middleware)
 		tasks.GET("/:taskRef/comments", r.taskComment.List, r.authMiddleware.Middleware)
+
+		// llm
+		tasks.GET("/:taskRef/generate-description", r.task.GenerateDescription, r.authMiddleware.Middleware)
 	}
 
 	setup := api.Group("/setup/v1")

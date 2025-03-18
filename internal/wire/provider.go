@@ -5,6 +5,7 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/grpcclient"
+	llm_repo "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/cache"
@@ -27,6 +28,7 @@ var InfraSet = wire.NewSet(
 	database.NewMongoClient,
 	router.NewRouter,
 	llm.NewOllamaClient,
+	llm.NewGeminiClient,
 	cache.NewRedisClient,
 )
 
@@ -41,6 +43,7 @@ var RepositorySet = wire.NewSet(
 	mongo.NewMongoSprintRepo,
 	mongo.NewMongoTaskRepo,
 	mongo.NewMongoTaskCommentRepo,
+	llm_repo.NewGeminiRepo,
 )
 
 var ServiceSet = wire.NewSet(

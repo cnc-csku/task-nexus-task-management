@@ -25,6 +25,7 @@ type TaskHandler interface {
 	UpdateAssignees(c echo.Context) error
 	UpdateSprint(c echo.Context) error
 	UpdateAttributes(c echo.Context) error
+	GenerateDescription(c echo.Context) error
 }
 
 type taskHandlerImpl struct {
@@ -277,6 +278,25 @@ func (h *taskHandlerImpl) UpdateAttributes(c echo.Context) error {
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
 	resp, err := h.taskService.UpdateAttributes(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) GenerateDescription(c echo.Context) error {
+	req := new(requests.GenerateDescriptionRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.GenerateDescription(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}
