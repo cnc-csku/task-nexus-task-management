@@ -28,8 +28,8 @@ github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XL
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cnc-csku/task-nexus-api-specification v0.0.0-20250221084027-937f1dec107a h1:cj7FtPhIW9VJIOOiBkdt4EDkhRzjf6nk973VaMpVzsQ=
 github.com/cnc-csku/task-nexus-api-specification v0.0.0-20250221084027-937f1dec107a/go.mod h1:4cceRs12rhYVFfwGj7OPMg2CJb/g0J9oC97lrcLSiV0=
-github.com/cnc-csku/task-nexus-go-lib v1.2.0 h1:PXvRt8ZswLCdGPWQP97OPnUTz6CPMksXzTA38JbQQQg=
-github.com/cnc-csku/task-nexus-go-lib v1.2.0/go.mod h1:P1seoHHHP99/LifTBhEG0sKjYyBfKIELPqxn4Puc7mQ=
+github.com/cnc-csku/task-nexus-go-lib v1.3.0 h1:+OXhR0r9+B72EtDiQWq6RdOj2+TZNH7EtVE62y0PPMU=
+github.com/cnc-csku/task-nexus-go-lib v1.3.0/go.mod h1:Wze/L1KN/jkC8BMfZHFvX6ooYbmQe9o5RTykBlE94ZQ=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

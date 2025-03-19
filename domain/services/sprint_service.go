@@ -16,9 +16,9 @@ import (
 
 type SprintService interface {
 	Create(ctx context.Context, req *requests.CreateSprintRequest, userID string) (*responses.CreateSprintResponse, *errutils.Error)
-	GetByID(ctx context.Context, req *requests.GetSprintByIDRequest) (*models.Sprint, *errutils.Error)
+	GetByID(ctx context.Context, req *requests.GetSprintByIDRequest, userID string) (*models.Sprint, *errutils.Error)
 	Edit(ctx context.Context, req *requests.EditSprintRequest, userID string) (*responses.EditSprintResponse, *errutils.Error)
-	List(ctx context.Context, req *requests.ListSprintPathParam) ([]models.Sprint, *errutils.Error)
+	List(ctx context.Context, req *requests.ListSprintPathParam, userID string) ([]models.Sprint, *errutils.Error)
 	CompleteSprint(ctx context.Context, req *requests.CompleteSprintRequest, userID string) (*responses.CompleteSprintResponse, *errutils.Error)
 	UpdateStatus(ctx context.Context, req *requests.UpdateSprintStatusRequest, userID string) (*models.Sprint, *errutils.Error)
 	Delete(ctx context.Context, req *requests.DeleteSprintRequest, userID string) (*responses.DeleteSprintResponse, *errutils.Error)
@@ -66,6 +66,7 @@ func (s *sprintServiceImpl) Create(ctx context.Context, req *requests.CreateSpri
 	sprint := &repositories.CreateSprintRequest{
 		ProjectID: bsonProjectID,
 		Title:     fmt.Sprintf("%s Sprint %d", project.Name, project.SprintRunningNumber),
+		Status:    models.SprintStatusCreated,
 		CreatedBy: bsonUserID,
 	}
 
@@ -83,15 +84,33 @@ func (s *sprintServiceImpl) Create(ctx context.Context, req *requests.CreateSpri
 		ID:        createdSprint.ID.Hex(),
 		ProjectID: createdSprint.ProjectID.Hex(),
 		Title:     createdSprint.Title,
+		Status:    createdSprint.Status.String(),
 		CreatedAt: createdSprint.CreatedAt,
 		CreatedBy: createdSprint.CreatedBy.Hex(),
 	}, nil
 }
 
-func (s *sprintServiceImpl) GetByID(ctx context.Context, req *requests.GetSprintByIDRequest) (*models.Sprint, *errutils.Error) {
+func (s *sprintServiceImpl) GetByID(ctx context.Context, req *requests.GetSprintByIDRequest, userID string) (*models.Sprint, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
 	bsonSprintID, err := bson.ObjectIDFromHex(req.SprintID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("user is not member of project")
 	}
 
 	sprint, err := s.sprintRepo.FindByID(ctx, bsonSprintID)
@@ -152,10 +171,24 @@ func (s *sprintServiceImpl) Edit(ctx context.Context, req *requests.EditSprintRe
 	}, nil
 }
 
-func (s *sprintServiceImpl) List(ctx context.Context, req *requests.ListSprintPathParam) ([]models.Sprint, *errutils.Error) {
+func (s *sprintServiceImpl) List(ctx context.Context, req *requests.ListSprintPathParam, userID string) ([]models.Sprint, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	var sprintStatus *models.SprintStatus
+	if req.Status != nil {
+		if !models.SprintStatus(*req.Status).IsValid() {
+			return nil, errutils.NewError(exceptions.ErrInvalidSprintStatus, errutils.BadRequest).WithDebugMessage("invalid sprint status")
+		}
+
+		sprintStatus = (*models.SprintStatus)(req.Status)
 	}
 
 	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
@@ -165,9 +198,17 @@ func (s *sprintServiceImpl) List(ctx context.Context, req *requests.ListSprintPa
 		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest).WithDebugMessage("project not found")
 	}
 
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("user is not member of project")
+	}
+
 	sprints, err := s.sprintRepo.List(ctx, &repositories.ListSprintFilter{
 		ProjectID: bsonProjectID,
 		IsActive:  req.IsActive,
+		Status:    sprintStatus,
 	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
