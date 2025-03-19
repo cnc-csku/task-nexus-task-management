@@ -72,6 +72,12 @@ func (f taskFilter) WithCurrentSprintID(sprintID bson.ObjectID) {
 	f["sprint.current_sprint_id"] = sprintID
 }
 
+func (f taskFilter) WithCurrentSprintIDs(sprintID []bson.ObjectID) {
+	f["sprint.current_sprint_id"] = bson.M{
+		"$in": sprintID,
+	}
+}
+
 func (f taskFilter) WithPreviousSprintID(sprintID bson.ObjectID) {
 	f["sprint.previous_sprint_ids"] = sprintID
 }
