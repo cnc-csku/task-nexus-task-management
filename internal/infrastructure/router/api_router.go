@@ -9,11 +9,6 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 
 	api.GET("/health", r.healthCheck.HealthCheck)
 
-	common := api.Group("/common/v1")
-	{
-		common.POST("/generate-put-presigned-url", r.common.GeneratePutPresignedURL, r.authMiddleware.Middleware)
-	}
-
 	auth := api.Group("/auth/v1")
 	{
 		auth.POST("/register", r.user.Register)
