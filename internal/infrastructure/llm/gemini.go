@@ -32,5 +32,7 @@ func NewGeminiClient(
 
 	model := client.GenerativeModel(cfg.GeminiClient.Model)
 
+	log.Printf("✅ connected to Gemini model: %s", cfg.GeminiClient.Model)
+
 	return &GeminiClient{Client: model}
 }

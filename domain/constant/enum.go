@@ -47,3 +47,12 @@ const (
 	ProjectMemberFieldDisplayName = "display_name"
 	ProjectMemberFieldJoinedAt    = "joined_at"
 )
+
+// File Category
+const (
+	UserProfileFileCategory = "USER_PROFILE"
+)
+
+const (
+	UserProfileFileCategoryPath = "user-profile"
+)

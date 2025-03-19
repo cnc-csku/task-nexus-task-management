@@ -17,6 +17,7 @@ type Config struct {
 	GrpcClient   coreGrpcClient.GrpcClientConfig `envPrefix:"GRPC_CLIENT_"`
 	OllamaClient OllamaClientConfig              `envPrefix:"OLLAMA_CLIENT_"`
 	GeminiClient GeminiClientConfig              `envPrefix:"GEMINI_CLIENT_"`
+	MinioClient  MinioClientConfig               `envPrefix:"MINIO_CLIENT_"`
 	JWT          JWT                             `envPrefix:"JWT_"`
 	Redis        RedisConfig                     `envPrefix:"REDIS_"`
 	LogFormat    string                          `env:"LOG_FORMAT"`
@@ -48,6 +49,16 @@ type OllamaClientConfig struct {
 	UseProxy      bool   `env:"USE_PROXY"`
 	HttpProxyHost string `env:"HTTP_PROXY_HOST"`
 	HttpProxyPort string `env:"HTTP_PROXY_PORT"`
+}
+
+type MinioClientConfig struct {
+	Endpoint              string `env:"ENDPOINT"`
+	AccessKeyID           string `env:"ACCESS_KEY_ID"`
+	SecretAccessKey       string `env:"SECRET_ACCESS_KEY"`
+	BucketName            string `env:"BUCKET_NAME"`
+	UseSSL                bool   `env:"USE_SSL"`
+	FileUploadSizeLimitMB int64  `env:"FILE_UPLOAD_SIZE_LIMIT_MB"`
+	PresignedURLExpirySec int64  `env:"PRESIGNED_URL_EXPIRY_SEC"`
 }
 
 type JWT struct {
