@@ -15,3 +15,9 @@ type SetupStatusResponse struct {
 	IsSetupOwner     bool `json:"isSetupOwner"`
 	IsSetupWorkspace bool `json:"isSetupWorkspace"`
 }
+
+type GeneratePutPresignedURLResponse struct {
+	URL       string `json:"url"`
+	ExpiredIn string `json:"expiredIn"`
+	ExpiredAt string `json:"expiredAt"`
+}

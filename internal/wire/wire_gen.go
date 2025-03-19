@@ -11,11 +11,13 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
 	llm2 "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
+	storage2 "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/storage"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/api"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/database"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
+	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/storage"
 	"github.com/cnc-csku/task-nexus/task-management/middlewares"
 )
 
@@ -28,7 +30,9 @@ func InitializeApp() *api.EchoAPI {
 	authMiddleware := middlewares.NewAdminJWTMiddleware(configConfig)
 	healthCheckHandler := rest.NewHealthCheckHandler()
 	globalSettingRepository := mongo.NewMongoGlobalSettingRepo(configConfig, client)
-	commonService := services.NewCommonService(globalSettingRepository)
+	minioClient := storage.NewMinIOClient(context, configConfig)
+	minioRepository := storage2.NewMinioRepository(minioClient, configConfig)
+	commonService := services.NewCommonService(globalSettingRepository, minioRepository)
 	commonHandler := rest.NewCommonHandler(commonService)
 	userRepository := mongo.NewMongoUserRepo(configConfig, client)
 	userService := services.NewUserService(configConfig, userRepository, globalSettingRepository)

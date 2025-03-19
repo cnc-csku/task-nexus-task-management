@@ -78,5 +78,5 @@ type SearchTaskResponseAssignee struct {
 }
 
 type GenerateDescriptionResponse struct {
-	Description []*genai.Content `json:"description"`
+	Description []genai.Part `json:"description"`
 }

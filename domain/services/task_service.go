@@ -15,6 +15,7 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
 	"github.com/cnc-csku/task-nexus/task-management/domain/requests"
 	"github.com/cnc-csku/task-nexus/task-management/domain/responses"
+	"github.com/google/generative-ai-go/genai"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -1307,12 +1308,79 @@ func (s *taskServiceImpl) UpdateAttributes(ctx context.Context, req *requests.Up
 
 // To be further implemented (prompt)
 func (s *taskServiceImpl) GenerateDescription(ctx context.Context, req *requests.GenerateDescriptionRequest, userId string) (*responses.GenerateDescriptionResponse, *errutils.Error) {
-	resp, err := s.geminiRepo.GenerateTaskDescription(ctx, req.Prompt)
+	bsonUserID, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Project not found: %s", bsonProjectID.Hex()))
+	}
+
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
+	task, err := s.taskRepo.FindByTaskRefAndProjectID(ctx, req.TaskRef, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if task == nil {
+		return nil, errutils.NewError(exceptions.ErrTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Task not found: %s", req.TaskRef))
+	}
+
+	var assigneeStr string
+	for _, assignee := range task.Assignees {
+		user, err := s.userRepo.FindByID(ctx, assignee.UserID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+
+		var point string
+		if assignee.Point != nil {
+			point = strconv.Itoa(*assignee.Point)
+		} else {
+			point = "N/A"
+		}
+
+		assigneeStr += user.DisplayName + ", " + assignee.Position + ", " + point + "\n"
+	}
+
+	prompt := fmt.Sprintf(`
+	Generate a detailed task description for a software development task.
+		Task Details:
+		- Title: %s
+		- Type: %s
+		- Priority: %s
+		- Project: %s
+		- Status: %s
+		- Assignees: %s
+		- Additional Context: %s
+		(Generate only the description content. Do not include the task details in the description.)
+		The description should be concise yet informative, covering the purpose, scope, requirements, and any necessary technical details.
+	`, task.Title, task.Type.String(), task.Priority.String(), project.Name, task.Status, assigneeStr, req.Prompt)
+
+	resp, err := s.geminiRepo.GenerateTaskDescription(ctx, prompt)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
+	var parts []genai.Part
+	for _, content := range resp {
+		parts = append(parts, content.Parts...)
+	}
+
 	return &responses.GenerateDescriptionResponse{
-		Description: resp,
+		Description: parts,
 	}, nil
 }

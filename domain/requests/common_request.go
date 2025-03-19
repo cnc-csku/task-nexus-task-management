@@ -8,3 +8,8 @@ type PaginationRequest struct {
 	SortBy   string `json:"sortBy" query:"sortBy"`
 	Order    string `json:"order" query:"order" validate:"oneof=ASC DESC asc desc ''"`
 }
+
+type GeneratePutPresignedURLRequest struct {
+	FileName     string `json:"fileName" validate:"required"`
+	FileCategory string `json:"fileCategory" validate:"required"`
+}

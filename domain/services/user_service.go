@@ -189,6 +189,7 @@ func (u *userServiceImpl) FindUserByEmail(ctx context.Context, email string) (*r
 		Email:       user.Email,
 		FullName:    user.FullName,
 		DisplayName: user.DisplayName,
+		ProfileUrl:  user.ProfileUrl,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
 	}
