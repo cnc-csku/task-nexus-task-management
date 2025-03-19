@@ -29,6 +29,7 @@ func (m *mongoSprintRepo) Create(ctx context.Context, sprint *repositories.Creat
 		ID:        bson.NewObjectID(),
 		ProjectID: sprint.ProjectID,
 		Title:     sprint.Title,
+		Status:    sprint.Status,
 		CreatedAt: time.Now(),
 		CreatedBy: sprint.CreatedBy,
 		UpdatedAt: time.Now(),
@@ -116,6 +117,10 @@ func (m *mongoSprintRepo) List(ctx context.Context, filter *repositories.ListSpr
 
 	if filter.IsActive != nil && *filter.IsActive {
 		f.WithEndDateGreaterThanOrEqualNowOrIsNull()
+	}
+
+	if filter.Status != nil {
+		f.WithStatus(*filter.Status)
 	}
 
 	cursor, err := m.collection.Find(ctx, f)

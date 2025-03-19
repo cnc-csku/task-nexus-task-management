@@ -60,7 +60,8 @@ func (h *sprintHandlerImpl) GetByID(c echo.Context) error {
 		return err
 	}
 
-	sprint, err := h.sprintService.GetByID(c.Request().Context(), req)
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	sprint, err := h.sprintService.GetByID(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}
@@ -97,7 +98,8 @@ func (h *sprintHandlerImpl) List(c echo.Context) error {
 		return err
 	}
 
-	sprints, err := h.sprintService.List(c.Request().Context(), req)
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	sprints, err := h.sprintService.List(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}

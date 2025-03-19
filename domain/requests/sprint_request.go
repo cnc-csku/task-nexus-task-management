@@ -7,7 +7,8 @@ type CreateSprintRequest struct {
 }
 
 type GetSprintByIDRequest struct {
-	SprintID string `param:"sprintId" validate:"required"`
+	ProjectID string `param:"projectId" validate:"required"`
+	SprintID  string `param:"sprintId" validate:"required"`
 }
 
 type EditSprintRequest struct {
@@ -21,8 +22,9 @@ type EditSprintRequest struct {
 }
 
 type ListSprintPathParam struct {
-	ProjectID string `param:"projectId" validate:"required"`
-	IsActive  *bool  `query:"isActive"`
+	ProjectID string  `param:"projectId" validate:"required"`
+	IsActive  *bool   `query:"isActive"`
+	Status    *string `query:"status"`
 }
 
 type CompleteSprintRequest struct {

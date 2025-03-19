@@ -3,6 +3,7 @@ package mongo
 import (
 	"time"
 
+	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -26,6 +27,10 @@ func (f sprintFilter) WithEndDateGreaterThanOrEqualNowOrIsNull() {
 		{"end_date": bson.M{"$gte": time.Now()}},
 		{"end_date": bson.M{"$eq": nil}},
 	}
+}
+
+func (f sprintFilter) WithStatus(status models.SprintStatus) {
+	f["status"] = status
 }
 
 type sprintUpdater bson.M

@@ -21,6 +21,7 @@ type SprintRepository interface {
 type CreateSprintRequest struct {
 	ProjectID bson.ObjectID
 	Title     string
+	Status    models.SprintStatus
 	CreatedBy bson.ObjectID
 }
 
@@ -36,6 +37,7 @@ type UpdateSprintRequest struct {
 type ListSprintFilter struct {
 	ProjectID bson.ObjectID
 	IsActive  *bool
+	Status    *models.SprintStatus
 }
 
 type UpdateSprintStatusRequest struct {
