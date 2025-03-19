@@ -131,7 +131,7 @@ type UpdateTaskChildrenPointRequest struct {
 type SearchTaskRequest struct {
 	ProjectID          bson.ObjectID
 	TaskTypes          []models.TaskType
-	SprintID           *bson.ObjectID
+	SprintIDs          []bson.ObjectID
 	IsTaskWithNoSprint bool
 	EpicTaskID         *bson.ObjectID
 	IsTaskWithNoEpic   bool

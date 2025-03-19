@@ -400,20 +400,21 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 	}
 
 	var (
-		bsonSprintID       *bson.ObjectID
 		isTaskWithNoSprint bool
+		bsonSprintIDs      []bson.ObjectID
 	)
-	if req.SprintID != nil {
-		if *req.SprintID == constant.SearchTaskParamsTaskBacklog {
-			isTaskWithNoSprint = true
-		} else {
-			sprintID, err := bson.ObjectIDFromHex(*req.SprintID)
+	if req.IsTaskInBacklog != nil && *req.IsTaskInBacklog {
+		isTaskWithNoSprint = true
+	} else if req.SprintIDs != nil {
+		for _, sprintID := range req.SprintIDs {
+			bsonSprintID, err := bson.ObjectIDFromHex(sprintID)
 			if err != nil {
 				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 			}
-			bsonSprintID = &sprintID
+			bsonSprintIDs = append(bsonSprintIDs, bsonSprintID)
 		}
 	}
+	fmt.Println("bsonSprintIDs", bsonSprintIDs)
 
 	var (
 		bsonParentID     *bson.ObjectID
@@ -466,7 +467,7 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 	tasks, err := s.taskRepo.Search(ctx, &repositories.SearchTaskRequest{
 		ProjectID:          bsonProjectID,
 		TaskTypes:          []models.TaskType{models.TaskTypeStory, models.TaskTypeTask, models.TaskTypeBug},
-		SprintID:           bsonSprintID,
+		SprintIDs:          bsonSprintIDs,
 		IsTaskWithNoSprint: isTaskWithNoSprint,
 		EpicTaskID:         bsonParentID,
 		IsTaskWithNoEpic:   isTaskWithNoEpic,

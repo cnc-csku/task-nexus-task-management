@@ -357,8 +357,8 @@ func (m *mongoTaskRepo) Search(ctx context.Context, in *repositories.SearchTaskR
 	f.WithProjectID(in.ProjectID)
 	f.WithTypes(in.TaskTypes)
 
-	if in.SprintID != nil {
-		f.WithCurrentSprintID(*in.SprintID)
+	if in.SprintIDs != nil {
+		f.WithCurrentSprintIDs(in.SprintIDs)
 	}
 
 	if in.IsTaskWithNoSprint {

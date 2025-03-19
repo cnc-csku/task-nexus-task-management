@@ -26,13 +26,14 @@ type ListEpicTasksPathParam struct {
 }
 
 type SearchTaskParams struct {
-	ProjectID     string   `param:"projectId" validate:"required"`
-	SprintID      *string  `query:"sprintId"`   // Sprint_id or BACKLOG (WITH_NO_SPRINT)
-	EpicTaskID    *string  `query:"epicTaskId"` // Parent_id or WITH_NO_EPIC
-	UserIDs       []string `query:"userIds"`
-	Positions     []string `query:"positions"`
-	Statuses      []string `query:"statuses"`
-	SearchKeyword *string  `query:"searchKeyword"`
+	ProjectID       string   `param:"projectId" validate:"required"`
+	SprintIDs       []string `query:"sprintIds"`
+	IsTaskInBacklog *bool    `query:"isTaskInBacklog"` // Task with no sprint
+	EpicTaskID      *string  `query:"epicTaskId"`      // Parent_id or WITH_NO_EPIC
+	UserIDs         []string `query:"userIds"`
+	Positions       []string `query:"positions"`
+	Statuses        []string `query:"statuses"`
+	SearchKeyword   *string  `query:"searchKeyword"`
 }
 
 type UpdateTaskDetailRequest struct {
