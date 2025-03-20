@@ -27,6 +27,7 @@ type TaskService interface {
 	UpdateDetail(ctx context.Context, req *requests.UpdateTaskDetailRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateTitle(ctx context.Context, req *requests.UpdateTaskTitleRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateParentID(ctx context.Context, req *requests.UpdateTaskParentIdRequest, userId string) (*models.Task, *errutils.Error)
+	UpdateType(ctx context.Context, req *requests.UpdateTaskTypeRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateStatus(ctx context.Context, req *requests.UpdateTaskStatusRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateApprovals(ctx context.Context, req *requests.UpdateTaskApprovalsRequest, userId string) (*models.Task, *errutils.Error)
 	ApproveTask(ctx context.Context, req *requests.ApproveTaskRequest, userId string) (*models.Task, *errutils.Error)
@@ -900,6 +901,58 @@ func updateChildrenPointOfPreviousParentTask(
 	}
 
 	return nil
+}
+
+func (s *taskServiceImpl) UpdateType(ctx context.Context, req *requests.UpdateTaskTypeRequest, userId string) (*models.Task, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	if !models.TaskType(req.Type).IsValid() {
+		return nil, errutils.NewError(exceptions.ErrInvalidTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid task type: %s", req.Type))
+	}
+
+	task, err := s.taskRepo.FindByTaskRefAndProjectID(ctx, req.TaskRef, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if task == nil {
+		return nil, errutils.NewError(exceptions.ErrTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Task not found: %s", req.TaskRef))
+	}
+
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, task.ProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
+	/*
+		Currently, only task in the same level can be converted to each other.
+
+		(Task <=> Story <=> Bug)
+	*/
+
+	if task.Type == models.TaskTypeEpic || task.Type == models.TaskTypeSubTask ||
+		req.Type == models.TaskTypeEpic.String() || req.Type == models.TaskTypeSubTask.String() {
+		return nil, errutils.NewError(exceptions.ErrOnlyTaskInTheSameLevelCanChangeType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Task type: %s", task.Type))
+	}
+
+	updatedTask, err := s.taskRepo.UpdateType(ctx, &repositories.UpdateTaskTypeRequest{
+		ID:        task.ID,
+		Type:      models.TaskType(req.Type),
+		UpdatedBy: bsonUserID,
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	return updatedTask, nil
 }
 
 func (s *taskServiceImpl) UpdateStatus(ctx context.Context, req *requests.UpdateTaskStatusRequest, userId string) (*models.Task, *errutils.Error) {

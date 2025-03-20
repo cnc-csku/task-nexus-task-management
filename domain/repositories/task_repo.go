@@ -17,6 +17,7 @@ type TaskRepository interface {
 	UpdateDetail(ctx context.Context, in *UpdateTaskDetailRequest) (*models.Task, error)
 	UpdateTitle(ctx context.Context, in *UpdateTaskTitleRequest) (*models.Task, error)
 	UpdateParentID(ctx context.Context, in *UpdateTaskParentIDRequest) (*models.Task, error)
+	UpdateType(ctx context.Context, in *UpdateTaskTypeRequest) (*models.Task, error)
 	UpdateStatus(ctx context.Context, in *UpdateTaskStatusRequest) (*models.Task, error)
 	UpdateApprovals(ctx context.Context, in *UpdateTaskApprovalsRequest) (*models.Task, error)
 	ApproveTask(ctx context.Context, in *ApproveTaskRequest) (*models.Task, error)
@@ -69,6 +70,12 @@ type UpdateTaskTitleRequest struct {
 type UpdateTaskParentIDRequest struct {
 	ID        bson.ObjectID
 	ParentID  *bson.ObjectID
+	UpdatedBy bson.ObjectID
+}
+
+type UpdateTaskTypeRequest struct {
+	ID        bson.ObjectID
+	Type      models.TaskType
 	UpdatedBy bson.ObjectID
 }
 

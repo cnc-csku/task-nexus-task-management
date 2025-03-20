@@ -92,6 +92,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		tasks.PUT("/:taskRef/detail", r.task.UpdateDetail, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/title", r.task.UpdateTitle, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/parent", r.task.UpdateParentID, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/type", r.task.UpdateType, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/status", r.task.UpdateStatus, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/approvals", r.task.UpdateApprovals, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/approve", r.task.ApproveTask, r.authMiddleware.Middleware)

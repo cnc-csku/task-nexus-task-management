@@ -58,6 +58,12 @@ type UpdateTaskParentIdRequest struct {
 	ParentID  *string `json:"parentId"`
 }
 
+type UpdateTaskTypeRequest struct {
+	ProjectID string `param:"projectId" validate:"required"`
+	TaskRef   string `param:"taskRef" validate:"required"`
+	Type      string `json:"type" validate:"required"`
+}
+
 type UpdateTaskStatusRequest struct {
 	ProjectID string `param:"projectId" validate:"required"`
 	TaskID    string `param:"taskRef" validate:"required"`
