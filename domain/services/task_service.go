@@ -278,11 +278,16 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Approval not found")
 		}
 
+		var profileUrl = user.DefaultProfileUrl
+		if user.UploadedProfileUrl != nil {
+			profileUrl = *user.UploadedProfileUrl
+		}
+
 		approvalResponses[i] = responses.GetTaskDetailResponseApprovals{
 			UserID:      approval.UserID.Hex(),
 			Email:       user.Email,
 			DisplayName: user.DisplayName,
-			ProfileUrl:  user.ProfileUrl,
+			ProfileUrl:  profileUrl,
 			IsApproved:  approval.IsApproved,
 			Reason:      approval.Reason,
 		}
@@ -310,11 +315,16 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Assignee not found")
 		}
 
+		var profileUrl = user.DefaultProfileUrl
+		if user.UploadedProfileUrl != nil {
+			profileUrl = *user.UploadedProfileUrl
+		}
+
 		assigneeResponses[i] = responses.GetTaskDetailResponseAssignee{
 			UserID:      assignee.UserID.Hex(),
 			Email:       user.Email,
 			DisplayName: user.DisplayName,
-			ProfileUrl:  user.ProfileUrl,
+			ProfileUrl:  profileUrl,
 			Position:    assignee.Position,
 			Point:       assignee.Point,
 		}
@@ -332,6 +342,16 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if updater == nil {
 		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.InternalServerError).WithDebugMessage(fmt.Sprintf("User not found: %s", task.UpdatedBy.Hex()))
+	}
+
+	var reporterProfileUrl = reporter.DefaultProfileUrl
+	if reporter.UploadedProfileUrl != nil {
+		reporterProfileUrl = *reporter.UploadedProfileUrl
+	}
+
+	var updaterProfileUrl = updater.DefaultProfileUrl
+	if updater.UploadedProfileUrl != nil {
+		updaterProfileUrl = *updater.UploadedProfileUrl
 	}
 
 	return &responses.GetTaskDetailResponse{
@@ -355,10 +375,11 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		CreatedAt:           task.CreatedAt,
 		ReporterUserID:      task.CreatedBy.Hex(),
 		ReporterDisplayName: reporter.DisplayName,
-		ReporterProfileUrl:  reporter.ProfileUrl,
+		ReporterProfileUrl:  reporterProfileUrl,
 		UpdatedAt:           task.UpdatedAt,
 		UpdatedBy:           task.UpdatedBy.Hex(),
 		UpdaterDisplayName:  updater.DisplayName,
+		UpdaterProfileUrl:   updaterProfileUrl,
 	}, nil
 }
 
@@ -414,7 +435,6 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 			bsonSprintIDs = append(bsonSprintIDs, bsonSprintID)
 		}
 	}
-	fmt.Println("bsonSprintIDs", bsonSprintIDs)
 
 	var (
 		bsonParentID     *bson.ObjectID
@@ -512,11 +532,16 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Assignee not found")
 			}
 
+			var profileUrl = user.DefaultProfileUrl
+			if user.UploadedProfileUrl != nil {
+				profileUrl = *user.UploadedProfileUrl
+			}
+
 			assigneeResponses[i] = responses.SearchTaskResponseAssignee{
 				UserID:      assignee.UserID.Hex(),
 				Email:       user.Email,
 				DisplayName: user.DisplayName,
-				ProfileUrl:  user.ProfileUrl,
+				ProfileUrl:  profileUrl,
 				Position:    assignee.Position,
 				Point:       assignee.Point,
 			}

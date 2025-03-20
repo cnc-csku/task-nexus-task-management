@@ -8,14 +8,15 @@ import (
 )
 
 type User struct {
-	ID           bson.ObjectID `bson:"_id" json:"id"`
-	Email        string        `bson:"email" json:"email"`
-	PasswordHash string        `bson:"password_hash" json:"passwordHash"`
-	FullName     string        `bson:"full_name" json:"fullName"`
-	DisplayName  string        `bson:"display_name" json:"displayName"`
-	ProfileUrl   string        `bson:"profile_url" json:"profileUrl"`
-	CreatedAt    time.Time     `bson:"created_at" json:"createdAt"`
-	UpdatedAt    time.Time     `bson:"updated_at" json:"updatedAt"`
+	ID                 bson.ObjectID `bson:"_id" json:"id"`
+	Email              string        `bson:"email" json:"email"`
+	PasswordHash       string        `bson:"password_hash" json:"passwordHash"`
+	FullName           string        `bson:"full_name" json:"fullName"`
+	DisplayName        string        `bson:"display_name" json:"displayName"`
+	DefaultProfileUrl  string        `bson:"default_profile_url" json:"defaultProfileUrl"`
+	UploadedProfileUrl *string       `bson:"uploaded_profile_url" json:"uploadedProfileUrl"`
+	CreatedAt          time.Time     `bson:"created_at" json:"createdAt"`
+	UpdatedAt          time.Time     `bson:"updated_at" json:"updatedAt"`
 }
 
 type UserCustomClaims struct {

@@ -30,14 +30,14 @@ func NewMongoUserRepo(config *config.Config, mongoClient *mongo.Client) reposito
 
 func (m *mongoUserRepo) Create(ctx context.Context, user *repositories.CreateUserRequest) (*models.User, error) {
 	newUser := models.User{
-		ID:           bson.NewObjectID(),
-		Email:        user.Email,
-		PasswordHash: user.PasswordHash,
-		FullName:     user.FullName,
-		DisplayName:  user.DisplayName,
-		ProfileUrl:   user.ProfileUrl,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ID:                bson.NewObjectID(),
+		Email:             user.Email,
+		PasswordHash:      user.PasswordHash,
+		FullName:          user.FullName,
+		DisplayName:       user.DisplayName,
+		DefaultProfileUrl: user.DefaultProfileUrl,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	_, err := m.collection.InsertOne(ctx, newUser)
@@ -195,4 +195,19 @@ func (m *mongoUserRepo) FindByID(ctx context.Context, userID bson.ObjectID) (*mo
 	}
 
 	return user, nil
+}
+
+func (m *mongoUserRepo) UpdateProfile(ctx context.Context, in *repositories.UpdateUserProfileRequest) (*models.User, error) {
+	f := NewUserFilter()
+	f.WithUserID(in.UserID)
+
+	u := NewUserUpdate()
+	u.UpdateProfile(in)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.UserID)
 }

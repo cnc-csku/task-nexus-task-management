@@ -26,6 +26,7 @@ type UserService interface {
 	Search(ctx context.Context, req *requests.SearchUserParams, searcherUserId string) (*responses.ListUserResponse, *errutils.Error)
 	SetupFirstUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error)
 	GetUserProfile(ctx context.Context, req *requests.GetUserProfileRequest) (*responses.UserResponse, *errutils.Error)
+	UpdateProfile(ctx context.Context, req *requests.UpdateUserProfileRequest, userID string) (*responses.UserResponse, *errutils.Error)
 }
 
 type userServiceImpl struct {
@@ -90,21 +91,20 @@ func (u *userServiceImpl) Register(ctx context.Context, req *requests.RegisterRe
 	// Generate profile url
 	fullName := strings.Trim(req.FullName, " ")
 	nameParts := strings.Split(fullName, " ")
-	var profileUrl = "https://ui-avatars.com/api/?name="
+	var defaultProfileUrl = "https://ui-avatars.com/api/?name="
 	if len(nameParts) == 1 {
-		profileUrl += nameParts[0]
+		defaultProfileUrl += nameParts[0]
 	} else {
-		profileUrl += nameParts[0] + "+" + nameParts[1]
+		defaultProfileUrl += nameParts[0] + "+" + nameParts[1]
 	}
 
-	user := &repositories.CreateUserRequest{
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		FullName:     fullName,
-		DisplayName:  fullName,
-		ProfileUrl:   profileUrl,
-	}
-	createdUser, err := u.userRepo.Create(ctx, user)
+	createdUser, err := u.userRepo.Create(ctx, &repositories.CreateUserRequest{
+		Email:             req.Email,
+		PasswordHash:      string(hashedPassword),
+		FullName:          fullName,
+		DisplayName:       fullName,
+		DefaultProfileUrl: defaultProfileUrl,
+	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError)
 	}
@@ -123,7 +123,7 @@ func (u *userServiceImpl) Register(ctx context.Context, req *requests.RegisterRe
 			Email:       createdUser.Email,
 			FullName:    createdUser.FullName,
 			DisplayName: createdUser.DisplayName,
-			ProfileUrl:  createdUser.ProfileUrl,
+			ProfileUrl:  createdUser.DefaultProfileUrl,
 			CreatedAt:   createdUser.CreatedAt,
 			UpdatedAt:   createdUser.UpdatedAt,
 		},
@@ -158,12 +158,17 @@ func (u *userServiceImpl) Login(ctx context.Context, req *requests.LoginRequest)
 		return nil, tokenErr
 	}
 
+	var profileUrl = user.DefaultProfileUrl
+	if user.UploadedProfileUrl != nil {
+		user.DefaultProfileUrl = *user.UploadedProfileUrl
+	}
+
 	res := &responses.UserWithTokenResponse{
 		UserResponse: responses.UserResponse{
 			ID:          user.ID.Hex(),
 			Email:       user.Email,
 			FullName:    user.FullName,
-			ProfileUrl:  user.ProfileUrl,
+			ProfileUrl:  profileUrl,
 			DisplayName: user.DisplayName,
 			CreatedAt:   user.CreatedAt,
 			UpdatedAt:   user.UpdatedAt,
@@ -184,12 +189,17 @@ func (u *userServiceImpl) FindUserByEmail(ctx context.Context, email string) (*r
 		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.NotFound)
 	}
 
+	var profileUrl = user.DefaultProfileUrl
+	if user.UploadedProfileUrl != nil {
+		user.DefaultProfileUrl = *user.UploadedProfileUrl
+	}
+
 	res := &responses.UserResponse{
 		ID:          user.ID.Hex(),
 		Email:       user.Email,
 		FullName:    user.FullName,
 		DisplayName: user.DisplayName,
-		ProfileUrl:  user.ProfileUrl,
+		ProfileUrl:  profileUrl,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
 	}
@@ -247,11 +257,17 @@ func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserPa
 			continue
 		}
 
+		var profileUrl = user.DefaultProfileUrl
+		if user.UploadedProfileUrl != nil {
+			user.DefaultProfileUrl = *user.UploadedProfileUrl
+		}
+
 		res.Users = append(res.Users, responses.UserResponse{
 			ID:          user.ID.Hex(),
 			Email:       user.Email,
 			FullName:    user.FullName,
 			DisplayName: user.DisplayName,
+			ProfileUrl:  profileUrl,
 			CreatedAt:   user.CreatedAt,
 			UpdatedAt:   user.UpdatedAt,
 		})
@@ -315,13 +331,71 @@ func (u *userServiceImpl) GetUserProfile(ctx context.Context, req *requests.GetU
 		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.NotFound).WithDebugMessage("user not found")
 	}
 
+	var profileUrl = user.DefaultProfileUrl
+	if user.UploadedProfileUrl != nil {
+		user.DefaultProfileUrl = *user.UploadedProfileUrl
+	}
+
 	return &responses.UserResponse{
 		ID:          user.ID.Hex(),
 		Email:       user.Email,
 		FullName:    user.FullName,
 		DisplayName: user.DisplayName,
-		ProfileUrl:  user.ProfileUrl,
+		ProfileUrl:  profileUrl,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
+	}, nil
+}
+
+func (u *userServiceImpl) UpdateProfile(ctx context.Context, req *requests.UpdateUserProfileRequest, userID string) (*responses.UserResponse, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	user, err := u.userRepo.FindByID(ctx, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if user == nil {
+		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.NotFound).WithDebugMessage("user not found")
+	}
+
+	var defaultProfileUrl = user.DefaultProfileUrl
+	if user.FullName != req.FullName {
+		fullName := strings.Trim(req.FullName, " ")
+		nameParts := strings.Split(fullName, " ")
+		var defaultProfileUrl = "https://ui-avatars.com/api/?name="
+		if len(nameParts) == 1 {
+			defaultProfileUrl += nameParts[0]
+		} else {
+			defaultProfileUrl += nameParts[0] + "+" + nameParts[1]
+		}
+	}
+
+	updatedUser, err := u.userRepo.UpdateProfile(ctx, &repositories.UpdateUserProfileRequest{
+		UserID:             bsonUserID,
+		FullName:           req.FullName,
+		DisplayName:        req.DisplayName,
+		DefaultProfileUrl:  defaultProfileUrl,
+		UploadedProfileUrl: req.ProfileUrl,
+		UpdatedBy:          bsonUserID,
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	var profileUrl = updatedUser.DefaultProfileUrl
+	if updatedUser.UploadedProfileUrl != nil {
+		updatedUser.DefaultProfileUrl = *updatedUser.UploadedProfileUrl
+	}
+
+	return &responses.UserResponse{
+		ID:          updatedUser.ID.Hex(),
+		Email:       updatedUser.Email,
+		FullName:    updatedUser.FullName,
+		DisplayName: updatedUser.DisplayName,
+		ProfileUrl:  profileUrl,
+		CreatedAt:   updatedUser.CreatedAt,
+		UpdatedAt:   updatedUser.UpdatedAt,
 	}, nil
 }

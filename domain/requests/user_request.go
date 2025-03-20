@@ -19,3 +19,9 @@ type SearchUserParams struct {
 type GetUserProfileRequest struct {
 	UserID string `param:"userId" validate:"required"`
 }
+
+type UpdateUserProfileRequest struct {
+	FullName    string  `json:"fullName" validate:"required"`
+	DisplayName string  `json:"displayName" validate:"required"`
+	ProfileUrl  *string `json:"profileUrl"`
+}

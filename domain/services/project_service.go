@@ -196,6 +196,11 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 			continue
 		}
 
+		var profileUrl = ownerInfo.DefaultProfileUrl
+		if ownerInfo.UploadedProfileUrl != nil {
+			profileUrl = *ownerInfo.UploadedProfileUrl
+		}
+
 		resp = append(resp, responses.ListProjectsResponse{
 			ID:                   project.ID.Hex(),
 			WorkspaceID:          project.WorkspaceID.Hex(),
@@ -206,7 +211,7 @@ func (p *projectServiceImpl) ListMyProjects(ctx context.Context, req *requests.L
 			OwnerUserID:          owner.UserID.Hex(),
 			OwnerProjectMemberID: owner.ID.Hex(),
 			OwnerDisplayName:     ownerInfo.DisplayName,
-			OwnerProfileUrl:      ownerInfo.ProfileUrl,
+			OwnerProfileUrl:      profileUrl,
 			CreatedAt:            project.CreatedAt,
 			CreatedBy:            project.CreatedBy.Hex(),
 			UpdatedAt:            project.UpdatedAt,
@@ -253,6 +258,11 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
 	}
 
+	var profileUrl = ownerInfo.DefaultProfileUrl
+	if ownerInfo.UploadedProfileUrl != nil {
+		profileUrl = *ownerInfo.UploadedProfileUrl
+	}
+
 	return &responses.GetProjectDetailResponse{
 		ID:                   project.ID.Hex(),
 		WorkspaceID:          project.WorkspaceID.Hex(),
@@ -263,7 +273,7 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 		OwnerUserID:          owner.UserID.Hex(),
 		OwnerProjectMemberID: owner.ID.Hex(),
 		OwnerDisplayName:     ownerInfo.DisplayName,
-		OwnerProfileUrl:      ownerInfo.ProfileUrl,
+		OwnerProfileUrl:      profileUrl,
 		Positions:            project.Positions,
 		Workflows:            project.Workflows,
 		AttributeTemplates:   project.AttributeTemplates,
@@ -531,12 +541,17 @@ func (p *projectServiceImpl) ListMembers(ctx context.Context, req *requests.List
 	memberResp := make([]responses.ListProjectMembersResponseMember, 0)
 	for _, member := range projectMembers {
 		if user, exists := userMap[member.UserID]; exists {
+			var profileUrl = user.DefaultProfileUrl
+			if user.UploadedProfileUrl != nil {
+				profileUrl = *user.UploadedProfileUrl
+			}
+
 			memberResp = append(memberResp, responses.ListProjectMembersResponseMember{
 				UserID:      user.ID.Hex(),
 				Email:       user.Email,
 				FullName:    user.FullName,
 				DisplayName: user.DisplayName,
-				ProfileUrl:  user.ProfileUrl,
+				ProfileUrl:  profileUrl,
 				Role:        member.Role.String(),
 				Position:    member.Position,
 				JoinedAt:    member.JoinedAt,
