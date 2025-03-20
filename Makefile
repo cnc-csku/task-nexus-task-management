@@ -1,6 +1,9 @@
 start:
 	go run cmd/app/main.go
 
+fmt:
+	go fmt ./...
+
 wire-gen:
 	wire ./internal/...
 

@@ -21,67 +21,45 @@ type WorkspaceService interface {
 }
 
 type workspaceServiceImpl struct {
-	workspaceRepo       repositories.WorkspaceRepository
-	globalSettingRepo   repositories.GlobalSettingRepository
-	userRepo            repositories.UserRepository
-	workspaceMemberRepo repositories.WorkspaceMemberRepository
+	workspaceRepo        repositories.WorkspaceRepository
+	userRepo             repositories.UserRepository
+	workspaceMemberRepo  repositories.WorkspaceMemberRepository
+	globalSettingService GlobalSettingService
 }
 
 func NewWorkspaceService(
 	workspaceRepo repositories.WorkspaceRepository,
-	globalSettingRepo repositories.GlobalSettingRepository,
 	userRepo repositories.UserRepository,
 	workspaceMemberRepo repositories.WorkspaceMemberRepository,
+	globalSettingService GlobalSettingService,
 ) WorkspaceService {
 	return &workspaceServiceImpl{
-		workspaceRepo:       workspaceRepo,
-		globalSettingRepo:   globalSettingRepo,
-		userRepo:            userRepo,
-		workspaceMemberRepo: workspaceMemberRepo,
+		workspaceRepo:        workspaceRepo,
+		userRepo:             userRepo,
+		workspaceMemberRepo:  workspaceMemberRepo,
+		globalSettingService: globalSettingService,
 	}
 }
 
 func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests.CreateWorkspaceRequest, userID string) (*models.Workspace, *errutils.Error) {
 	// Check is setup workspace
-	isSetupWorkspace, err := w.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupWorkspace)
-	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError)
+	isSetupWorkspaceSetting, svcErr := w.globalSettingService.GetGlobalSettingByKey(ctx, constant.GlobalSettingKeyIsSetupWorkspace)
+	if svcErr != nil {
+		return nil, svcErr
 	}
 
-	if isSetupWorkspace == nil {
-		err := w.globalSettingRepo.Set(ctx, &models.KeyValuePair{
-			Key:   constant.GlobalSettingKeyIsSetupWorkspace,
-			Type:  models.KeyValuePairTypeBoolean,
-			Value: false,
-		})
-
-		if err != nil {
-			return nil, errutils.NewError(err, errutils.InternalServerError)
-		}
-	} else if isSetupWorkspace.Value.(bool) {
+	if isSetupWorkspaceSetting.Value.(bool) {
 		return nil, errutils.NewError(exceptions.ErrWorkspaceAlreadySetup, errutils.BadRequest).
 			WithMessage("Workspace already setup")
 	}
 
-	// Check is setup owner
-	isSetupOwner, err := w.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupOwner)
-	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError)
+	// Check is setup owner - first try cache
+	isSetupOwnerSetting, svcErr := w.globalSettingService.GetGlobalSettingByKey(ctx, constant.GlobalSettingKeyIsSetupOwner)
+	if svcErr != nil {
+		return nil, svcErr
 	}
 
-	if isSetupOwner == nil {
-		err := w.globalSettingRepo.Set(ctx, &models.KeyValuePair{
-			Key:   constant.GlobalSettingKeyIsSetupOwner,
-			Type:  models.KeyValuePairTypeBoolean,
-			Value: false,
-		})
-
-		if err != nil {
-			return nil, errutils.NewError(err, errutils.InternalServerError)
-		}
-	}
-
-	if !isSetupOwner.Value.(bool) {
+	if !isSetupOwnerSetting.Value.(bool) {
 		return nil, errutils.NewError(exceptions.ErrOwnerNotSetup, errutils.BadRequest)
 	}
 
@@ -127,15 +105,12 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
-	// Set is setup complete
-	err = w.globalSettingRepo.Set(ctx, &models.KeyValuePair{
+	// Set is setup workspace completed
+	err = w.globalSettingService.SetGlobalSetting(ctx, &models.KeyValuePair{
 		Key:   constant.GlobalSettingKeyIsSetupWorkspace,
 		Type:  models.KeyValuePairTypeBoolean,
 		Value: true,
 	})
-	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError).WithDebugMessage(err.Error())
-	}
 
 	return workspace, nil
 }

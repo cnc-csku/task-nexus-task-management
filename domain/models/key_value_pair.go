@@ -3,7 +3,7 @@ package models
 type KeyValuePair struct {
 	Key   string           `json:"key" bson:"key"`
 	Type  KeyValuePairType `json:"type" bson:"type"`
-	Value interface{}      `json:"value" bson:"value"`
+	Value any              `json:"value" bson:"value"`
 }
 
 type KeyValuePairType string

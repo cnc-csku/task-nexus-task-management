@@ -30,20 +30,23 @@ type UserService interface {
 }
 
 type userServiceImpl struct {
-	config            *config.Config
-	userRepo          repositories.UserRepository
-	globalSettingRepo repositories.GlobalSettingRepository
+	config               *config.Config
+	userRepo             repositories.UserRepository
+	globalSettingRepo    repositories.GlobalSettingRepository
+	globalSettingService GlobalSettingService
 }
 
 func NewUserService(
 	config *config.Config,
 	userRepo repositories.UserRepository,
 	globalSettingRepo repositories.GlobalSettingRepository,
+	globalSettingService GlobalSettingService,
 ) UserService {
 	return &userServiceImpl{
-		config:            config,
-		userRepo:          userRepo,
-		globalSettingRepo: globalSettingRepo,
+		config:               config,
+		userRepo:             userRepo,
+		globalSettingRepo:    globalSettingRepo,
+		globalSettingService: globalSettingService,
 	}
 }
 
@@ -278,24 +281,12 @@ func (u *userServiceImpl) Search(ctx context.Context, req *requests.SearchUserPa
 
 func (u *userServiceImpl) SetupFirstUser(ctx context.Context, req *requests.RegisterRequest) (*responses.UserWithTokenResponse, *errutils.Error) {
 	// Check is setup
-	isSetupOwner, err := u.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupOwner)
+	isSetupOwnerSetting, err := u.globalSettingService.GetGlobalSettingByKey(ctx, constant.GlobalSettingKeyIsSetupOwner)
 	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError)
+		return nil, err
 	}
 
-	if isSetupOwner == nil {
-		err := u.globalSettingRepo.Set(ctx, &models.KeyValuePair{
-			Key:   constant.GlobalSettingKeyIsSetupOwner,
-			Type:  models.KeyValuePairTypeBoolean,
-			Value: false,
-		})
-
-		if err != nil {
-			return nil, errutils.NewError(err, errutils.InternalServerError)
-		}
-	}
-
-	if isSetupOwner.Value.(bool) {
+	if isSetupOwnerSetting.Value.(bool) {
 		return nil, errutils.NewError(exceptions.ErrOwnerAlreadySetup, errutils.BadRequest)
 	}
 
@@ -304,8 +295,7 @@ func (u *userServiceImpl) SetupFirstUser(ctx context.Context, req *requests.Regi
 		return nil, regErr
 	}
 
-	// Set is setup owner
-	err = u.globalSettingRepo.Set(ctx, &models.KeyValuePair{
+	err = u.globalSettingService.SetGlobalSetting(ctx, &models.KeyValuePair{
 		Key:   constant.GlobalSettingKeyIsSetupOwner,
 		Type:  models.KeyValuePairTypeBoolean,
 		Value: true,

@@ -1,13 +1,14 @@
 package wire
 
 import (
-	core_grpcclient "github.com/cnc-csku/task-nexus-go-lib/grpcclient"
+	coreGrpcclient "github.com/cnc-csku/task-nexus-go-lib/grpcclient"
 	"github.com/cnc-csku/task-nexus/task-management/config"
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/grpcclient"
-	llm_repo "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/llm"
+	llmRepo "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
-	storage_repo "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/storage"
+	redisRepo "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/redis"
+	storageRepo "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/storage"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/cache"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/database"
@@ -46,8 +47,9 @@ var RepositorySet = wire.NewSet(
 	mongo.NewMongoSprintRepo,
 	mongo.NewMongoTaskRepo,
 	mongo.NewMongoTaskCommentRepo,
-	llm_repo.NewGeminiRepo,
-	storage_repo.NewMinioRepository,
+	llmRepo.NewGeminiRepo,
+	storageRepo.NewMinioRepository,
+	redisRepo.NewRedisGlobalSettingCacheRepo,
 )
 
 var ServiceSet = wire.NewSet(
@@ -60,6 +62,7 @@ var ServiceSet = wire.NewSet(
 	services.NewSprintService,
 	services.NewTaskService,
 	services.NewTaskCommentService,
+	services.NewGlobalSettingService,
 )
 
 var RestHandlerSet = wire.NewSet(
@@ -77,7 +80,7 @@ var RestHandlerSet = wire.NewSet(
 
 var GrpcClientSet = wire.NewSet(
 	config.ProvideGrpcClientConfig,
-	core_grpcclient.NewGrpcClient,
+	coreGrpcclient.NewGrpcClient,
 	grpcclient.NewGrpcClient,
 )
 
