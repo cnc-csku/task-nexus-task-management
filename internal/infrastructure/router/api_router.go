@@ -110,6 +110,10 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	reports := api.Group("/projects/v1/:projectId/reports/v1")
 	{
 		reports.GET("/status-overview", r.report.GetStatusOverview, r.authMiddleware.Middleware)
+		reports.GET("/priority-overview", r.report.GetPriorityOverview, r.authMiddleware.Middleware)
+		reports.GET("/type-overview", r.report.GetTypeOverview, r.authMiddleware.Middleware)
+		reports.GET("/assignee-overview", r.report.GetAssigneeOverview, r.authMiddleware.Middleware)
+		reports.GET("/epic-task-overview", r.report.GetEpicTaskOverview, r.authMiddleware.Middleware)
 	}
 
 	setup := api.Group("/setup/v1")
