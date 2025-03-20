@@ -33,6 +33,7 @@ type GetTaskDetailResponse struct {
 	UpdatedAt           time.Time                        `json:"updatedAt"`
 	UpdatedBy           string                           `json:"updatedBy"`
 	UpdaterDisplayName  string                           `json:"updaterDisplayName"`
+	UpdaterProfileUrl   string                           `json:"updaterProfileUrl"`
 }
 
 type GetTaskDetailResponseApprovals struct {

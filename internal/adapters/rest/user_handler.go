@@ -16,6 +16,7 @@ type UserHandler interface {
 	Login(c echo.Context) error
 	GetMyProfile(c echo.Context) error
 	SearchUser(c echo.Context) error
+	UpdateProfile(c echo.Context) error
 	SetupUser(c echo.Context) error
 	GetUserProfile(c echo.Context) error
 }
@@ -93,6 +94,25 @@ func (u *userHandlerImpl) SearchUser(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, users)
+}
+
+func (u *userHandlerImpl) UpdateProfile(c echo.Context) error {
+	req := new(requests.UpdateUserProfileRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	user, err := u.userService.UpdateProfile(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, user)
 }
 
 func (u *userHandlerImpl) SetupUser(c echo.Context) error {

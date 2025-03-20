@@ -20,6 +20,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		auth.POST("/login", r.user.Login)
 		auth.GET("/profile", r.user.GetMyProfile, r.authMiddleware.Middleware)
 		auth.GET("/search", r.user.SearchUser, r.authMiddleware.Middleware)
+		auth.PUT("/profile", r.user.UpdateProfile, r.authMiddleware.Middleware)
 	}
 
 	users := api.Group("/users/v1")

@@ -100,11 +100,16 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.BadRequest)
 	}
 
+	var profileUrl = user.DefaultProfileUrl
+	if user.UploadedProfileUrl != nil {
+		profileUrl = *user.UploadedProfileUrl
+	}
+
 	// Create workspace with user as owner
 	workspace, err := w.workspaceRepo.Create(ctx, &repositories.CreateWorkspaceRequest{
 		Name:            req.Name,
 		UserDisplayName: user.DisplayName,
-		ProfileUrl:      user.ProfileUrl,
+		ProfileUrl:      profileUrl,
 		UserID:          userObjID,
 	})
 
@@ -240,6 +245,11 @@ func (s *workspaceServiceImpl) ListWorkspaceMembers(ctx context.Context, req *re
 	response := make([]responses.ListWorkspaceMembersResponseWorkspaceMember, 0)
 	for _, member := range workspaceMembers {
 		if user, exists := userMap[member.UserID]; exists {
+			var profileUrl = user.DefaultProfileUrl
+			if user.UploadedProfileUrl != nil {
+				profileUrl = *user.UploadedProfileUrl
+			}
+
 			response = append(response, responses.ListWorkspaceMembersResponseWorkspaceMember{
 				WorkspaceMemberID: member.ID.Hex(),
 				UserID:            user.ID.Hex(),
@@ -248,7 +258,7 @@ func (s *workspaceServiceImpl) ListWorkspaceMembers(ctx context.Context, req *re
 				Email:             user.Email,
 				FullName:          user.FullName,
 				DisplayName:       user.DisplayName,
-				ProfileUrl:        user.ProfileUrl,
+				ProfileUrl:        profileUrl,
 			})
 		}
 	}
