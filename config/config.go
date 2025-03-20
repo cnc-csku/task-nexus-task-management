@@ -20,6 +20,7 @@ type Config struct {
 	MinioClient  MinioClientConfig               `envPrefix:"MINIO_CLIENT_"`
 	JWT          JWT                             `envPrefix:"JWT_"`
 	Redis        RedisConfig                     `envPrefix:"REDIS_"`
+	Cache        CacheConfig                     `envPrefix:"CACHE_"`
 	LogFormat    string                          `env:"LOG_FORMAT"`
 }
 
@@ -64,6 +65,10 @@ type MinioClientConfig struct {
 type JWT struct {
 	AccessTokenSecret  string `env:"ACCESS_TOKEN_SECRET"`
 	RefreshTokenSecret string `env:"REFRESH_TOKEN_SECRET"`
+}
+
+type CacheConfig struct {
+	GlobalConfigTTL string `env:"GLOBAL_CONFIG_TTL"`
 }
 
 type RedisConfig struct {

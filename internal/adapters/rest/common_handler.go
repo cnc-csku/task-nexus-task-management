@@ -4,8 +4,10 @@ import (
 	"net/http"
 
 	"github.com/cnc-csku/task-nexus-go-lib/utils/tokenutils"
+	"github.com/cnc-csku/task-nexus/task-management/domain/constant"
 	"github.com/cnc-csku/task-nexus/task-management/domain/models"
 	"github.com/cnc-csku/task-nexus/task-management/domain/requests"
+	"github.com/cnc-csku/task-nexus/task-management/domain/responses"
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
 	"github.com/labstack/echo/v4"
 )
@@ -16,24 +18,37 @@ type CommonHandler interface {
 }
 
 type commonHandler struct {
-	commonService services.CommonService
+	commonService        services.CommonService
+	globalSettingService services.GlobalSettingService
 }
 
 func NewCommonHandler(
 	commonService services.CommonService,
+	globalSettingService services.GlobalSettingService,
 ) CommonHandler {
 	return &commonHandler{
-		commonService: commonService,
+		commonService:        commonService,
+		globalSettingService: globalSettingService,
 	}
 }
 
 func (ch *commonHandler) GetSetupStatus(c echo.Context) error {
-	res, err := ch.commonService.GetSetupStatus(c.Request().Context())
+	response := &responses.SetupStatusResponse{}
+
+	setupWorkspaceSetting, err := ch.globalSettingService.GetGlobalSettingByKey(c.Request().Context(), constant.GlobalSettingKeyIsSetupWorkspace)
+	if err != nil {
+		return err.ToEchoError()
+	}
+	response.IsSetupWorkspace = setupWorkspaceSetting.Value.(bool)
+
+	setupOwnerSetting, err := ch.globalSettingService.GetGlobalSettingByKey(c.Request().Context(), constant.GlobalSettingKeyIsSetupOwner)
 	if err != nil {
 		return err.ToEchoError()
 	}
 
-	return c.JSON(http.StatusOK, res)
+	response.IsSetupOwner = setupOwnerSetting.Value.(bool)
+
+	return c.JSON(http.StatusOK, response)
 
 }
 

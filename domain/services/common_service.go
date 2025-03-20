@@ -15,40 +15,25 @@ import (
 )
 
 type CommonService interface {
-	GetSetupStatus(ctx context.Context) (*responses.SetupStatusResponse, *errutils.Error)
 	GeneratePutPresignedURL(ctx context.Context, req *requests.GeneratePutPresignedURLRequest, userID string) (*responses.GeneratePutPresignedURLResponse, *errutils.Error)
 }
 
 type commonService struct {
-	globalSettingRepo repositories.GlobalSettingRepository
-	minioRepo         repositories.MinioRepository
+	globalSettingRepo      repositories.GlobalSettingRepository
+	globalSettingCacheRepo repositories.GlobalSettingCacheRepository
+	minioRepo              repositories.MinioRepository
 }
 
 func NewCommonService(
 	globalSettingRepo repositories.GlobalSettingRepository,
+	globalSettingCacheRepo repositories.GlobalSettingCacheRepository,
 	minioRepo repositories.MinioRepository,
 ) CommonService {
 	return &commonService{
-		globalSettingRepo: globalSettingRepo,
-		minioRepo:         minioRepo,
+		globalSettingRepo:      globalSettingRepo,
+		globalSettingCacheRepo: globalSettingCacheRepo,
+		minioRepo:              minioRepo,
 	}
-}
-
-func (c *commonService) GetSetupStatus(ctx context.Context) (*responses.SetupStatusResponse, *errutils.Error) {
-	isSetupWorkspace, err := c.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupWorkspace)
-	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError)
-	}
-
-	isSetupOwner, err := c.globalSettingRepo.GetByKey(ctx, constant.GlobalSettingKeyIsSetupOwner)
-	if err != nil {
-		return nil, errutils.NewError(err, errutils.InternalServerError)
-	}
-
-	return &responses.SetupStatusResponse{
-		IsSetupWorkspace: isSetupWorkspace.Value.(bool),
-		IsSetupOwner:     isSetupOwner.Value.(bool),
-	}, nil
 }
 
 func (c *commonService) GeneratePutPresignedURL(ctx context.Context, req *requests.GeneratePutPresignedURLRequest, userID string) (*responses.GeneratePutPresignedURLResponse, *errutils.Error) {

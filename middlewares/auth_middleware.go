@@ -34,7 +34,7 @@ func (a *authMiddleware) Middleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		// Parse and validate the token
-		token, err := jwt.ParseWithClaims(tokenString, &models.UserCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(tokenString, &models.UserCustomClaims{}, func(token *jwt.Token) (any, error) {
 			// Validate the signing method
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

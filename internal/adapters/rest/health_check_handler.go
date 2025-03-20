@@ -17,6 +17,7 @@ func NewHealthCheckHandler() HealthCheckHandler {
 }
 
 // HealthCheck godoc
+//
 //	@Summary		Health Check
 //	@Description	Check the health of the service
 //	@Tags			health

@@ -11,9 +11,11 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/domain/services"
 	llm2 "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/mongo"
+	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/redis"
 	storage2 "github.com/cnc-csku/task-nexus/task-management/internal/adapters/repositories/storage"
 	"github.com/cnc-csku/task-nexus/task-management/internal/adapters/rest"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/api"
+	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/cache"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/database"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/llm"
 	"github.com/cnc-csku/task-nexus/task-management/internal/infrastructure/router"
@@ -30,12 +32,15 @@ func InitializeApp() *api.EchoAPI {
 	authMiddleware := middlewares.NewAdminJWTMiddleware(configConfig)
 	healthCheckHandler := rest.NewHealthCheckHandler()
 	globalSettingRepository := mongo.NewMongoGlobalSettingRepo(configConfig, client)
+	redisClient := cache.NewRedisClient(context, configConfig)
+	globalSettingCacheRepository := redis.NewRedisGlobalSettingCacheRepo(configConfig, redisClient)
 	minioClient := storage.NewMinIOClient(context, configConfig)
 	minioRepository := storage2.NewMinioRepository(minioClient, configConfig)
-	commonService := services.NewCommonService(globalSettingRepository, minioRepository)
-	commonHandler := rest.NewCommonHandler(commonService)
+	commonService := services.NewCommonService(globalSettingRepository, globalSettingCacheRepository, minioRepository)
+	globalSettingService := services.NewGlobalSettingService(globalSettingRepository, globalSettingCacheRepository)
+	commonHandler := rest.NewCommonHandler(commonService, globalSettingService)
 	userRepository := mongo.NewMongoUserRepo(configConfig, client)
-	userService := services.NewUserService(configConfig, userRepository, globalSettingRepository)
+	userService := services.NewUserService(configConfig, userRepository, globalSettingRepository, globalSettingService)
 	userHandler := rest.NewUserHandler(userService)
 	workspaceRepository := mongo.NewMongoWorkspaceRepo(configConfig, client)
 	workspaceMemberRepository := mongo.NewMongoWorkspaceMemberRepo(configConfig, client)
@@ -49,7 +54,7 @@ func InitializeApp() *api.EchoAPI {
 	invitationRepository := mongo.NewMongoInvitationRepo(configConfig, client)
 	invitationService := services.NewInvitationService(userRepository, workspaceRepository, invitationRepository, workspaceMemberRepository, configConfig)
 	invitationHandler := rest.NewInvitationHandler(invitationService)
-	workspaceService := services.NewWorkspaceService(workspaceRepository, globalSettingRepository, userRepository, workspaceMemberRepository)
+	workspaceService := services.NewWorkspaceService(workspaceRepository, userRepository, workspaceMemberRepository, globalSettingService)
 	workspaceHandler := rest.NewWorkspaceHandler(workspaceService)
 	sprintRepository := mongo.NewMongoSprintRepo(configConfig, client)
 	sprintService := services.NewSprintService(sprintRepository, projectRepository, projectMemberRepository, taskRepository)
