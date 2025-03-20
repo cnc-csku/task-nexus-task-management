@@ -37,7 +37,10 @@ func (m *mongoTaskRepo) Create(ctx context.Context, task *repositories.CreateTas
 		Type:        task.Type,
 		Status:      task.Status,
 		Priority:    task.Priority,
+		Approvals:   task.Approvals,
+		Assignees:   task.Assignees,
 		Sprint:      task.Sprint,
+		Attributes:  task.Attributes,
 		StartDate:   task.StartDate,
 		DueDate:     task.DueDate,
 		CreatedAt:   time.Now(),
@@ -123,6 +126,25 @@ func (m *mongoTaskRepo) FindByTaskRefAndProjectID(ctx context.Context, taskRef s
 	}
 
 	return task, nil
+}
+
+func (m *mongoTaskRepo) FindByProjectID(ctx context.Context, projectID bson.ObjectID) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithProjectID(projectID)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
 
 func (m *mongoTaskRepo) UpdateDetail(ctx context.Context, in *repositories.UpdateTaskDetailRequest) (*models.Task, error) {

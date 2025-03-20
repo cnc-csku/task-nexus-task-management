@@ -5,15 +5,24 @@ import (
 )
 
 type CreateTaskRequest struct {
-	ProjectID   string     `param:"projectId" validate:"required"`
-	Title       string     `json:"title" validate:"required"`
-	Description string     `json:"description"`
-	ParentID    *string    `json:"parentId"`
-	Type        string     `json:"type" validate:"required"`
-	Priority    *string    `json:"priority"`
-	SprintID    *string    `json:"sprintId"`
-	StartDate   *time.Time `json:"startDate"`
-	DueDate     *time.Time `json:"dueDate"`
+	ProjectID        string                      `param:"projectId" validate:"required"`
+	Title            string                      `json:"title" validate:"required"`
+	Description      string                      `json:"description"`
+	ParentID         *string                     `json:"parentId"`
+	Type             string                      `json:"type" validate:"required"`
+	Priority         *string                     `json:"priority"`
+	SprintID         *string                     `json:"sprintId"`
+	StartDate        *time.Time                  `json:"startDate"`
+	DueDate          *time.Time                  `json:"dueDate"`
+	Assignees        []CreateTaskRequestAssignee `json:"assignees"`
+	ApprovalUserIDs  []string                    `json:"approvalUserIds"`
+	AdditionalFields map[string]any              `json:"additionalFields"`
+}
+
+type CreateTaskRequestAssignee struct {
+	UserID   string `json:"userId" validate:"required"`
+	Position string `json:"position" validate:"required"`
+	Point    *int   `json:"point"`
 }
 
 type GetTaskDetailPathParam struct {

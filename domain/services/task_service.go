@@ -122,6 +122,112 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		return nil, errutils.NewError(exceptions.ErrInvalidTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid task type: %s", req.Type))
 	}
 
+	var taskSprint *models.TaskSprint
+	if bsonSprintID != nil {
+		sprint, err := s.sprintRepo.FindByID(ctx, *bsonSprintID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		} else if sprint == nil {
+			return nil, errutils.NewError(exceptions.ErrSprintNotFound, errutils.BadRequest)
+		}
+
+		taskSprint = &models.TaskSprint{
+			CurrentSprintID: bsonSprintID,
+		}
+	}
+
+	var defaultWorkflow *models.ProjectWorkflow
+	for _, workflow := range project.Workflows {
+		if workflow.IsDefault {
+			defaultWorkflow = &workflow
+			break
+		}
+	}
+	if defaultWorkflow == nil {
+		return nil, errutils.NewError(exceptions.ErrDefaultWorkflowNotFound, errutils.InternalServerError)
+	}
+
+	assignees := make([]models.TaskAssignee, 0, len(req.Assignees))
+	for _, assignee := range req.Assignees {
+		assigneeUserID, err := bson.ObjectIDFromHex(assignee.UserID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		}
+
+		assignees = append(assignees, models.TaskAssignee{
+			UserID:   assigneeUserID,
+			Position: assignee.Position,
+			Point:    assignee.Point,
+		})
+	}
+
+	approvals := make([]models.TaskApproval, 0, len(req.ApprovalUserIDs))
+	for _, approvalUserID := range req.ApprovalUserIDs {
+		approvalUserID, err := bson.ObjectIDFromHex(approvalUserID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		}
+
+		approvals = append(approvals, models.TaskApproval{
+			UserID: approvalUserID,
+		})
+	}
+
+	attributeTemplates := make(map[string]models.ProjectAttributeTemplate)
+	for _, attributeTemplate := range project.AttributeTemplates {
+		attributeTemplates[attributeTemplate.Name] = attributeTemplate
+	}
+
+	attributes := make([]models.TaskAttribute, 0, len(req.AdditionalFields))
+	for key, value := range req.AdditionalFields {
+		if attribute, ok := attributeTemplates[key]; ok {
+			var val any
+			switch attribute.Type {
+			case models.KeyValuePairTypeString:
+				val, ok = value.(string)
+				if !ok {
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid attribute value type: %s", key))
+				}
+			case models.KeyValuePairTypeNumber:
+				switch v := value.(type) {
+				case float64:
+					val = v
+				case string:
+					val, err = strconv.ParseFloat(v, 64)
+					if err != nil {
+						return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+					}
+				default:
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid attribute value type: %s", key))
+				}
+			case models.KeyValuePairTypeDate:
+				val, err = time.Parse(time.RFC3339, value.(string))
+				if err != nil {
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+				}
+			case models.KeyValuePairTypeBoolean:
+				switch v := value.(type) {
+				case bool:
+					val = v
+				case string:
+					val, err = strconv.ParseBool(v)
+					if err != nil {
+						return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+					}
+				default:
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid attribute value type: %s", key))
+				}
+			default:
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid attribute type: %s", attribute.Type))
+			}
+
+			attributes = append(attributes, models.TaskAttribute{
+				Key:   key,
+				Value: val,
+			})
+		}
+	}
+
 	var nullableBsonTaskParentID *bson.ObjectID
 	if req.ParentID != nil {
 		bsonTaskParentID, err := bson.ObjectIDFromHex(*req.ParentID)
@@ -151,31 +257,6 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		nullableBsonTaskParentID = &bsonTaskParentID
 	}
 
-	var taskSprint *models.TaskSprint
-	if bsonSprintID != nil {
-		sprint, err := s.sprintRepo.FindByID(ctx, *bsonSprintID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-		} else if sprint == nil {
-			return nil, errutils.NewError(exceptions.ErrSprintNotFound, errutils.BadRequest)
-		}
-
-		taskSprint = &models.TaskSprint{
-			CurrentSprintID: bsonSprintID,
-		}
-	}
-
-	var defaultWorkflow *models.ProjectWorkflow
-	for _, workflow := range project.Workflows {
-		if workflow.IsDefault {
-			defaultWorkflow = &workflow
-			break
-		}
-	}
-	if defaultWorkflow == nil {
-		return nil, errutils.NewError(exceptions.ErrDefaultWorkflowNotFound, errutils.InternalServerError)
-	}
-
 	task, err := s.taskRepo.Create(ctx, &repositories.CreateTaskRequest{
 		TaskRef:     fmt.Sprintf("%s-%d", project.ProjectPrefix, project.TaskRunningNumber),
 		ProjectID:   bsonProjectID,
@@ -188,6 +269,9 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		Sprint:      taskSprint,
 		StartDate:   req.StartDate,
 		DueDate:     req.DueDate,
+		Assignees:   assignees,
+		Approvals:   approvals,
+		Attributes:  attributes,
 		CreatedBy:   bsonUserID,
 	})
 	if err != nil {
@@ -1349,7 +1433,7 @@ func (s *taskServiceImpl) UpdateAttributes(ctx context.Context, req *requests.Up
 		case models.KeyValuePairTypeString:
 			value = attribute.Value
 		case models.KeyValuePairTypeNumber:
-			value, err = strconv.Atoi(attribute.Value)
+			value, err = strconv.ParseFloat(attribute.Value, 64)
 			if err != nil {
 				return nil, errutils.NewError(exceptions.ErrInvalidAttributeType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid attribute type: %s", attributeTemplate.Type))
 			}
