@@ -497,8 +497,6 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 		IsDoneStatuses:     getDoneStatuses(project),
 		SearchKeyword:      req.SearchKeyword,
 	})
-	fmt.Println("len(tasks) == 0", len(tasks) == 0)
-	fmt.Println("err", err)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if len(tasks) == 0 {
