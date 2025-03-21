@@ -20,9 +20,9 @@ type CreateTaskRequest struct {
 }
 
 type CreateTaskRequestAssignee struct {
-	UserID   string `json:"userId" validate:"required"`
-	Position string `json:"position" validate:"required"`
-	Point    *int   `json:"point"`
+	UserID   *string `json:"userId"`
+	Position string  `json:"position" validate:"required"`
+	Point    *int    `json:"point"`
 }
 
 type GetTaskDetailPathParam struct {
@@ -98,10 +98,9 @@ type UpdateTaskAssigneesRequest struct {
 }
 
 type UpdateTaskAssigneesRequestAssignee struct {
-	ProjectID string `json:"projectId" validate:"required"`
-	Position  string `json:"position" validate:"required"` // List project's position
-	UserId    string `json:"userId" validate:"required"`   // List User in the following project
-	Point     *int   `json:"point"`
+	Position string  `json:"position" validate:"required"`
+	UserId   *string `json:"userId"`
+	Point    *int    `json:"point"`
 }
 
 type UpdateTaskSprintRequest struct {

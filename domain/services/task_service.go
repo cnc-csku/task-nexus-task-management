@@ -149,13 +149,17 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 
 	assignees := make([]models.TaskAssignee, 0, len(req.Assignees))
 	for _, assignee := range req.Assignees {
-		assigneeUserID, err := bson.ObjectIDFromHex(assignee.UserID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		var bsonAssigneeUserID *bson.ObjectID
+		if assignee.UserID != nil {
+			assigneeUserID, err := bson.ObjectIDFromHex(*assignee.UserID)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+			}
+			bsonAssigneeUserID = &assigneeUserID
 		}
 
 		assignees = append(assignees, models.TaskAssignee{
-			UserID:   assigneeUserID,
+			UserID:   bsonAssigneeUserID,
 			Position: assignee.Position,
 			Point:    assignee.Point,
 		})
@@ -252,6 +256,40 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		})
 		if err != nil {
 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+
+		if models.TaskType(req.Type) == models.TaskTypeSubTask {
+			var totalPoint int
+			for _, assignee := range req.Assignees {
+				if assignee.Point != nil {
+					totalPoint += *assignee.Point
+				}
+			}
+
+			_, err := s.taskRepo.UpdateChildrenPoint(ctx, &repositories.UpdateTaskChildrenPointRequest{
+				ID:            bsonTaskParentID,
+				ChildrenPoint: parentTask.ChildrenPoint + totalPoint,
+			})
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			}
+
+			if parentTask.ParentID != nil {
+				epicParentTask, err := s.taskRepo.FindByID(ctx, *parentTask.ParentID)
+				if err != nil {
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+				} else if epicParentTask == nil {
+					return nil, errutils.NewError(exceptions.ErrParentTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task not found: %s", parentTask.ParentID.Hex()))
+				}
+
+				_, err = s.taskRepo.UpdateChildrenPoint(ctx, &repositories.UpdateTaskChildrenPointRequest{
+					ID:            *parentTask.ParentID,
+					ChildrenPoint: epicParentTask.ChildrenPoint + totalPoint,
+				})
+				if err != nil {
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+				}
+			}
 		}
 
 		nullableBsonTaskParentID = &bsonTaskParentID
@@ -380,7 +418,9 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 
 	assigneeUserIDs := make([]bson.ObjectID, 0, len(task.Assignees))
 	for _, assignee := range task.Assignees {
-		assigneeUserIDs = append(assigneeUserIDs, assignee.UserID)
+		if assignee.UserID != nil {
+			assigneeUserIDs = append(assigneeUserIDs, *assignee.UserID)
+		}
 	}
 
 	assignees, err := s.userRepo.FindByIDs(ctx, assigneeUserIDs)
@@ -395,23 +435,33 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 
 	assigneeResponses := make([]responses.GetTaskDetailResponseAssignee, len(task.Assignees))
 	for i, assignee := range task.Assignees {
-		user, ok := assigneeMap[assignee.UserID.Hex()]
-		if !ok {
+		if assignee.UserID == nil {
+			assigneeResponses[i] = responses.GetTaskDetailResponseAssignee{
+				Position: assignee.Position,
+				Point:    assignee.Point,
+			}
+			continue
+		} else if _, ok := assigneeMap[assignee.UserID.Hex()]; !ok {
 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Assignee not found")
-		}
+		} else {
+			user, ok := assigneeMap[assignee.UserID.Hex()]
+			if ok {
+				var profileUrl = user.DefaultProfileUrl
+				if user.UploadedProfileUrl != nil {
+					profileUrl = *user.UploadedProfileUrl
+				}
 
-		var profileUrl = user.DefaultProfileUrl
-		if user.UploadedProfileUrl != nil {
-			profileUrl = *user.UploadedProfileUrl
-		}
+				userID := assignee.UserID.Hex()
 
-		assigneeResponses[i] = responses.GetTaskDetailResponseAssignee{
-			UserID:      assignee.UserID.Hex(),
-			Email:       user.Email,
-			DisplayName: user.DisplayName,
-			ProfileUrl:  profileUrl,
-			Position:    assignee.Position,
-			Point:       assignee.Point,
+				assigneeResponses[i] = responses.GetTaskDetailResponseAssignee{
+					UserID:      &userID,
+					Email:       &user.Email,
+					DisplayName: &user.DisplayName,
+					ProfileUrl:  &profileUrl,
+					Position:    assignee.Position,
+					Point:       assignee.Point,
+				}
+			}
 		}
 	}
 
@@ -597,7 +647,9 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 	for _, task := range tasks {
 		assigneesUserIDs := make([]bson.ObjectID, 0, len(task.Assignees))
 		for _, assignee := range task.Assignees {
-			assigneesUserIDs = append(assigneesUserIDs, assignee.UserID)
+			if assignee.UserID != nil {
+				assigneesUserIDs = append(assigneesUserIDs, *assignee.UserID)
+			}
 		}
 
 		assignees, err := s.userRepo.FindByIDs(ctx, assigneesUserIDs)
@@ -612,23 +664,33 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 
 		assigneeResponses := make([]responses.SearchTaskResponseAssignee, len(task.Assignees))
 		for i, assignee := range task.Assignees {
-			user, ok := assigneeMap[assignee.UserID.Hex()]
-			if !ok {
+			if assignee.UserID == nil {
+				assigneeResponses[i] = responses.SearchTaskResponseAssignee{
+					Position: assignee.Position,
+					Point:    assignee.Point,
+				}
+				continue
+			} else if _, ok := assigneeMap[assignee.UserID.Hex()]; !ok {
 				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Assignee not found")
-			}
+			} else {
+				user, ok := assigneeMap[assignee.UserID.Hex()]
+				if ok {
+					var profileUrl = user.DefaultProfileUrl
+					if user.UploadedProfileUrl != nil {
+						profileUrl = *user.UploadedProfileUrl
+					}
 
-			var profileUrl = user.DefaultProfileUrl
-			if user.UploadedProfileUrl != nil {
-				profileUrl = *user.UploadedProfileUrl
-			}
+					userID := assignee.UserID.Hex()
 
-			assigneeResponses[i] = responses.SearchTaskResponseAssignee{
-				UserID:      assignee.UserID.Hex(),
-				Email:       user.Email,
-				DisplayName: user.DisplayName,
-				ProfileUrl:  profileUrl,
-				Position:    assignee.Position,
-				Point:       assignee.Point,
+					assigneeResponses[i] = responses.SearchTaskResponseAssignee{
+						UserID:      &userID,
+						Email:       &user.Email,
+						DisplayName: &user.DisplayName,
+						ProfileUrl:  &profileUrl,
+						Position:    assignee.Position,
+						Point:       assignee.Point,
+					}
+				}
 			}
 		}
 
@@ -852,6 +914,23 @@ func (s *taskServiceImpl) UpdateParentID(ctx context.Context, req *requests.Upda
 			})
 			if err != nil {
 				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			}
+
+			if newParentTask.ParentID != nil {
+				epicParentTask, err := s.taskRepo.FindByID(ctx, *newParentTask.ParentID)
+				if err != nil {
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+				} else if epicParentTask == nil {
+					return nil, errutils.NewError(exceptions.ErrParentTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task not found: %s", *newParentTask.ParentID))
+				}
+
+				_, err = s.taskRepo.UpdateChildrenPoint(ctx, &repositories.UpdateTaskChildrenPointRequest{
+					ID:            *newParentTask.ParentID,
+					ChildrenPoint: epicParentTask.ChildrenPoint + totalPoint,
+				})
+				if err != nil {
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+				}
 			}
 		} else if array.ContainAny(
 			[]string{task.Type.String()},
@@ -1218,9 +1297,13 @@ func (s *taskServiceImpl) UpdateAssignees(ctx context.Context, req *requests.Upd
 	// Modify Assignees, their positions and `point` for SubTask
 	if task.Type == models.TaskTypeSubTask {
 		for _, assignee := range req.Assignees {
-			bsonAssigneeUserID, err := bson.ObjectIDFromHex(assignee.UserId)
-			if err != nil {
-				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+			var bsonAssigneeUserID *bson.ObjectID
+			if assignee.UserId != nil {
+				assigneeUserID, err := bson.ObjectIDFromHex(*assignee.UserId)
+				if err != nil {
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+				}
+				bsonAssigneeUserID = &assigneeUserID
 			}
 
 			assignees = append(assignees, repositories.UpdateTaskAssigneesRequestAssignee{
@@ -1237,9 +1320,13 @@ func (s *taskServiceImpl) UpdateAssignees(ctx context.Context, req *requests.Upd
 	} else {
 		// Modify Only Assignees and their positions, not point for Epic, Story, Task, Bug
 		for _, assignee := range req.Assignees {
-			bsonAssigneeUserID, err := bson.ObjectIDFromHex(assignee.UserId)
-			if err != nil {
-				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+			var bsonAssigneeUserID *bson.ObjectID
+			if assignee.UserId != nil {
+				assigneeUserID, err := bson.ObjectIDFromHex(*assignee.UserId)
+				if err != nil {
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+				}
+				bsonAssigneeUserID = &assigneeUserID
 			}
 
 			assignees = append(assignees, repositories.UpdateTaskAssigneesRequestAssignee{
@@ -1504,11 +1591,6 @@ func (s *taskServiceImpl) GenerateDescription(ctx context.Context, req *requests
 
 	var assigneeStr string
 	for _, assignee := range task.Assignees {
-		user, err := s.userRepo.FindByID(ctx, assignee.UserID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-		}
-
 		var point string
 		if assignee.Point != nil {
 			point = strconv.Itoa(*assignee.Point)
@@ -1516,7 +1598,16 @@ func (s *taskServiceImpl) GenerateDescription(ctx context.Context, req *requests
 			point = "N/A"
 		}
 
-		assigneeStr += user.DisplayName + ", " + assignee.Position + ", " + point + "\n"
+		if assignee.UserID != nil {
+			user, err := s.userRepo.FindByID(ctx, *assignee.UserID)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			}
+
+			assigneeStr += user.DisplayName + ", " + assignee.Position + ", " + point + "\n"
+		} else {
+			assigneeStr += assignee.Position + ", " + point + "\n"
+		}
 	}
 
 	prompt := fmt.Sprintf(`

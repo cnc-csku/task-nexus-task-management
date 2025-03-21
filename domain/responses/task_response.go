@@ -46,12 +46,12 @@ type GetTaskDetailResponseApprovals struct {
 }
 
 type GetTaskDetailResponseAssignee struct {
-	UserID      string `json:"userId"`
-	Email       string `json:"email"`
-	DisplayName string `json:"displayName"`
-	ProfileUrl  string `json:"profileUrl"`
-	Position    string `json:"position"`
-	Point       *int   `json:"point"`
+	UserID      *string `json:"userId"`
+	Email       *string `json:"email"`
+	DisplayName *string `json:"displayName"`
+	ProfileUrl  *string `json:"profileUrl"`
+	Position    string  `json:"position"`
+	Point       *int    `json:"point"`
 }
 
 type SearchTaskResponse struct {
@@ -70,12 +70,12 @@ type SearchTaskResponse struct {
 }
 
 type SearchTaskResponseAssignee struct {
-	UserID      string `json:"userId"`
-	Email       string `json:"email"`
-	DisplayName string `json:"displayName"`
-	ProfileUrl  string `json:"profileUrl"`
-	Position    string `json:"position"`
-	Point       *int   `json:"point"`
+	UserID      *string `json:"userId"`
+	Email       *string `json:"email"`
+	DisplayName *string `json:"displayName"`
+	ProfileUrl  *string `json:"profileUrl"`
+	Position    string  `json:"position"`
+	Point       *int    `json:"point"`
 }
 
 type GenerateDescriptionResponse struct {

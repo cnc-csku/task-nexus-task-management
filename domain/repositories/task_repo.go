@@ -113,7 +113,7 @@ type UpdateTaskAssigneesRequest struct {
 
 type UpdateTaskAssigneesRequestAssignee struct {
 	Position string
-	UserID   bson.ObjectID
+	UserID   *bson.ObjectID
 	Point    *int
 }
 
