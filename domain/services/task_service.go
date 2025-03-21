@@ -185,6 +185,14 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 	attributes := make([]models.TaskAttribute, 0, len(req.AdditionalFields))
 	for key, value := range req.AdditionalFields {
 		if attribute, ok := attributeTemplates[key]; ok {
+			if value == nil {
+				attributes = append(attributes, models.TaskAttribute{
+					Key:   key,
+					Value: nil,
+				})
+				continue
+			}
+
 			var val any
 			switch attribute.Type {
 			case models.KeyValuePairTypeString:
