@@ -273,7 +273,7 @@ func (m *mongoTaskRepo) UpdateCurrentSprintID(ctx context.Context, in *repositor
 	f.WithID(in.ID)
 
 	u := NewTaskUpdate()
-	u.UpdateCurrentSprintID(in)
+	u.UpdateCurrentSprintID(in.CurrentSprintID, in.UpdatedBy)
 
 	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
 	if err != nil {
@@ -509,4 +509,19 @@ func (m *mongoTaskRepo) FindByCurrentSprintIDAndPreviousSprintIDs(ctx context.Co
 	}
 
 	return tasks, nil
+}
+
+func (m *mongoTaskRepo) BulkUpdateCurrentSprintID(ctx context.Context, in *repositories.BulkUpdateCurrentSprintIDRequest) error {
+	f := NewTaskFilter()
+	f.WithIDs(in.TaskIDs)
+
+	u := NewTaskUpdate()
+	u.UpdateCurrentSprintID(in.CurrentSprintID, in.UpdatedBy)
+
+	_, err := m.collection.UpdateMany(ctx, f, u)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

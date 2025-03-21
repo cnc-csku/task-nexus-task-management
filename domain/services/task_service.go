@@ -122,7 +122,7 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		return nil, errutils.NewError(exceptions.ErrInvalidTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid task type: %s", req.Type))
 	}
 
-	var taskSprint *models.TaskSprint
+	var taskSprint = &models.TaskSprint{}
 	if bsonSprintID != nil {
 		sprint, err := s.sprintRepo.FindByID(ctx, *bsonSprintID)
 		if err != nil {
@@ -296,6 +296,10 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 				})
 				if err != nil {
 					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+				}
+
+				if parentTask.Sprint != nil {
+					taskSprint.CurrentSprintID = parentTask.Sprint.CurrentSprintID
 				}
 			}
 		}
@@ -909,6 +913,16 @@ func (s *taskServiceImpl) UpdateParentID(ctx context.Context, req *requests.Upda
 		}
 
 		if task.Type == models.TaskTypeSubTask {
+			// Update Task's Sprint to Parent Task's Sprint
+			_, err := s.taskRepo.UpdateCurrentSprintID(ctx, &repositories.UpdateTaskCurrentSprintIDRequest{
+				ID:              task.ID,
+				CurrentSprintID: newParentTask.Sprint.CurrentSprintID,
+				UpdatedBy:       bsonUserID,
+			})
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			}
+
 			var totalPoint int
 			for _, assignee := range task.Assignees {
 				if assignee.Point != nil {
@@ -961,6 +975,16 @@ func (s *taskServiceImpl) UpdateParentID(ctx context.Context, req *requests.Upda
 		serviceErr := updatePreviousParentTask(ctx, s.taskRepo, task)
 		if serviceErr != nil {
 			return nil, serviceErr
+		}
+
+		// Update Task's Sprint to nil
+		_, err := s.taskRepo.UpdateCurrentSprintID(ctx, &repositories.UpdateTaskCurrentSprintIDRequest{
+			ID:              task.ID,
+			CurrentSprintID: nil,
+			UpdatedBy:       bsonUserID,
+		})
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 		}
 
 		nullableBsonTaskParentID = nil
@@ -1474,6 +1498,35 @@ func (s *taskServiceImpl) UpdateSprint(ctx context.Context, req *requests.Update
 	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	if array.ContainAny(
+		[]string{task.Type.String()},
+		[]string{
+			models.TaskTypeStory.String(),
+			models.TaskTypeTask.String(),
+			models.TaskTypeBug.String(),
+		},
+	) {
+		childrenTasks, err := s.taskRepo.FindByParentID(ctx, task.ID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+		if len(childrenTasks) > 0 {
+			childrenTaskIDs := make([]bson.ObjectID, 0, len(childrenTasks))
+			for _, childrenTask := range childrenTasks {
+				childrenTaskIDs = append(childrenTaskIDs, childrenTask.ID)
+			}
+
+			err = s.taskRepo.BulkUpdateCurrentSprintID(ctx, &repositories.BulkUpdateCurrentSprintIDRequest{
+				TaskIDs:         childrenTaskIDs,
+				CurrentSprintID: bsonCurrentSprintID,
+				UpdatedBy:       bsonUserID,
+			})
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			}
+		}
 	}
 
 	return updatedTask, nil
