@@ -205,13 +205,13 @@ func (u taskUpdate) UpdateAssignees(in *repositories.UpdateTaskAssigneesRequest)
 	}
 }
 
-func (u taskUpdate) UpdateCurrentSprintID(in *repositories.UpdateTaskCurrentSprintIDRequest) {
+func (u taskUpdate) UpdateCurrentSprintID(currentSprintID *bson.ObjectID, updatedBy bson.ObjectID) {
 	u["$set"] = bson.M{
 		"sprint": bson.M{
-			"current_sprint_id": in.CurrentSprintID,
+			"current_sprint_id": currentSprintID,
 		},
 		"updated_at": time.Now(),
-		"updated_by": in.UpdatedBy,
+		"updated_by": updatedBy,
 	}
 }
 
