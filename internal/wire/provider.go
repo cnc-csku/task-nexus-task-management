@@ -63,6 +63,7 @@ var ServiceSet = wire.NewSet(
 	services.NewTaskService,
 	services.NewTaskCommentService,
 	services.NewGlobalSettingService,
+	services.NewReportService,
 )
 
 var RestHandlerSet = wire.NewSet(
@@ -76,6 +77,7 @@ var RestHandlerSet = wire.NewSet(
 	rest.NewSprintHandler,
 	rest.NewTaskHandler,
 	rest.NewTaskCommentHandler,
+	rest.NewReportHandler,
 )
 
 var GrpcClientSet = wire.NewSet(

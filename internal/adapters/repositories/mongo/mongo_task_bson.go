@@ -150,6 +150,14 @@ func (u taskUpdate) UpdateParentID(in *repositories.UpdateTaskParentIDRequest) {
 	}
 }
 
+func (u taskUpdate) UpdateType(in *repositories.UpdateTaskTypeRequest) {
+	u["$set"] = bson.M{
+		"type":       in.Type,
+		"updated_at": time.Now(),
+		"updated_by": in.UpdatedBy,
+	}
+}
+
 func (u taskUpdate) UpdateStatus(in *repositories.UpdateTaskStatusRequest) {
 	u["$set"] = bson.M{
 		"status":     in.Status,

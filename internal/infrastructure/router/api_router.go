@@ -92,6 +92,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		tasks.PUT("/:taskRef/detail", r.task.UpdateDetail, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/title", r.task.UpdateTitle, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/parent", r.task.UpdateParentID, r.authMiddleware.Middleware)
+		tasks.PUT("/:taskRef/type", r.task.UpdateType, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/status", r.task.UpdateStatus, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/approvals", r.task.UpdateApprovals, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/approve", r.task.ApproveTask, r.authMiddleware.Middleware)
@@ -104,6 +105,15 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 
 		// llm
 		tasks.GET("/:taskRef/generate-description", r.task.GenerateDescription, r.authMiddleware.Middleware)
+	}
+
+	reports := api.Group("/projects/v1/:projectId/reports/v1")
+	{
+		reports.GET("/status-overview", r.report.GetStatusOverview, r.authMiddleware.Middleware)
+		reports.GET("/priority-overview", r.report.GetPriorityOverview, r.authMiddleware.Middleware)
+		reports.GET("/type-overview", r.report.GetTypeOverview, r.authMiddleware.Middleware)
+		reports.GET("/assignee-overview", r.report.GetAssigneeOverview, r.authMiddleware.Middleware)
+		reports.GET("/epic-task-overview", r.report.GetEpicTaskOverview, r.authMiddleware.Middleware)
 	}
 
 	setup := api.Group("/setup/v1")

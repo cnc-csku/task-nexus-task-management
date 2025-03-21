@@ -66,7 +66,9 @@ func InitializeApp() *api.EchoAPI {
 	taskHandler := rest.NewTaskHandler(taskService)
 	taskCommentService := services.NewTaskCommentService(userRepository, taskCommentRepository, taskRepository, projectRepository, projectMemberRepository)
 	taskCommentHandler := rest.NewTaskCommentHandler(taskCommentService)
-	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler, projectHandler, projectMemberHandler, invitationHandler, workspaceHandler, sprintHandler, taskHandler, taskCommentHandler)
+	reportService := services.NewReportService(userRepository, projectRepository, projectMemberRepository, taskRepository)
+	reportHandler := rest.NewReportHandler(reportService)
+	routerRouter := router.NewRouter(authMiddleware, healthCheckHandler, commonHandler, userHandler, projectHandler, projectMemberHandler, invitationHandler, workspaceHandler, sprintHandler, taskHandler, taskCommentHandler, reportHandler)
 	echoAPI := api.NewEchoAPI(context, configConfig, client, routerRouter)
 	return echoAPI
 }
