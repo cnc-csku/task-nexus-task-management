@@ -14,6 +14,7 @@ type TaskRepository interface {
 	FindByIDs(ctx context.Context, ids []bson.ObjectID) ([]*models.Task, error)
 	FindByTaskRef(ctx context.Context, taskRef string) (*models.Task, error)
 	FindByTaskRefAndProjectID(ctx context.Context, taskRef string, projectID bson.ObjectID) (*models.Task, error)
+	FindByTaskRefsAndProjectID(ctx context.Context, taskRefs []string, projectID bson.ObjectID) ([]*models.Task, error)
 	FindByProjectID(ctx context.Context, projectID bson.ObjectID) ([]*models.Task, error)
 	UpdateDetail(ctx context.Context, in *UpdateTaskDetailRequest) (*models.Task, error)
 	UpdateTitle(ctx context.Context, in *UpdateTaskTitleRequest) (*models.Task, error)
@@ -36,6 +37,7 @@ type TaskRepository interface {
 	FindByPreviousSprintID(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error)
 	FindByCurrentSprintIDAndPreviousSprintIDs(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error)
 	BulkUpdateCurrentSprintID(ctx context.Context, in *BulkUpdateCurrentSprintIDRequest) error
+	FindByCurrentSprintIDs(ctx context.Context, sprintIDs []bson.ObjectID) ([]*models.Task, error)
 }
 
 type CreateTaskRequest struct {

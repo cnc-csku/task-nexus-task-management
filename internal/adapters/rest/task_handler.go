@@ -14,6 +14,7 @@ import (
 type TaskHandler interface {
 	Create(c echo.Context) error
 	GetTaskDetail(c echo.Context) error
+	GetManyTaskDetail(c echo.Context) error
 	ListEpicTasks(c echo.Context) error
 	SearchTask(c echo.Context) error
 	UpdateDetail(c echo.Context) error
@@ -70,6 +71,25 @@ func (h *taskHandlerImpl) GetTaskDetail(c echo.Context) error {
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
 	resp, err := h.taskService.GetTaskDetail(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *taskHandlerImpl) GetManyTaskDetail(c echo.Context) error {
+	req := new(requests.GetManyTaskDetailPathParam)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	resp, err := h.taskService.GetManyTaskDetail(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}

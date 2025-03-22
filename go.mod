@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cnc-csku/task-nexus-go-lib v1.3.0
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/generative-ai-go v0.19.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1

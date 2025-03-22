@@ -119,8 +119,8 @@ func (m *mongoSprintRepo) List(ctx context.Context, filter *repositories.ListSpr
 		f.WithEndDateGreaterThanOrEqualNowOrIsNull()
 	}
 
-	if filter.Status != nil {
-		f.WithStatus(*filter.Status)
+	if filter.Statuses != nil {
+		f.WithStatuses(filter.Statuses)
 	}
 
 	cursor, err := m.collection.Find(ctx, f)
@@ -167,4 +167,25 @@ func (m *mongoSprintRepo) Delete(ctx context.Context, sprintID bson.ObjectID) er
 	}
 
 	return nil
+}
+
+func (m *mongoSprintRepo) FindByProjectIDAndStatus(ctx context.Context, projectID bson.ObjectID, status models.SprintStatus) ([]models.Sprint, error) {
+	sprints := make([]models.Sprint, 0)
+
+	f := NewSprintFilter()
+	f.WithProjectID(projectID)
+	f.WithStatus(status)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	err = cursor.All(ctx, &sprints)
+	if err != nil {
+		return nil, err
+	}
+
+	return sprints, nil
 }

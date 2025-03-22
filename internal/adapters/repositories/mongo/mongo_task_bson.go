@@ -28,6 +28,12 @@ func (f taskFilter) WithTaskRef(taskRef string) {
 	f["task_ref"] = taskRef
 }
 
+func (f taskFilter) WithTaskRefs(taskRefs []string) {
+	f["task_ref"] = bson.M{
+		"$in": taskRefs,
+	}
+}
+
 func (f taskFilter) WithUserApproval(userID bson.ObjectID) {
 	f["approvals.user_id"] = userID
 }
@@ -72,9 +78,9 @@ func (f taskFilter) WithCurrentSprintID(sprintID bson.ObjectID) {
 	f["sprint.current_sprint_id"] = sprintID
 }
 
-func (f taskFilter) WithCurrentSprintIDs(sprintID []bson.ObjectID) {
+func (f taskFilter) WithCurrentSprintIDs(sprintIDs []bson.ObjectID) {
 	f["sprint.current_sprint_id"] = bson.M{
-		"$in": sprintID,
+		"$in": sprintIDs,
 	}
 }
 

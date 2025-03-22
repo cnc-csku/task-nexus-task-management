@@ -33,20 +33,6 @@ type GetTaskTypeOverviewResponseTypes struct {
 	Percent float64 `json:"percent"`
 }
 
-type GetTaskAssigneeOverviewResponse struct {
-	Assignees  []GetTaskAssigneeOverviewResponseAssignees `json:"assignees"`
-	TotalCount int                                        `json:"totalCount"`
-}
-
-type GetTaskAssigneeOverviewResponseAssignees struct {
-	UserID      string  `json:"userID"`
-	FullName    string  `json:"fullName"`
-	DisplayName string  `json:"displayName"`
-	ProfileUrl  string  `json:"profileUrl"`
-	Count       int     `json:"count"`
-	Percent     float64 `json:"percent"`
-}
-
 type GetEpicTaskOverviewResponse struct {
 	Epics      []GetEpicTaskOverviewResponseEpics `json:"epics"`
 	TotalCount int                                `json:"totalCount"`
@@ -64,4 +50,28 @@ type GetEpicTaskOverviewResponseEpicsStatuses struct {
 	Status  string  `json:"status"`
 	Count   int     `json:"count"`
 	Percent float64 `json:"percent"`
+}
+
+type GetAssigneeOverviewBySprintResponse struct {
+	Sprints    []GetAssigneeOverviewBySprintResponseSprint `json:"sprints"`
+	TotalCount int                                         `json:"totalCount"`
+}
+
+type GetAssigneeOverviewBySprintResponseSprint struct {
+	SprintID    string                                              `json:"sprintID"`
+	SprintTitle string                                              `json:"sprintTitle"`
+	Assignees   []GetAssigneeOverviewBySprintResponseSprintAssignee `json:"assignees"`
+	TotalTask   int                                                 `json:"totalTask"`
+	TotalPoint  int                                                 `json:"totalPoint"`
+}
+
+type GetAssigneeOverviewBySprintResponseSprintAssignee struct {
+	UserID       string  `json:"userID"`
+	FullName     string  `json:"fullName"`
+	DisplayName  string  `json:"displayName"`
+	ProfileUrl   string  `json:"profileUrl"`
+	TaskCount    int     `json:"taskCount"`
+	PointCount   int     `json:"pointCount"`
+	TaskPercent  float64 `json:"taskPercent"`
+	PointPercent float64 `json:"pointPercent"`
 }
