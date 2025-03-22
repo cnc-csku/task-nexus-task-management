@@ -902,6 +902,7 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 			ParentTitle:   parentTitleResp,
 			Type:          task.Type.String(),
 			Status:        task.Status,
+			Priority:      task.Priority.String(),
 			Assignees:     assigneeResponses,
 			Approvals:     task.Approvals,
 			ChildrenPoint: task.ChildrenPoint,
