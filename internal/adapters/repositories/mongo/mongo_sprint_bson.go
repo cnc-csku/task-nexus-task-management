@@ -33,6 +33,12 @@ func (f sprintFilter) WithStatus(status models.SprintStatus) {
 	f["status"] = status
 }
 
+func (f sprintFilter) WithStatuses(statuses []models.SprintStatus) {
+	f["status"] = bson.M{
+		"$in": statuses,
+	}
+}
+
 type sprintUpdater bson.M
 
 func NewSprintUpdater() sprintUpdater {

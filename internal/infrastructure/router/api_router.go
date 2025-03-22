@@ -85,6 +85,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 	{
 		tasks.POST("", r.task.Create, r.authMiddleware.Middleware)
 		tasks.GET("/:taskRef", r.task.GetTaskDetail, r.authMiddleware.Middleware)
+		tasks.GET("/detail", r.task.GetManyTaskDetail, r.authMiddleware.Middleware)
 
 		tasks.GET("/epic", r.task.ListEpicTasks, r.authMiddleware.Middleware)
 		tasks.GET("", r.task.SearchTask, r.authMiddleware.Middleware)
@@ -112,8 +113,8 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		reports.GET("/status-overview", r.report.GetStatusOverview, r.authMiddleware.Middleware)
 		reports.GET("/priority-overview", r.report.GetPriorityOverview, r.authMiddleware.Middleware)
 		reports.GET("/type-overview", r.report.GetTypeOverview, r.authMiddleware.Middleware)
-		reports.GET("/assignee-overview", r.report.GetAssigneeOverview, r.authMiddleware.Middleware)
 		reports.GET("/epic-task-overview", r.report.GetEpicTaskOverview, r.authMiddleware.Middleware)
+		reports.GET("/assignee-overview-by-sprint", r.report.GetAssigneeOverviewBySprint, r.authMiddleware.Middleware)
 	}
 
 	setup := api.Group("/setup/v1")

@@ -30,6 +30,11 @@ type GetTaskDetailPathParam struct {
 	TaskRef   string `param:"taskRef" validate:"required"`
 }
 
+type GetManyTaskDetailPathParam struct {
+	ProjectID string   `param:"projectId" validate:"required"`
+	TaskRefs  []string `query:"taskRefs" validate:"required"`
+}
+
 type ListEpicTasksPathParam struct {
 	ProjectID string `param:"projectId" validate:"required"`
 }

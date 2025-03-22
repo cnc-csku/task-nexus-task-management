@@ -128,6 +128,26 @@ func (m *mongoTaskRepo) FindByTaskRefAndProjectID(ctx context.Context, taskRef s
 	return task, nil
 }
 
+func (m *mongoTaskRepo) FindByTaskRefsAndProjectID(ctx context.Context, taskRefs []string, projectID bson.ObjectID) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithTaskRefs(taskRefs)
+	f.WithProjectID(projectID)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 func (m *mongoTaskRepo) FindByProjectID(ctx context.Context, projectID bson.ObjectID) ([]*models.Task, error) {
 	tasks := make([]*models.Task, 0)
 
@@ -524,4 +544,23 @@ func (m *mongoTaskRepo) BulkUpdateCurrentSprintID(ctx context.Context, in *repos
 	}
 
 	return nil
+}
+
+func (m *mongoTaskRepo) FindByCurrentSprintIDs(ctx context.Context, sprintIDs []bson.ObjectID) ([]*models.Task, error) {
+	tasks := make([]*models.Task, 0)
+
+	f := NewTaskFilter()
+	f.WithCurrentSprintIDs(sprintIDs)
+
+	cursor, err := m.collection.Find(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }

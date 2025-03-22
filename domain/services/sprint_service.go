@@ -19,7 +19,7 @@ type SprintService interface {
 	GetByID(ctx context.Context, req *requests.GetSprintByIDRequest, userID string) (*models.Sprint, *errutils.Error)
 	Edit(ctx context.Context, req *requests.EditSprintRequest, userID string) (*responses.EditSprintResponse, *errutils.Error)
 	List(ctx context.Context, req *requests.ListSprintPathParam, userID string) ([]models.Sprint, *errutils.Error)
-	CompleteSprint(ctx context.Context, req *requests.CompleteSprintRequest, userID string) (*responses.CompleteSprintResponse, *errutils.Error)
+	CompleteSprint(ctx context.Context, req *requests.CompleteSprintRequest, userID string) (*models.Sprint, *errutils.Error)
 	UpdateStatus(ctx context.Context, req *requests.UpdateSprintStatusRequest, userID string) (*models.Sprint, *errutils.Error)
 	Delete(ctx context.Context, req *requests.DeleteSprintRequest, userID string) (*responses.DeleteSprintResponse, *errutils.Error)
 }
@@ -182,13 +182,13 @@ func (s *sprintServiceImpl) List(ctx context.Context, req *requests.ListSprintPa
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
-	var sprintStatus *models.SprintStatus
-	if req.Status != nil {
-		if !models.SprintStatus(*req.Status).IsValid() {
+	var statuses []models.SprintStatus
+	for _, status := range req.Statuses {
+		if !models.SprintStatus(status).IsValid() {
 			return nil, errutils.NewError(exceptions.ErrInvalidSprintStatus, errutils.BadRequest).WithDebugMessage("invalid sprint status")
 		}
 
-		sprintStatus = (*models.SprintStatus)(req.Status)
+		statuses = append(statuses, models.SprintStatus(status))
 	}
 
 	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
@@ -208,7 +208,7 @@ func (s *sprintServiceImpl) List(ctx context.Context, req *requests.ListSprintPa
 	sprints, err := s.sprintRepo.List(ctx, &repositories.ListSprintFilter{
 		ProjectID: bsonProjectID,
 		IsActive:  req.IsActive,
-		Status:    sprintStatus,
+		Statuses:  statuses,
 	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
@@ -217,7 +217,12 @@ func (s *sprintServiceImpl) List(ctx context.Context, req *requests.ListSprintPa
 	return sprints, nil
 }
 
-func (s *sprintServiceImpl) CompleteSprint(ctx context.Context, req *requests.CompleteSprintRequest, userID string) (*responses.CompleteSprintResponse, *errutils.Error) {
+func (s *sprintServiceImpl) CompleteSprint(ctx context.Context, req *requests.CompleteSprintRequest, userID string) (*models.Sprint, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
 	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -272,9 +277,16 @@ func (s *sprintServiceImpl) CompleteSprint(ctx context.Context, req *requests.Co
 		)
 	}
 
-	return &responses.CompleteSprintResponse{
-		Message: "Sprint is completed",
-	}, nil
+	updatedSprint, err := s.sprintRepo.UpdateStatus(ctx, &repositories.UpdateSprintStatusRequest{
+		ID:        bsonCurrentSprintID,
+		Status:    models.SprintStatusCompleted,
+		UpdatedBy: bsonUserID,
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	return updatedSprint, nil
 }
 
 func (s *sprintServiceImpl) UpdateStatus(ctx context.Context, req *requests.UpdateSprintStatusRequest, userID string) (*models.Sprint, *errutils.Error) {

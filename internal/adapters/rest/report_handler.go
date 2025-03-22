@@ -15,8 +15,8 @@ type ReportHandler interface {
 	GetStatusOverview(c echo.Context) error
 	GetPriorityOverview(c echo.Context) error
 	GetTypeOverview(c echo.Context) error
-	GetAssigneeOverview(c echo.Context) error
 	GetEpicTaskOverview(c echo.Context) error
+	GetAssigneeOverviewBySprint(c echo.Context) error
 }
 
 type reportHandlerImpl struct {
@@ -86,25 +86,6 @@ func (h *reportHandlerImpl) GetTypeOverview(c echo.Context) error {
 	return c.JSON(http.StatusOK, typeOverview)
 }
 
-func (h *reportHandlerImpl) GetAssigneeOverview(c echo.Context) error {
-	req := new(requests.GetTaskAssigneeOverviewRequest)
-	if err := c.Bind(req); err != nil {
-		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
-	}
-
-	if err := c.Validate(req); err != nil {
-		return err
-	}
-
-	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
-	assigneeOverview, err := h.reportService.GetAssigneeOverview(c.Request().Context(), req, userClaims.ID)
-	if err != nil {
-		return err.ToEchoError()
-	}
-
-	return c.JSON(http.StatusOK, assigneeOverview)
-}
-
 func (h *reportHandlerImpl) GetEpicTaskOverview(c echo.Context) error {
 	req := new(requests.GetEpicTaskOverviewRequest)
 	if err := c.Bind(req); err != nil {
@@ -122,4 +103,23 @@ func (h *reportHandlerImpl) GetEpicTaskOverview(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, epicTaskOverview)
+}
+
+func (h *reportHandlerImpl) GetAssigneeOverviewBySprint(c echo.Context) error {
+	req := new(requests.GetTaskAssigneeOverviewBySprintRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	assigneeOverview, err := h.reportService.GetAssigneeOverviewBySprint(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, assigneeOverview)
 }

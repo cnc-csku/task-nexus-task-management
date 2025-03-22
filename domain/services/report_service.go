@@ -16,14 +16,15 @@ type ReportService interface {
 	GetStatusOverview(ctx context.Context, req *requests.GetTaskStatusOverviewRequest, userID string) (*responses.GetTaskStatusOverviewResponse, *errutils.Error)
 	GetPriorityOverview(ctx context.Context, req *requests.GetTaskPriorityOverviewRequest, userID string) (*responses.GetTaskPriorityOverviewResponse, *errutils.Error)
 	GetTypeOverview(ctx context.Context, req *requests.GetTaskTypeOverviewRequest, userID string) (*responses.GetTaskTypeOverviewResponse, *errutils.Error)
-	GetAssigneeOverview(ctx context.Context, req *requests.GetTaskAssigneeOverviewRequest, userID string) (*responses.GetTaskAssigneeOverviewResponse, *errutils.Error)
 	GetEpicTaskOverview(ctx context.Context, req *requests.GetEpicTaskOverviewRequest, userID string) (*responses.GetEpicTaskOverviewResponse, *errutils.Error)
+	GetAssigneeOverviewBySprint(ctx context.Context, req *requests.GetTaskAssigneeOverviewBySprintRequest, userID string) (*responses.GetAssigneeOverviewBySprintResponse, *errutils.Error)
 }
 
 type reportServiceImpl struct {
 	userRepo      repositories.UserRepository
 	projectRepo   repositories.ProjectRepository
 	projectMember repositories.ProjectMemberRepository
+	sprintRepo    repositories.SprintRepository
 	taskRepo      repositories.TaskRepository
 }
 
@@ -31,12 +32,14 @@ func NewReportService(
 	userRepo repositories.UserRepository,
 	projectRepo repositories.ProjectRepository,
 	projectMember repositories.ProjectMemberRepository,
+	sprintRepo repositories.SprintRepository,
 	taskRepo repositories.TaskRepository,
 ) ReportService {
 	return &reportServiceImpl{
 		userRepo:      userRepo,
 		projectRepo:   projectRepo,
 		projectMember: projectMember,
+		sprintRepo:    sprintRepo,
 		taskRepo:      taskRepo,
 	}
 }
@@ -204,98 +207,6 @@ func (s *reportServiceImpl) GetTypeOverview(ctx context.Context, req *requests.G
 	}, nil
 }
 
-// To Be Disccused
-func (s *reportServiceImpl) GetAssigneeOverview(ctx context.Context, req *requests.GetTaskAssigneeOverviewRequest, userID string) (*responses.GetTaskAssigneeOverviewResponse, *errutils.Error) {
-	bsonUserID, err := bson.ObjectIDFromHex(userID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	}
-
-	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	}
-
-	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if project == nil {
-		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest).WithDebugMessage("project not found")
-	}
-
-	member, err := s.projectMember.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if member == nil {
-		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.Forbidden).WithDebugMessage("permission denied")
-	}
-
-	tasks, err := s.taskRepo.FindByProjectID(ctx, bsonProjectID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if len(tasks) == 0 {
-		return &responses.GetTaskAssigneeOverviewResponse{
-			Assignees: []responses.GetTaskAssigneeOverviewResponseAssignees{},
-		}, nil
-	}
-
-	assignees := make(map[string]int)
-	for _, task := range tasks {
-		for _, assignee := range task.Assignees {
-			assignees[assignee.UserID.Hex()]++
-		}
-	}
-
-	assigneeOverview := make([]responses.GetTaskAssigneeOverviewResponseAssignees, 0)
-	for assigneeID, count := range assignees {
-		bsonUserID, err := bson.ObjectIDFromHex(assigneeID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-		}
-
-		user, err := s.userRepo.FindByID(ctx, bsonUserID)
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-		} else if user == nil {
-			return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.BadRequest).WithDebugMessage("user not found")
-		}
-
-		var profileUrl = user.DefaultProfileUrl
-		if user.UploadedProfileUrl != nil {
-			profileUrl = *user.UploadedProfileUrl
-		}
-
-		assigneeOverview = append(assigneeOverview, responses.GetTaskAssigneeOverviewResponseAssignees{
-			UserID:      assigneeID,
-			FullName:    user.FullName,
-			DisplayName: user.DisplayName,
-			ProfileUrl:  profileUrl,
-			Count:       count,
-			Percent:     float64(count) / float64(len(tasks)) * 100,
-		})
-	}
-
-	unassignedTaskCount := 0
-	for _, task := range tasks {
-		if len(task.Assignees) == 0 {
-			unassignedTaskCount++
-		}
-	}
-	assigneeOverview = append(assigneeOverview, responses.GetTaskAssigneeOverviewResponseAssignees{
-		UserID:      "",
-		FullName:    "Unassigned",
-		DisplayName: "Unassigned",
-		ProfileUrl:  "",
-		Count:       unassignedTaskCount,
-		Percent:     float64(unassignedTaskCount) / float64(len(tasks)) * 100,
-	})
-
-	return &responses.GetTaskAssigneeOverviewResponse{
-		Assignees:  assigneeOverview,
-		TotalCount: len(tasks),
-	}, nil
-}
-
 func (s *reportServiceImpl) GetEpicTaskOverview(ctx context.Context, req *requests.GetEpicTaskOverviewRequest, userID string) (*responses.GetEpicTaskOverviewResponse, *errutils.Error) {
 	bsonUserID, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
@@ -330,8 +241,8 @@ func (s *reportServiceImpl) GetEpicTaskOverview(ctx context.Context, req *reques
 		}, nil
 	}
 
-	epicTasks := make(map[string]responses.GetEpicTaskOverviewResponseEpics)
-	statusCounts := make(map[string]map[string]int)
+	epicTasks := make(map[string]responses.GetEpicTaskOverviewResponseEpics) // map[epicID]epicResponse
+	statusCounts := make(map[string]map[string]int)                          // map[epicID]map[status]count
 
 	// Step 1: Get all epics and initialize status counts
 	for _, task := range tasks {
@@ -383,5 +294,209 @@ func (s *reportServiceImpl) GetEpicTaskOverview(ctx context.Context, req *reques
 	return &responses.GetEpicTaskOverviewResponse{
 		Epics:      responseEpics,
 		TotalCount: len(responseEpics),
+	}, nil
+}
+
+func (s *reportServiceImpl) GetAssigneeOverviewBySprint(ctx context.Context, req *requests.GetTaskAssigneeOverviewBySprintRequest, userID string) (*responses.GetAssigneeOverviewBySprintResponse, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest).WithDebugMessage("project not found")
+	}
+
+	member, err := s.projectMember.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.Forbidden).WithDebugMessage("permission denied")
+	}
+
+	var (
+		tasks     []*models.Task
+		sprintMap = make(map[string]models.Sprint)
+	)
+	if req.GetAllSprint != nil && *req.GetAllSprint {
+		sprints, err := s.sprintRepo.FindByProjectID(ctx, bsonProjectID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		} else if len(sprints) == 0 {
+			return &responses.GetAssigneeOverviewBySprintResponse{
+				Sprints:    []responses.GetAssigneeOverviewBySprintResponseSprint{},
+				TotalCount: 0,
+			}, nil
+		}
+
+		for _, sprint := range sprints {
+			sprintMap[sprint.ID.Hex()] = sprint
+		}
+
+		tasks, err = s.taskRepo.FindByProjectID(ctx, bsonProjectID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		} else if len(tasks) == 0 {
+			return &responses.GetAssigneeOverviewBySprintResponse{
+				Sprints:    []responses.GetAssigneeOverviewBySprintResponseSprint{},
+				TotalCount: 0,
+			}, nil
+		}
+	} else {
+		activeSprints, err := s.sprintRepo.FindByProjectIDAndStatus(ctx, bsonProjectID, models.SprintStatusInProgress)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		} else if len(activeSprints) == 0 {
+			return &responses.GetAssigneeOverviewBySprintResponse{
+				Sprints:    []responses.GetAssigneeOverviewBySprintResponseSprint{},
+				TotalCount: 0,
+			}, nil
+		}
+
+		for _, sprint := range activeSprints {
+			sprintMap[sprint.ID.Hex()] = sprint
+		}
+
+		activeSprintIDs := make([]bson.ObjectID, 0, len(activeSprints))
+		for _, sprint := range activeSprints {
+			activeSprintIDs = append(activeSprintIDs, sprint.ID)
+		}
+
+		tasks, err := s.taskRepo.FindByCurrentSprintIDs(ctx, activeSprintIDs)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		} else if len(tasks) == 0 {
+			return &responses.GetAssigneeOverviewBySprintResponse{
+				Sprints:    []responses.GetAssigneeOverviewBySprintResponseSprint{},
+				TotalCount: 0,
+			}, nil
+		}
+	}
+
+	type Total struct {
+		TotalTask  int
+		TotalPoint int
+	}
+
+	var (
+		sprints           = make(map[string]responses.GetAssigneeOverviewBySprintResponseSprint) // map[sprintID]sprintResponse
+		assigneeCounts    = make(map[string]map[string]Total)                                    // map[sprintID]map[assigneeID]Total
+		assigneeUserIDMap = make(map[bson.ObjectID]struct{})                                     // map[assigneeID]struct{}
+	)
+
+	// Step 1: Filter tasks by sprint and initialize counts
+	for _, task := range tasks {
+		if task.Sprint == nil || task.Sprint.CurrentSprintID == nil {
+			continue
+		}
+
+		sprintID := *task.Sprint.CurrentSprintID
+		sprints[sprintID.Hex()] = responses.GetAssigneeOverviewBySprintResponseSprint{
+			SprintID:    sprintID.Hex(),
+			SprintTitle: sprintMap[sprintID.Hex()].Title,
+		}
+		assigneeCounts[sprintID.Hex()] = make(map[string]Total)
+	}
+
+	// Step 2: Count tasks by assignee
+	for _, task := range tasks {
+		if task.Sprint == nil || task.Sprint.CurrentSprintID == nil {
+			continue
+		}
+
+		sprintID := *task.Sprint.CurrentSprintID
+		if counts, exists := assigneeCounts[sprintID.Hex()]; exists {
+			for _, assignee := range task.Assignees {
+				var point int
+				if assignee.Point != nil {
+					point = *assignee.Point
+				}
+				if assignee.UserID != nil {
+					counts[assignee.UserID.Hex()] = Total{
+						TotalTask:  counts[assignee.UserID.Hex()].TotalTask + 1,
+						TotalPoint: counts[assignee.UserID.Hex()].TotalPoint + point,
+					}
+
+					assigneeUserIDMap[*assignee.UserID] = struct{}{}
+				}
+			}
+		}
+	}
+
+	assigneeUserIDs := make([]bson.ObjectID, 0, len(assigneeUserIDMap))
+	for assigneeUserID := range assigneeUserIDMap {
+		assigneeUserIDs = append(assigneeUserIDs, assigneeUserID)
+	}
+
+	users, err := s.userRepo.FindByIDs(ctx, assigneeUserIDs)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	userMap := make(map[bson.ObjectID]models.User)
+	for _, user := range users {
+		userMap[user.ID] = user
+	}
+
+	// Step 3: Build response with percentage calculation
+	responseSprints := make([]responses.GetAssigneeOverviewBySprintResponseSprint, 0, len(sprints))
+	for sprintID, sprint := range sprints {
+		var (
+			assigneeList = make([]responses.GetAssigneeOverviewBySprintResponseSprintAssignee, 0, len(assigneeCounts[sprintID]))
+			totalTasks   = 0
+			totalPoints  = 0
+		)
+
+		for assigneeID, total := range assigneeCounts[sprintID] {
+			totalTasks += total.TotalTask
+			totalPoints += total.TotalPoint
+
+			userID, err := bson.ObjectIDFromHex(assigneeID)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			}
+
+			var profileURL = userMap[userID].DefaultProfileUrl
+			if userMap[userID].UploadedProfileUrl != nil {
+				profileURL = *userMap[userID].UploadedProfileUrl
+			}
+
+			assigneeList = append(assigneeList, responses.GetAssigneeOverviewBySprintResponseSprintAssignee{
+				UserID:      assigneeID,
+				FullName:    userMap[userID].FullName,
+				DisplayName: userMap[userID].DisplayName,
+				ProfileUrl:  profileURL,
+				TaskCount:   total.TotalTask,
+				PointCount:  total.TotalPoint,
+			})
+		}
+
+		// Calculate percentage
+		for i := range assigneeList {
+			if totalTasks > 0 {
+				assigneeList[i].TaskPercent = float64(assigneeList[i].TaskCount) / float64(totalTasks) * 100
+			}
+			if totalPoints > 0 {
+				assigneeList[i].PointPercent = float64(assigneeList[i].PointCount) / float64(totalPoints) * 100
+			}
+		}
+
+		sprint.Assignees = assigneeList
+		sprint.TotalTask = totalTasks
+		sprint.TotalPoint = totalPoints
+		responseSprints = append(responseSprints, sprint)
+	}
+
+	return &responses.GetAssigneeOverviewBySprintResponse{
+		Sprints:    responseSprints,
+		TotalCount: len(responseSprints),
 	}, nil
 }

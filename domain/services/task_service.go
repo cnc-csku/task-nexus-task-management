@@ -22,6 +22,7 @@ import (
 type TaskService interface {
 	Create(ctx context.Context, req *requests.CreateTaskRequest, userID string) (*models.Task, *errutils.Error)
 	GetTaskDetail(ctx context.Context, req *requests.GetTaskDetailPathParam, userId string) (*responses.GetTaskDetailResponse, *errutils.Error)
+	GetManyTaskDetail(ctx context.Context, req *requests.GetManyTaskDetailPathParam, userId string) ([]responses.GetTaskDetailResponse, *errutils.Error)
 	ListEpicTasks(ctx context.Context, req *requests.ListEpicTasksPathParam, userId string) ([]*models.Task, *errutils.Error)
 	SearchTask(ctx context.Context, req *requests.SearchTaskParams, userId string) ([]responses.SearchTaskResponse, *errutils.Error)
 	UpdateDetail(ctx context.Context, req *requests.UpdateTaskDetailRequest, userId string) (*models.Task, *errutils.Error)
@@ -377,18 +378,18 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest)
 	}
 
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
 	task, err := s.taskRepo.FindByTaskRefAndProjectID(ctx, req.TaskRef, bsonProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if task == nil {
 		return nil, errutils.NewError(exceptions.ErrTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Task not found: %s", req.TaskRef))
-	}
-
-	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, task.ProjectID, bsonUserID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if member == nil {
-		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
 	}
 
 	approvalUserIDs := make([]bson.ObjectID, 0, len(task.Approvals))
@@ -528,6 +529,182 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 		UpdaterDisplayName:  updater.DisplayName,
 		UpdaterProfileUrl:   updaterProfileUrl,
 	}, nil
+}
+
+func (s *taskServiceImpl) GetManyTaskDetail(ctx context.Context, req *requests.GetManyTaskDetailPathParam, userId string) ([]responses.GetTaskDetailResponse, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest)
+	}
+
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
+	tasks, err := s.taskRepo.FindByTaskRefsAndProjectID(ctx, req.TaskRefs, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if len(tasks) == 0 {
+		return nil, errutils.NewError(exceptions.ErrTaskNotFound, errutils.BadRequest).WithDebugMessage("Tasks not found")
+	}
+
+	response := make([]responses.GetTaskDetailResponse, 0, len(tasks))
+	for _, task := range tasks {
+		approvalUserIDs := make([]bson.ObjectID, 0, len(task.Approvals))
+		for _, approval := range task.Approvals {
+			approvalUserIDs = append(approvalUserIDs, approval.UserID)
+		}
+
+		approvals, err := s.userRepo.FindByIDs(ctx, approvalUserIDs)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+
+		approvalMap := make(map[string]models.User, len(approvals))
+		for _, approval := range approvals {
+			approvalMap[approval.ID.Hex()] = approval
+		}
+
+		approvalResponses := make([]responses.GetTaskDetailResponseApprovals, len(task.Approvals))
+		for i, approval := range task.Approvals {
+			user, ok := approvalMap[approval.UserID.Hex()]
+			if !ok {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Approval not found")
+			}
+
+			var profileUrl = user.DefaultProfileUrl
+			if user.UploadedProfileUrl != nil {
+				profileUrl = *user.UploadedProfileUrl
+			}
+
+			approvalResponses[i] = responses.GetTaskDetailResponseApprovals{
+				UserID:      approval.UserID.Hex(),
+				Email:       user.Email,
+				DisplayName: user.DisplayName,
+				ProfileUrl:  profileUrl,
+				IsApproved:  approval.IsApproved,
+				Reason:      approval.Reason,
+			}
+		}
+
+		assigneeUserIDs := make([]bson.ObjectID, 0, len(task.Assignees))
+		for _, assignee := range task.Assignees {
+			if assignee.UserID != nil {
+				assigneeUserIDs = append(assigneeUserIDs, *assignee.UserID)
+			}
+		}
+
+		assignees, err := s.userRepo.FindByIDs(ctx, assigneeUserIDs)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+
+		assigneeMap := make(map[string]models.User, len(assignees))
+		for _, assignee := range assignees {
+			assigneeMap[assignee.ID.Hex()] = assignee
+		}
+
+		assigneeResponses := make([]responses.GetTaskDetailResponseAssignee, len(task.Assignees))
+		for i, assignee := range task.Assignees {
+			if assignee.UserID == nil {
+				assigneeResponses[i] = responses.GetTaskDetailResponseAssignee{
+					Position: assignee.Position,
+					Point:    assignee.Point,
+				}
+				continue
+			} else if _, ok := assigneeMap[assignee.UserID.Hex()]; !ok {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Assignee not found")
+			} else {
+				user, ok := assigneeMap[assignee.UserID.Hex()]
+				if ok {
+					var profileUrl = user.DefaultProfileUrl
+					if user.UploadedProfileUrl != nil {
+						profileUrl = *user.UploadedProfileUrl
+					}
+
+					userID := assignee.UserID.Hex()
+
+					assigneeResponses[i] = responses.GetTaskDetailResponseAssignee{
+						UserID:      &userID,
+						Email:       &user.Email,
+						DisplayName: &user.DisplayName,
+						ProfileUrl:  &profileUrl,
+						Position:    assignee.Position,
+						Point:       assignee.Point,
+					}
+				}
+			}
+		}
+
+		reporter, err := s.userRepo.FindByID(ctx, task.CreatedBy)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		} else if reporter == nil {
+			return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.InternalServerError).WithDebugMessage(fmt.Sprintf("User not found: %s", task.CreatedBy.Hex()))
+		}
+
+		updater, err := s.userRepo.FindByID(ctx, task.UpdatedBy)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		} else if updater == nil {
+			return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.InternalServerError).WithDebugMessage(fmt.Sprintf("User not found: %s", task.UpdatedBy.Hex()))
+		}
+
+		var reporterProfileUrl = reporter.DefaultProfileUrl
+		if reporter.UploadedProfileUrl != nil {
+			reporterProfileUrl = *reporter.UploadedProfileUrl
+		}
+
+		var updaterProfileUrl = updater.DefaultProfileUrl
+		if updater.UploadedProfileUrl != nil {
+			updaterProfileUrl = *updater.UploadedProfileUrl
+		}
+
+		response = append(response, responses.GetTaskDetailResponse{
+			ID:                  task.ID.Hex(),
+			TaskRef:             task.TaskRef,
+			ProjectID:           task.ProjectID.Hex(),
+			Title:               task.Title,
+			Description:         task.Description,
+			ParentID:            task.ParentID,
+			Type:                task.Type,
+			Status:              task.Status,
+			Priority:            task.Priority,
+			Approvals:           approvalResponses,
+			Assignees:           assigneeResponses,
+			ChildrenPoint:       task.ChildrenPoint,
+			HasChildren:         task.HasChildren,
+			Sprint:              task.Sprint,
+			Attributes:          task.Attributes,
+			StartDate:           task.StartDate,
+			DueDate:             task.DueDate,
+			CreatedAt:           task.CreatedAt,
+			ReporterUserID:      task.CreatedBy.Hex(),
+			ReporterDisplayName: reporter.DisplayName,
+			ReporterProfileUrl:  reporterProfileUrl,
+			UpdatedAt:           task.UpdatedAt,
+			UpdatedBy:           task.UpdatedBy.Hex(),
+			UpdaterDisplayName:  updater.DisplayName,
+			UpdaterProfileUrl:   updaterProfileUrl,
+		})
+	}
+
+	return response, nil
 }
 
 func (s *taskServiceImpl) ListEpicTasks(ctx context.Context, req *requests.ListEpicTasksPathParam, userId string) ([]*models.Task, *errutils.Error) {
@@ -975,16 +1152,6 @@ func (s *taskServiceImpl) UpdateParentID(ctx context.Context, req *requests.Upda
 		serviceErr := updatePreviousParentTask(ctx, s.taskRepo, task)
 		if serviceErr != nil {
 			return nil, serviceErr
-		}
-
-		// Update Task's Sprint to nil
-		_, err := s.taskRepo.UpdateCurrentSprintID(ctx, &repositories.UpdateTaskCurrentSprintIDRequest{
-			ID:              task.ID,
-			CurrentSprintID: nil,
-			UpdatedBy:       bsonUserID,
-		})
-		if err != nil {
-			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 		}
 
 		nullableBsonTaskParentID = nil

@@ -22,9 +22,9 @@ type EditSprintRequest struct {
 }
 
 type ListSprintPathParam struct {
-	ProjectID string  `param:"projectId" validate:"required"`
-	IsActive  *bool   `query:"isActive"`
-	Status    *string `query:"status"`
+	ProjectID string   `param:"projectId" validate:"required"`
+	IsActive  *bool    `query:"isActive"`
+	Statuses  []string `query:"statuses"`
 }
 
 type CompleteSprintRequest struct {
