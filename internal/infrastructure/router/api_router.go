@@ -89,6 +89,7 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 
 		tasks.GET("/epic", r.task.ListEpicTasks, r.authMiddleware.Middleware)
 		tasks.GET("", r.task.SearchTask, r.authMiddleware.Middleware)
+		tasks.GET("/children", r.task.GetChildrenTasks, r.authMiddleware.Middleware)
 
 		tasks.PUT("/:taskRef/detail", r.task.UpdateDetail, r.authMiddleware.Middleware)
 		tasks.PUT("/:taskRef/title", r.task.UpdateTitle, r.authMiddleware.Middleware)

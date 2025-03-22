@@ -78,6 +78,18 @@ type SearchTaskResponseAssignee struct {
 	Point       *int    `json:"point"`
 }
 
+type GetChildrenTasksResponse struct {
+	ID        string                           `json:"id"`
+	TaskRef   string                           `json:"taskRef"`
+	ProjectID string                           `json:"projectId"`
+	Title     string                           `json:"title"`
+	Type      string                           `json:"type"`
+	Status    string                           `json:"status"`
+	Priority  string                           `json:"priority"`
+	Approvals []GetTaskDetailResponseApprovals `json:"approvals"`
+	Assignees []GetTaskDetailResponseAssignee  `json:"assignees"`
+}
+
 type GenerateDescriptionResponse struct {
 	Description []genai.Part `json:"description"`
 }
