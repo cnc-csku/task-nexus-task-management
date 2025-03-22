@@ -62,6 +62,7 @@ type SearchTaskResponse struct {
 	ParentTitle   *string                      `json:"parentTitle"`
 	Type          string                       `json:"type"`
 	Status        string                       `json:"status"`
+	Priority      string                       `json:"priority"`
 	Assignees     []SearchTaskResponseAssignee `json:"assignees"`
 	Approvals     []models.TaskApproval        `json:"approvals"`
 	ChildrenPoint int                          `json:"childrenPoint"`
