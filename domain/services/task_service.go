@@ -22,9 +22,10 @@ import (
 type TaskService interface {
 	Create(ctx context.Context, req *requests.CreateTaskRequest, userID string) (*models.Task, *errutils.Error)
 	GetTaskDetail(ctx context.Context, req *requests.GetTaskDetailPathParam, userId string) (*responses.GetTaskDetailResponse, *errutils.Error)
-	GetManyTaskDetail(ctx context.Context, req *requests.GetManyTaskDetailPathParam, userId string) ([]responses.GetTaskDetailResponse, *errutils.Error)
+	GetManyTaskDetail(ctx context.Context, req *requests.GetManyTaskDetailParams, userId string) ([]responses.GetTaskDetailResponse, *errutils.Error)
 	ListEpicTasks(ctx context.Context, req *requests.ListEpicTasksPathParam, userId string) ([]*models.Task, *errutils.Error)
 	SearchTask(ctx context.Context, req *requests.SearchTaskParams, userId string) ([]responses.SearchTaskResponse, *errutils.Error)
+	GetChildrenTasks(ctx context.Context, req *requests.GetChildrenTasksParams, userId string) ([]responses.GetChildrenTasksResponse, *errutils.Error)
 	UpdateDetail(ctx context.Context, req *requests.UpdateTaskDetailRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateTitle(ctx context.Context, req *requests.UpdateTaskTitleRequest, userId string) (*models.Task, *errutils.Error)
 	UpdateParentID(ctx context.Context, req *requests.UpdateTaskParentIdRequest, userId string) (*models.Task, *errutils.Error)
@@ -531,7 +532,7 @@ func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTa
 	}, nil
 }
 
-func (s *taskServiceImpl) GetManyTaskDetail(ctx context.Context, req *requests.GetManyTaskDetailPathParam, userId string) ([]responses.GetTaskDetailResponse, *errutils.Error) {
+func (s *taskServiceImpl) GetManyTaskDetail(ctx context.Context, req *requests.GetManyTaskDetailParams, userId string) ([]responses.GetTaskDetailResponse, *errutils.Error) {
 	bsonUserID, err := bson.ObjectIDFromHex(userId)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
@@ -941,6 +942,147 @@ func getParentTasksMap(ctx context.Context, taskRepo repositories.TaskRepository
 	}
 
 	return parentTasksMap, nil
+}
+
+func (s *taskServiceImpl) GetChildrenTasks(ctx context.Context, req *requests.GetChildrenTasksParams, userId string) ([]responses.GetChildrenTasksResponse, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest)
+	}
+
+	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
+	}
+
+	parentTask, err := s.taskRepo.FindByTaskRefAndProjectID(ctx, req.ParentTaskRef, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	tasks, err := s.taskRepo.FindByParentID(ctx, parentTask.ID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if len(tasks) == 0 {
+		return []responses.GetChildrenTasksResponse{}, nil
+	}
+
+	response := make([]responses.GetChildrenTasksResponse, 0, len(tasks))
+	for _, task := range tasks {
+		approvalUserIDs := make([]bson.ObjectID, 0, len(task.Approvals))
+		for _, approval := range task.Approvals {
+			approvalUserIDs = append(approvalUserIDs, approval.UserID)
+		}
+
+		approvals, err := s.userRepo.FindByIDs(ctx, approvalUserIDs)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+
+		approvalMap := make(map[string]models.User, len(approvals))
+		for _, approval := range approvals {
+			approvalMap[approval.ID.Hex()] = approval
+		}
+
+		approvalResponses := make([]responses.GetTaskDetailResponseApprovals, len(task.Approvals))
+		for i, approval := range task.Approvals {
+			user, ok := approvalMap[approval.UserID.Hex()]
+			if !ok {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Approval not found")
+			}
+
+			var profileUrl = user.DefaultProfileUrl
+			if user.UploadedProfileUrl != nil {
+				profileUrl = *user.UploadedProfileUrl
+			}
+
+			approvalResponses[i] = responses.GetTaskDetailResponseApprovals{
+				UserID:      approval.UserID.Hex(),
+				Email:       user.Email,
+				DisplayName: user.DisplayName,
+				ProfileUrl:  profileUrl,
+				IsApproved:  approval.IsApproved,
+				Reason:      approval.Reason,
+			}
+		}
+
+		assigneeUserIDs := make([]bson.ObjectID, 0, len(task.Assignees))
+		for _, assignee := range task.Assignees {
+			if assignee.UserID != nil {
+				assigneeUserIDs = append(assigneeUserIDs, *assignee.UserID)
+			}
+		}
+
+		assignees, err := s.userRepo.FindByIDs(ctx, assigneeUserIDs)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+
+		assigneeMap := make(map[string]models.User, len(assignees))
+		for _, assignee := range assignees {
+			assigneeMap[assignee.ID.Hex()] = assignee
+		}
+
+		assigneeResponses := make([]responses.GetTaskDetailResponseAssignee, len(task.Assignees))
+		for i, assignee := range task.Assignees {
+			if assignee.UserID == nil {
+				assigneeResponses[i] = responses.GetTaskDetailResponseAssignee{
+					Position: assignee.Position,
+					Point:    assignee.Point,
+				}
+				continue
+			} else if _, ok := assigneeMap[assignee.UserID.Hex()]; !ok {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage("Assignee not found")
+			} else {
+				user, ok := assigneeMap[assignee.UserID.Hex()]
+				if ok {
+					var profileUrl = user.DefaultProfileUrl
+					if user.UploadedProfileUrl != nil {
+						profileUrl = *user.UploadedProfileUrl
+					}
+
+					userID := assignee.UserID.Hex()
+
+					assigneeResponses[i] = responses.GetTaskDetailResponseAssignee{
+						UserID:      &userID,
+						Email:       &user.Email,
+						DisplayName: &user.DisplayName,
+						ProfileUrl:  &profileUrl,
+						Position:    assignee.Position,
+						Point:       assignee.Point,
+					}
+				}
+			}
+		}
+
+		response = append(response, responses.GetChildrenTasksResponse{
+			ID:        task.ID.Hex(),
+			TaskRef:   task.TaskRef,
+			ProjectID: task.ProjectID.Hex(),
+			Title:     task.Title,
+			Type:      task.Type.String(),
+			Status:    task.Status,
+			Priority:  task.Priority.String(),
+			Approvals: approvalResponses,
+			Assignees: assigneeResponses,
+		})
+	}
+
+	return response, nil
 }
 
 func (s *taskServiceImpl) UpdateDetail(ctx context.Context, req *requests.UpdateTaskDetailRequest, userId string) (*models.Task, *errutils.Error) {

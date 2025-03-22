@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cnc-csku/task-nexus-go-lib/utils/errutils"
 	"github.com/cnc-csku/task-nexus/task-management/domain/exceptions"
@@ -352,6 +353,10 @@ func (s *reportServiceImpl) GetAssigneeOverviewBySprint(ctx context.Context, req
 		}
 	} else {
 		activeSprints, err := s.sprintRepo.FindByProjectIDAndStatus(ctx, bsonProjectID, models.SprintStatusInProgress)
+		fmt.Println("len(activeSprints)", len(activeSprints))
+		for _, sprint := range activeSprints {
+			fmt.Println("sprint", sprint)
+		}
 		if err != nil {
 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 		} else if len(activeSprints) == 0 {

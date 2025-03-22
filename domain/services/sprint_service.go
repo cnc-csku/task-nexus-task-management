@@ -331,8 +331,9 @@ func (s *sprintServiceImpl) UpdateStatus(ctx context.Context, req *requests.Upda
 	}
 
 	sprint, err = s.sprintRepo.UpdateStatus(ctx, &repositories.UpdateSprintStatusRequest{
-		ID:     bsonSprintID,
-		Status: models.SprintStatus(req.Status),
+		ID:        bsonSprintID,
+		Status:    models.SprintStatus(req.Status),
+		UpdatedBy: bsonUserID,
 	})
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())

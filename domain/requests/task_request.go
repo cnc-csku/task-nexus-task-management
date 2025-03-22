@@ -30,7 +30,7 @@ type GetTaskDetailPathParam struct {
 	TaskRef   string `param:"taskRef" validate:"required"`
 }
 
-type GetManyTaskDetailPathParam struct {
+type GetManyTaskDetailParams struct {
 	ProjectID string   `param:"projectId" validate:"required"`
 	TaskRefs  []string `query:"taskRefs" validate:"required"`
 }
@@ -48,6 +48,11 @@ type SearchTaskParams struct {
 	Positions       []string `query:"positions"`
 	Statuses        []string `query:"statuses"`
 	SearchKeyword   *string  `query:"searchKeyword"`
+}
+
+type GetChildrenTasksParams struct {
+	ProjectID     string `param:"projectId" validate:"required"`
+	ParentTaskRef string `query:"parentTaskRef" validate:"required"`
 }
 
 type UpdateTaskDetailRequest struct {
