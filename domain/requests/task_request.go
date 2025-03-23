@@ -48,6 +48,7 @@ type SearchTaskParams struct {
 	Positions       []string `query:"positions"`
 	Statuses        []string `query:"statuses"`
 	SearchKeyword   *string  `query:"searchKeyword"`
+	Types           []string `query:"types"`
 }
 
 type GetChildrenTasksParams struct {

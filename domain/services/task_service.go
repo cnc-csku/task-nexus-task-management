@@ -745,6 +745,14 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
+	var taskTypes []models.TaskType
+	for _, taskType := range req.Types {
+		if !models.TaskType(taskType).IsValid() {
+			return nil, errutils.NewError(exceptions.ErrInvalidTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Invalid task type: %s", taskType))
+		}
+		taskTypes = append(taskTypes, models.TaskType(taskType))
+	}
+
 	var (
 		isTaskWithNoSprint bool
 		bsonSprintIDs      []bson.ObjectID
@@ -811,7 +819,7 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 
 	tasks, err := s.taskRepo.Search(ctx, &repositories.SearchTaskRequest{
 		ProjectID:          bsonProjectID,
-		TaskTypes:          []models.TaskType{models.TaskTypeStory, models.TaskTypeTask, models.TaskTypeBug},
+		TaskTypes:          taskTypes,
 		SprintIDs:          bsonSprintIDs,
 		IsTaskWithNoSprint: isTaskWithNoSprint,
 		EpicTaskID:         bsonParentID,
