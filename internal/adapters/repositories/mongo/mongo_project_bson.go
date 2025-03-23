@@ -82,3 +82,10 @@ func (u projectUpdate) UpdateSetupStatus(setupStatus models.ProjectSetupStatus) 
 		"setup_status": setupStatus,
 	}
 }
+
+func (u projectUpdate) UpdateDetail(name, description string) {
+	u["$set"] = bson.M{
+		"name":        name,
+		"description": description,
+	}
+}

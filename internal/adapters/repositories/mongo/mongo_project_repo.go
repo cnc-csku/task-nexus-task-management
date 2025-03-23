@@ -444,3 +444,18 @@ func (m *mongoProjectRepo) UpdateSetupStatus(ctx context.Context, in *repositori
 
 	return m.FindByProjectID(ctx, in.ProjectID)
 }
+
+func (m *mongoProjectRepo) UpdateDetail(ctx context.Context, in *repositories.UpdateProjectDetailRequest) (*models.Project, error) {
+	f := NewProjectFilter()
+	f.WithID(in.ProjectID)
+
+	u := NewProjectUpdate()
+	u.UpdateDetail(in.Name, in.Description)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByProjectID(ctx, in.ProjectID)
+}

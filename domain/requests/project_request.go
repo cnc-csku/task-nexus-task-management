@@ -15,6 +15,12 @@ type GetProjectsDetailPathParams struct {
 	ProjectID string `param:"projectId" validate:"required"`
 }
 
+type UpdateProjectDetailRequest struct {
+	ProjectID   string `param:"projectId" validate:"required"`
+	Name        string `json:"name" validate:"required"`
+	Description string `json:"description"`
+}
+
 type UpdateSetupStatusRequest struct {
 	ProjectID string `param:"projectId" validate:"required"`
 	Status    string `json:"status" validate:"required"`
