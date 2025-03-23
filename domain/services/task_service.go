@@ -304,22 +304,6 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 					taskSprint.CurrentSprintID = parentTask.Sprint.CurrentSprintID
 				}
 			}
-
-			childrenTasks, err := s.taskRepo.FindByParentID(ctx, parentTask.ID)
-			if err != nil {
-				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-			}
-
-			serviceErr := updateParentTaskStatusToLowestWorkflowStatus(ctx, &UpdateParentTaskStatusToLowestWorkflowStatus{
-				taskRepo:      s.taskRepo,
-				Workflows:     project.Workflows,
-				ChildrenTasks: childrenTasks,
-				ParentTask:    parentTask,
-				UpdaterUserID: bsonUserID,
-			})
-			if serviceErr != nil {
-				return nil, serviceErr
-			}
 		}
 
 		nullableBsonTaskParentID = &bsonTaskParentID
@@ -349,6 +333,33 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 	err = s.projectRepo.IncrementTaskRunningNumber(ctx, bsonProjectID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	}
+
+	if models.TaskType(req.Type) == models.TaskTypeSubTask {
+		if task.ParentID != nil {
+			parentTask, err := s.taskRepo.FindByID(ctx, *task.ParentID)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			} else if parentTask == nil {
+				return nil, errutils.NewError(exceptions.ErrParentTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task not found: %s", *task.ParentID))
+			}
+
+			childrenTasks, err := s.taskRepo.FindByParentID(ctx, parentTask.ID)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			}
+
+			serviceErr := updateParentTaskStatusToLowestWorkflowStatus(ctx, &UpdateParentTaskStatusToLowestWorkflowStatus{
+				taskRepo:      s.taskRepo,
+				Workflows:     project.Workflows,
+				ChildrenTasks: childrenTasks,
+				ParentTask:    parentTask,
+				UpdaterUserID: bsonUserID,
+			})
+			if serviceErr != nil {
+				return nil, serviceErr
+			}
+		}
 	}
 
 	return task, nil
