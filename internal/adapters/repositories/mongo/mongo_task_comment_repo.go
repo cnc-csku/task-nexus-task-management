@@ -9,6 +9,7 @@ import (
 	"github.com/cnc-csku/task-nexus/task-management/domain/repositories"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type mongoTaskCommentRepo struct {
@@ -47,7 +48,9 @@ func (m *mongoTaskCommentRepo) FindByTaskID(ctx context.Context, taskID bson.Obj
 	f := NewTaskCommentFilter()
 	f.WithTaskID(taskID)
 
-	cursor, err := m.collection.Find(ctx, f)
+	o := options.Find().SetSort(bson.M{"created_at": -1})
+
+	cursor, err := m.collection.Find(ctx, f, o)
 	if err != nil {
 		return nil, err
 	}
