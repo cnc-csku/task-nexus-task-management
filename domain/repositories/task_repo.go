@@ -38,6 +38,7 @@ type TaskRepository interface {
 	FindByCurrentSprintIDAndPreviousSprintIDs(ctx context.Context, sprintID bson.ObjectID) ([]*models.Task, error)
 	BulkUpdateCurrentSprintID(ctx context.Context, in *BulkUpdateCurrentSprintIDRequest) error
 	FindByCurrentSprintIDs(ctx context.Context, sprintIDs []bson.ObjectID) ([]*models.Task, error)
+	UpdateManyTasksStatus(ctx context.Context, in *UpdateManyTasksStatusRequest) error
 }
 
 type CreateTaskRequest struct {
@@ -166,4 +167,10 @@ type BulkUpdateCurrentSprintIDRequest struct {
 	TaskIDs         []bson.ObjectID
 	CurrentSprintID *bson.ObjectID
 	UpdatedBy       bson.ObjectID
+}
+
+type UpdateManyTasksStatusRequest struct {
+	TaskIDs   []bson.ObjectID
+	Status    string
+	UpdatedBy bson.ObjectID
 }
