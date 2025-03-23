@@ -164,11 +164,11 @@ func (u taskUpdate) UpdateType(in *repositories.UpdateTaskTypeRequest) {
 	}
 }
 
-func (u taskUpdate) UpdateStatus(in *repositories.UpdateTaskStatusRequest) {
+func (u taskUpdate) UpdateStatus(status string, updatedBy bson.ObjectID) {
 	u["$set"] = bson.M{
-		"status":     in.Status,
+		"status":     status,
 		"updated_at": time.Now(),
-		"updated_by": in.UpdatedBy,
+		"updated_by": updatedBy,
 	}
 }
 

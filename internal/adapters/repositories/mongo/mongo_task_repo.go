@@ -232,7 +232,7 @@ func (m *mongoTaskRepo) UpdateStatus(ctx context.Context, in *repositories.Updat
 	f.WithID(in.ID)
 
 	u := NewTaskUpdate()
-	u.UpdateStatus(in)
+	u.UpdateStatus(in.Status, in.UpdatedBy)
 
 	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
 	if err != nil {
@@ -563,4 +563,19 @@ func (m *mongoTaskRepo) FindByCurrentSprintIDs(ctx context.Context, sprintIDs []
 	}
 
 	return tasks, nil
+}
+
+func (m *mongoTaskRepo) UpdateManyTasksStatus(ctx context.Context, in *repositories.UpdateManyTasksStatusRequest) error {
+	f := NewTaskFilter()
+	f.WithIDs(in.TaskIDs)
+
+	u := NewTaskUpdate()
+	u.UpdateStatus(in.Status, in.UpdatedBy)
+
+	_, err := m.collection.UpdateMany(ctx, f, u)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
