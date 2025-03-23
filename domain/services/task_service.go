@@ -359,33 +359,30 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 			if serviceErr != nil {
 				return nil, serviceErr
 			}
+
+			// If Level 1 parent task (Story, Task, Bug) has assignees with points, delete those points from the assignees
+			if assigneeesContainPoint(parentTask.Assignees) {
+				newAssignees := make([]repositories.UpdateTaskAssigneesRequestAssignee, 0, len(parentTask.Assignees))
+				for _, assignee := range parentTask.Assignees {
+					newAssignees = append(newAssignees, repositories.UpdateTaskAssigneesRequestAssignee{
+						UserID:   assignee.UserID,
+						Position: assignee.Position,
+					})
+				}
+
+				_, err := s.taskRepo.UpdateAssignees(ctx, &repositories.UpdateTaskAssigneesRequest{
+					ID:        parentTask.ID,
+					Assignees: newAssignees,
+					UpdatedBy: bsonUserID,
+				})
+				if err != nil {
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+				}
+			}
 		}
 	}
 
 	return task, nil
-}
-
-func validateParentTaskType(childTaskType string, parentTaskType models.TaskType) *errutils.Error {
-	switch childTaskType {
-	case models.TaskTypeEpic.String():
-		return errutils.NewError(exceptions.ErrInvalidParentTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task type is not valid: %s", parentTaskType))
-	case models.TaskTypeStory.String(), models.TaskTypeTask.String(), models.TaskTypeBug.String():
-		if parentTaskType != models.TaskTypeEpic {
-			return errutils.NewError(exceptions.ErrInvalidParentTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task type is not valid: %s", parentTaskType))
-		}
-	case models.TaskTypeSubTask.String():
-		if !array.ContainAny(
-			[]string{parentTaskType.String()},
-			[]string{
-				models.TaskTypeStory.String(),
-				models.TaskTypeTask.String(),
-				models.TaskTypeBug.String(),
-			},
-		) {
-			return errutils.NewError(exceptions.ErrInvalidParentTaskType, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task type is not valid: %s", parentTaskType))
-		}
-	}
-	return nil
 }
 
 func (s *taskServiceImpl) GetTaskDetail(ctx context.Context, req *requests.GetTaskDetailPathParam, userId string) (*responses.GetTaskDetailResponse, *errutils.Error) {
@@ -949,37 +946,6 @@ func (s *taskServiceImpl) SearchTask(ctx context.Context, req *requests.SearchTa
 	return response, nil
 }
 
-func getDoneStatuses(project *models.Project) []string {
-	isDoneStatuses := make([]string, 0)
-	for _, workflow := range project.Workflows {
-		if workflow.IsDone {
-			isDoneStatuses = append(isDoneStatuses, workflow.Status)
-		}
-	}
-	return isDoneStatuses
-}
-
-func getParentTasksMap(ctx context.Context, taskRepo repositories.TaskRepository, tasks []*models.Task) (map[string]*string, *errutils.Error) {
-	parentTaskIDs := make([]bson.ObjectID, 0, len(tasks))
-	for _, task := range tasks {
-		if task.ParentID != nil {
-			parentTaskIDs = append(parentTaskIDs, *task.ParentID)
-		}
-	}
-
-	parentTasks, err := taskRepo.FindByIDs(ctx, parentTaskIDs)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	}
-
-	parentTasksMap := make(map[string]*string, len(parentTasks))
-	for _, parentTask := range parentTasks {
-		parentTasksMap[parentTask.ID.Hex()] = &parentTask.Title
-	}
-
-	return parentTasksMap, nil
-}
-
 func (s *taskServiceImpl) GetChildrenTasks(ctx context.Context, req *requests.GetChildrenTasksParams, userId string) ([]responses.GetChildrenTasksResponse, *errutils.Error) {
 	bsonUserID, err := bson.ObjectIDFromHex(userId)
 	if err != nil {
@@ -1347,102 +1313,6 @@ func (s *taskServiceImpl) UpdateParentID(ctx context.Context, req *requests.Upda
 	return updatedTask, nil
 }
 
-func updatePreviousParentTask(
-	ctx context.Context,
-	taskRepo repositories.TaskRepository,
-	updatedTask *models.Task,
-) *errutils.Error {
-	if updatedTask.ParentID == nil {
-		return nil
-	}
-
-	previousParentTask, err := taskRepo.FindByID(ctx, *updatedTask.ParentID)
-	if err != nil {
-		return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if previousParentTask == nil {
-		return errutils.NewError(exceptions.ErrParentTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task not found: %s", *updatedTask.ParentID))
-	}
-
-	childrenOfPreviousParentTasks, err := taskRepo.FindByParentID(ctx, previousParentTask.ID)
-	if err != nil {
-		return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	}
-
-	if len(childrenOfPreviousParentTasks) == 0 {
-		_, err := taskRepo.UpdateHasChildren(ctx, &repositories.UpdateTaskHasChildrenRequest{
-			ID:          previousParentTask.ID,
-			HasChildren: false,
-		})
-		if err != nil {
-			return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-		}
-	}
-
-	serviceErr := updateChildrenPointOfPreviousParentTask(ctx, taskRepo, updatedTask, previousParentTask)
-	if serviceErr != nil {
-		return serviceErr
-	}
-
-	return nil
-}
-
-func updateChildrenPointOfPreviousParentTask(
-	ctx context.Context,
-	taskRepo repositories.TaskRepository,
-	updatedTask, previousParentTask *models.Task,
-) *errutils.Error {
-	if previousParentTask.Type == models.TaskTypeEpic {
-		_, err := taskRepo.UpdateChildrenPoint(ctx, &repositories.UpdateTaskChildrenPointRequest{
-			ID:            previousParentTask.ID,
-			ChildrenPoint: previousParentTask.ChildrenPoint - updatedTask.ChildrenPoint,
-		})
-		if err != nil {
-			return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-		}
-	} else if array.ContainAny(
-		[]string{previousParentTask.Type.String()},
-		[]string{
-			models.TaskTypeStory.String(),
-			models.TaskTypeTask.String(),
-			models.TaskTypeBug.String(),
-		},
-	) {
-		// Current previous parent task is a story, task, or bug
-		var totalPoint int
-		for _, assignee := range updatedTask.Assignees {
-			if assignee.Point != nil {
-				totalPoint += *assignee.Point
-			}
-		}
-
-		_, err := taskRepo.UpdateChildrenPoint(ctx, &repositories.UpdateTaskChildrenPointRequest{
-			ID:            previousParentTask.ID,
-			ChildrenPoint: previousParentTask.ChildrenPoint - totalPoint,
-		})
-		if err != nil {
-			return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-		}
-
-		// Update children point of the previous parent task's parent task (EPIC)
-		if previousParentTask.ParentID != nil {
-			epicParentTask, err := taskRepo.FindByID(ctx, *previousParentTask.ParentID)
-			if err != nil {
-				return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-			}
-
-			_, err = taskRepo.UpdateChildrenPoint(ctx, &repositories.UpdateTaskChildrenPointRequest{
-				ID:            *previousParentTask.ParentID,
-				ChildrenPoint: epicParentTask.ChildrenPoint - totalPoint,
-			})
-			if err != nil {
-				return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-			}
-		}
-	}
-
-	return nil
-}
-
 func (s *taskServiceImpl) UpdateType(ctx context.Context, req *requests.UpdateTaskTypeRequest, userId string) (*models.Task, *errutils.Error) {
 	bsonUserID, err := bson.ObjectIDFromHex(userId)
 	if err != nil {
@@ -1715,55 +1585,49 @@ func (s *taskServiceImpl) UpdateAssignees(ctx context.Context, req *requests.Upd
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
 	}
 
-	var (
-		currentTotalPoint int
-		assignees         = make([]repositories.UpdateTaskAssigneesRequestAssignee, 0, len(req.Assignees))
-	)
-	for _, assignee := range task.Assignees {
-		if assignee.Point != nil {
-			currentTotalPoint += *assignee.Point
+	assignees := make([]repositories.UpdateTaskAssigneesRequestAssignee, 0, len(req.Assignees))
+	for _, assignee := range req.Assignees {
+		var bsonAssigneeUserID *bson.ObjectID
+		if assignee.UserId != nil {
+			assigneeUserID, err := bson.ObjectIDFromHex(*assignee.UserId)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+			}
+			bsonAssigneeUserID = &assigneeUserID
 		}
+
+		assigneeRequest := repositories.UpdateTaskAssigneesRequestAssignee{
+			Position: assignee.Position,
+			UserID:   bsonAssigneeUserID,
+		}
+
+		// Set point for subtask and level 1 task which has no children
+		if task.Type == models.TaskTypeSubTask ||
+			(!task.HasChildren &&
+				array.ContainAny(
+					[]string{task.Type.String()},
+					[]string{
+						models.TaskTypeStory.String(),
+						models.TaskTypeTask.String(),
+						models.TaskTypeBug.String(),
+					})) {
+			assigneeRequest.Point = assignee.Point
+		}
+
+		assignees = append(assignees, assigneeRequest)
 	}
 
-	// Modify Assignees, their positions and `point` for SubTask
 	if task.Type == models.TaskTypeSubTask {
-		for _, assignee := range req.Assignees {
-			var bsonAssigneeUserID *bson.ObjectID
-			if assignee.UserId != nil {
-				assigneeUserID, err := bson.ObjectIDFromHex(*assignee.UserId)
-				if err != nil {
-					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
-				}
-				bsonAssigneeUserID = &assigneeUserID
+		var currentTotalPoint int
+		for _, assignee := range task.Assignees {
+			if assignee.Point != nil {
+				currentTotalPoint += *assignee.Point
 			}
-
-			assignees = append(assignees, repositories.UpdateTaskAssigneesRequestAssignee{
-				Position: assignee.Position,
-				UserID:   bsonAssigneeUserID,
-				Point:    assignee.Point,
-			})
 		}
 
 		serviceErr := updateParentTaskPoints(ctx, s.taskRepo, task, assignees, currentTotalPoint)
 		if serviceErr != nil {
 			return nil, serviceErr
-		}
-	} else {
-		// Modify Only Assignees and their positions, not point for Epic, Story, Task, Bug
-		for _, assignee := range req.Assignees {
-			var bsonAssigneeUserID *bson.ObjectID
-			if assignee.UserId != nil {
-				assigneeUserID, err := bson.ObjectIDFromHex(*assignee.UserId)
-				if err != nil {
-					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
-				}
-				bsonAssigneeUserID = &assigneeUserID
-			}
-
-			assignees = append(assignees, repositories.UpdateTaskAssigneesRequestAssignee{
-				Position: assignee.Position,
-				UserID:   bsonAssigneeUserID,
-			})
 		}
 	}
 
@@ -1777,76 +1641,6 @@ func (s *taskServiceImpl) UpdateAssignees(ctx context.Context, req *requests.Upd
 	}
 
 	return updatedTask, nil
-}
-
-func updateParentTaskPoints(
-	ctx context.Context,
-	taskRepo repositories.TaskRepository,
-	task *models.Task,
-	assignees []repositories.UpdateTaskAssigneesRequestAssignee,
-	currentTotalPoint int,
-) *errutils.Error {
-	if task.ParentID == nil {
-		return nil
-	}
-
-	parentTask, err := taskRepo.FindByID(ctx, *task.ParentID)
-	if err != nil {
-		return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if parentTask == nil {
-		return errutils.NewError(exceptions.ErrParentTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Parent task not found: %s", task.ParentID.Hex()))
-	}
-
-	var newTotalPoint int
-	for _, assignee := range assignees {
-		if assignee.Point != nil {
-			newTotalPoint += *assignee.Point
-		}
-	}
-
-	if parentTask.Type == models.TaskTypeEpic {
-		_, err := taskRepo.UpdateChildrenPoint(ctx, &repositories.UpdateTaskChildrenPointRequest{
-			ID:            *task.ParentID,
-			ChildrenPoint: parentTask.ChildrenPoint - currentTotalPoint + newTotalPoint,
-		})
-		if err != nil {
-			return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-		}
-	} else if array.ContainAny(
-		[]string{parentTask.Type.String()},
-		[]string{
-			models.TaskTypeStory.String(),
-			models.TaskTypeTask.String(),
-			models.TaskTypeBug.String(),
-		},
-	) {
-		// Modify point for Story, Task, Bug
-		_, err := taskRepo.UpdateChildrenPoint(ctx, &repositories.UpdateTaskChildrenPointRequest{
-			ID:            *task.ParentID,
-			ChildrenPoint: parentTask.ChildrenPoint - currentTotalPoint + newTotalPoint,
-		})
-		if err != nil {
-			return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-		}
-
-		// Update children point of the parent task's parent task (EPIC)
-		if parentTask.ParentID != nil {
-			epicParentTask, err := taskRepo.FindByID(ctx, *parentTask.ParentID)
-			if err != nil {
-				return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-			}
-
-			_, err = taskRepo.UpdateChildrenPoint(ctx, &repositories.UpdateTaskChildrenPointRequest{
-				ID:            *parentTask.ParentID,
-				ChildrenPoint: epicParentTask.ChildrenPoint - currentTotalPoint + newTotalPoint,
-			})
-			if err != nil {
-				return errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-			}
-		}
-	}
-
-	return nil
 }
 
 func (s *taskServiceImpl) UpdateSprint(ctx context.Context, req *requests.UpdateTaskSprintRequest, userId string) (*models.Task, *errutils.Error) {
