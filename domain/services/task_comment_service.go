@@ -125,23 +125,28 @@ func extractUserIDsFromComments(comments []*models.TaskComment) []bson.ObjectID 
 	return userIDs
 }
 
-func mapUsersByID(users []models.User) map[string]string {
-	userMap := make(map[string]string, len(users))
+func mapUsersByID(users []models.User) map[string]models.User {
+	userMap := make(map[string]models.User, len(users))
 	for _, user := range users {
-		userMap[user.ID.Hex()] = user.DisplayName
+		userMap[user.ID.Hex()] = user
 	}
 	return userMap
 }
 
-func buildTaskComments(comments []*models.TaskComment, userMap map[string]string) []responses.ListTaskCommentResponse {
+func buildTaskComments(comments []*models.TaskComment, userMap map[string]models.User) []responses.ListTaskCommentResponse {
 	taskComments := make([]responses.ListTaskCommentResponse, 0, len(comments))
 	for _, comment := range comments {
+		var profileUrl = userMap[comment.UserID.Hex()].DefaultProfileUrl
+		if userMap[comment.UserID.Hex()].UploadedProfileUrl != nil {
+			profileUrl = *userMap[comment.UserID.Hex()].UploadedProfileUrl
+		}
+
 		taskComments = append(taskComments, responses.ListTaskCommentResponse{
 			ID:              comment.ID.Hex(),
 			Content:         comment.Content,
 			UserID:          comment.UserID.Hex(),
-			UserDisplayName: userMap[comment.UserID.Hex()],
-			UserProfileUrl:  userMap[comment.UserID.Hex()],
+			UserDisplayName: userMap[comment.UserID.Hex()].DisplayName,
+			UserProfileUrl:  profileUrl,
 			TaskID:          comment.TaskID.Hex(),
 			CreatedAt:       comment.CreatedAt,
 			UpdatedAt:       comment.UpdatedAt,
