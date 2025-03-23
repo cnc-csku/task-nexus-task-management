@@ -304,6 +304,22 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 					taskSprint.CurrentSprintID = parentTask.Sprint.CurrentSprintID
 				}
 			}
+
+			childrenTasks, err := s.taskRepo.FindByParentID(ctx, parentTask.ID)
+			if err != nil {
+				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			}
+
+			serviceErr := updateParentTaskStatusToLowestWorkflowStatus(ctx, &UpdateParentTaskStatusToLowestWorkflowStatus{
+				taskRepo:      s.taskRepo,
+				Workflows:     project.Workflows,
+				ChildrenTasks: childrenTasks,
+				ParentTask:    parentTask,
+				UpdaterUserID: bsonUserID,
+			})
+			if serviceErr != nil {
+				return nil, serviceErr
+			}
 		}
 
 		nullableBsonTaskParentID = &bsonTaskParentID
@@ -1559,92 +1575,20 @@ func (s *taskServiceImpl) UpdateStatus(ctx context.Context, req *requests.Update
 				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 			}
 
-			// Step 1: Sort workflows
-			sortedWorkflows := sortWorkflows(project.Workflows)
-
-			// Step 2: Find the lowest workflow status in children tasks
-			statusIndexMap := make(map[string]int)
-			for i, workflow := range sortedWorkflows {
-				statusIndexMap[workflow.Status] = i
-			}
-
-			minIndex := len(sortedWorkflows) // Set to max initially
-			for _, child := range childrenTasks {
-				if idx, exists := statusIndexMap[child.Status]; exists && idx < minIndex {
-					minIndex = idx
-				}
-			}
-
-			// Step 3: Update the parent task to the lowest status found
-			if minIndex < len(sortedWorkflows) {
-				newParentStatus := sortedWorkflows[minIndex].Status
-				if parentTask.Status != newParentStatus { // Only update if different
-					_, err = s.taskRepo.UpdateStatus(ctx, &repositories.UpdateTaskStatusRequest{
-						ID:        parentTask.ID,
-						Status:    newParentStatus,
-						UpdatedBy: bsonUserID,
-					})
-					if err != nil {
-						return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-					}
-				}
+			serviceErr := updateParentTaskStatusToLowestWorkflowStatus(ctx, &UpdateParentTaskStatusToLowestWorkflowStatus{
+				taskRepo:      s.taskRepo,
+				Workflows:     project.Workflows,
+				ChildrenTasks: childrenTasks,
+				ParentTask:    parentTask,
+				UpdaterUserID: bsonUserID,
+			})
+			if serviceErr != nil {
+				return nil, serviceErr
 			}
 		}
 	}
 
 	return updatedTask, nil
-}
-
-func sortWorkflows(workflows []models.ProjectWorkflow) []models.ProjectWorkflow {
-	// Step 1: Build graph adjacency list and in-degree map
-	graph := make(map[string][]string)
-	inDegree := make(map[string]int)
-	statusMap := make(map[string]models.ProjectWorkflow)
-
-	// Initialize graph nodes
-	for _, workflow := range workflows {
-		statusMap[workflow.Status] = workflow
-		if _, exists := inDegree[workflow.Status]; !exists {
-			inDegree[workflow.Status] = 0
-		}
-	}
-
-	// Populate the adjacency list and compute in-degree
-	for _, workflow := range workflows {
-		for _, prevStatus := range workflow.PreviousStatuses {
-			graph[prevStatus] = append(graph[prevStatus], workflow.Status)
-			inDegree[workflow.Status]++ // Increase in-degree for the dependent status
-		}
-	}
-
-	// Step 2: Find all statuses with in-degree 0 (starting points)
-	var queue []string
-	for status, degree := range inDegree {
-		if degree == 0 {
-			queue = append(queue, status)
-		}
-	}
-
-	// Step 3: Perform Topological Sort
-	var sortedWorkflows []models.ProjectWorkflow
-	for len(queue) > 0 {
-		// Dequeue a status
-		current := queue[0]
-		queue = queue[1:]
-
-		// Append to the sorted order
-		sortedWorkflows = append(sortedWorkflows, statusMap[current])
-
-		// Reduce in-degree for its children and enqueue if they become 0
-		for _, nextStatus := range graph[current] {
-			inDegree[nextStatus]--
-			if inDegree[nextStatus] == 0 {
-				queue = append(queue, nextStatus)
-			}
-		}
-	}
-
-	return sortedWorkflows
 }
 
 func (s *taskServiceImpl) UpdateApprovals(ctx context.Context, req *requests.UpdateTaskApprovalsRequest, userID string) (*models.Task, *errutils.Error) {
