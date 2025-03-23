@@ -51,6 +51,9 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		// Setup
 		projects.PUT("/:projectId/setup-status", r.project.UpdateSetupStatus, r.authMiddleware.Middleware)
 
+		// Detail
+		projects.PUT("/:projectId/detail", r.project.UpdateDetail, r.authMiddleware.Middleware)
+
 		// Positions
 		projects.PUT("/:projectId/positions", r.project.UpdatePositions, r.authMiddleware.Middleware)
 		projects.GET("/:projectId/positions", r.project.ListPositions, r.authMiddleware.Middleware)

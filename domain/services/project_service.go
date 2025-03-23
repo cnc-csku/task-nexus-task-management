@@ -21,6 +21,7 @@ type ProjectService interface {
 	Create(ctx context.Context, req *requests.CreateProjectRequest, userID string) (*responses.CreateProjectResponse, *errutils.Error)
 	ListMyProjects(ctx context.Context, req *requests.ListMyProjectsPathParams, userID string) ([]responses.ListProjectsResponse, *errutils.Error)
 	GetProjectDetail(ctx context.Context, req *requests.GetProjectsDetailPathParams, userID string) (*responses.GetProjectDetailResponse, *errutils.Error)
+	UpdateDetail(ctx context.Context, req *requests.UpdateProjectDetailRequest, userID string) (*models.Project, *errutils.Error)
 	UpdateSetupStatus(ctx context.Context, req *requests.UpdateSetupStatusRequest, userID string) (*models.Project, *errutils.Error)
 	UpdatePositions(ctx context.Context, req *requests.UpdatePositionsRequest, userID string) (*responses.UpdatePositionsResponse, *errutils.Error)
 	ListPositions(ctx context.Context, req *requests.ListPositionsPathParams) ([]string, *errutils.Error)
@@ -282,6 +283,44 @@ func (p *projectServiceImpl) GetProjectDetail(ctx context.Context, req *requests
 		UpdatedAt:            project.UpdatedAt,
 		UpdatedBy:            project.UpdatedBy.Hex(),
 	}, nil
+}
+
+func (p *projectServiceImpl) UpdateDetail(ctx context.Context, req *requests.UpdateProjectDetailRequest, userID string) (*models.Project, *errutils.Error) {
+	bsonUserID, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+	}
+
+	project, err := p.projectRepo.FindByProjectID(ctx, bsonProjectID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if project == nil {
+		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.NotFound).WithDebugMessage("Project not found")
+	}
+
+	// Check if the user is owner of the project
+	member, err := p.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	} else if member == nil {
+		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("Requester is not owner of the project")
+	}
+
+	updatedProject, err := p.projectRepo.UpdateDetail(ctx, &repositories.UpdateProjectDetailRequest{
+		ProjectID:   bsonProjectID,
+		Name:        req.Name,
+		Description: req.Description,
+	})
+	if err != nil {
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalError).WithDebugMessage(err.Error())
+	}
+
+	return updatedProject, nil
 }
 
 func (p *projectServiceImpl) UpdateSetupStatus(ctx context.Context, req *requests.UpdateSetupStatusRequest, userID string) (*models.Project, *errutils.Error) {

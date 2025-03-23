@@ -22,6 +22,7 @@ type ProjectRepository interface {
 	UpdateAttributeTemplates(ctx context.Context, projectID bson.ObjectID, attributeTemplates []models.ProjectAttributeTemplate) error
 	FindAttributeTemplatesByProjectID(ctx context.Context, projectID bson.ObjectID) ([]models.ProjectAttributeTemplate, error)
 	UpdateSetupStatus(ctx context.Context, in *UpdateProjectSetupStatus) (*models.Project, error)
+	UpdateDetail(ctx context.Context, in *UpdateProjectDetailRequest) (*models.Project, error)
 }
 
 type CreateProjectRequest struct {
@@ -40,4 +41,10 @@ type CreateProjectRequest struct {
 type UpdateProjectSetupStatus struct {
 	ProjectID   bson.ObjectID
 	SetupStatus models.ProjectSetupStatus
+}
+
+type UpdateProjectDetailRequest struct {
+	ProjectID   bson.ObjectID
+	Name        string
+	Description string
 }

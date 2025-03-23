@@ -16,6 +16,7 @@ type ProjectHandler interface {
 	ListMyProjects(c echo.Context) error
 	GetProjectDetail(c echo.Context) error
 	UpdateSetupStatus(c echo.Context) error
+	UpdateDetail(c echo.Context) error
 	UpdatePositions(c echo.Context) error
 	ListPositions(c echo.Context) error
 	AddMembers(c echo.Context) error
@@ -105,6 +106,25 @@ func (u *projectHandlerImpl) UpdateSetupStatus(c echo.Context) error {
 
 	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
 	res, err := u.projectService.UpdateSetupStatus(c.Request().Context(), req, userClaims.ID)
+	if err != nil {
+		return err.ToEchoError()
+	}
+
+	return c.JSON(http.StatusOK, res)
+}
+
+func (u *projectHandlerImpl) UpdateDetail(c echo.Context) error {
+	req := new(requests.UpdateProjectDetailRequest)
+	if err := c.Bind(req); err != nil {
+		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	userClaims := tokenutils.GetProfileOnEchoContext(c).(*models.UserCustomClaims)
+	res, err := u.projectService.UpdateDetail(c.Request().Context(), req, userClaims.ID)
 	if err != nil {
 		return err.ToEchoError()
 	}
