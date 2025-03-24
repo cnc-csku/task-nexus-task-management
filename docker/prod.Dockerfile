@@ -20,7 +20,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o task-nexus-task-management .
+RUN make build
 
 # ───────────────────────────────────────────────────────────
 # 🚀 Stage 2: Create the final runtime image
