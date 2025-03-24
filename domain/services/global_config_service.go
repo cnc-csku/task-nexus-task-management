@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"log"
 	"strconv"
 	"time"
 
@@ -35,8 +34,7 @@ func NewGlobalSettingService(
 func (g *globalSettingServiceImpl) GetGlobalSettingByKey(ctx context.Context, key string) (*models.KeyValuePair, *errutils.Error) {
 	// Try to get from cache first
 	cachedSetting, err := g.globalSettingCacheRepo.GetByKey(ctx, key)
-	log.Println("cachedSetting", cachedSetting)
-	log.Println("err", err)
+
 	if err != nil {
 		// If not in cache, fetch from repository
 		setting, err := g.globalSettingRepo.GetByKey(ctx, key)
