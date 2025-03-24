@@ -2,7 +2,7 @@ name: "Deploy Beta"
 on:
   push:
     branches:
-      - "dev"
+      - "feature/cicd"
 env:
   APP_NAME: "task-nexus-task-management-beta"
   NAMESPACE: "cnc-beta"
