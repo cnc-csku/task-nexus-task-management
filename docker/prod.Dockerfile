@@ -1,49 +1,53 @@
-# Stage 1: Build the Go application
+# ───────────────────────────────────────────────────────────
+# 🏗️ Stage 1: Build the Go application
+# ───────────────────────────────────────────────────────────
 FROM golang:1.23-alpine AS builder
 
-# Set the environment variable for the Go application
-ENV PORT=8080
-
-# Install tzdata package for timezone configuration
+# Install dependencies
 RUN apk add --no-cache tzdata
 
-# Set the timezone to Asia/Bangkok
+# Set timezone to Asia/Bangkok
 ENV TZ=Asia/Bangkok
 
-# Set the current working directory inside the container
+# Set up working directory
 WORKDIR /app
 
-# Copy the go.mod and go.sum files for dependency resolution
+# Copy go.mod and go.sum first to cache dependencies
 COPY go.mod go.sum ./
-
-# Download the Go modules
 RUN go mod download
 
-# Copy the source code into the container
+# Copy the entire source code
 COPY . .
 
 # Build the Go application
 RUN go build -o task-nexus-task-management .
 
-# Stage 2: Create the final image
+# ───────────────────────────────────────────────────────────
+# 🚀 Stage 2: Create the final runtime image
+# ───────────────────────────────────────────────────────────
 FROM alpine:latest
 
-# Install necessary packages for running Go apps (if needed)
+# Install necessary system packages
 RUN apk --no-cache add ca-certificates
 
-# Set the working directory inside the container
-WORKDIR /root/
+# Set up working directory
+WORKDIR /app
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/task-nexus-task-management .
 
-# Copy the timezone information from the builder stage
-COPY --from=builder /usr/local/go/lib/time/zoneinfo.zip /
+# Ensure the binary is executable
+RUN chmod +x task-nexus-task-management
+
+# Copy timezone info for accurate timestamps
+COPY --from=builder /usr/local/go/lib/time/zoneinfo.zip /zoneinfo.zip
 ENV ZONEINFO=/zoneinfo.zip
 
-# Set the PORT environment variable
-EXPOSE $PORT
+# Cloud Run requires the app to listen on $PORT, default to 8080
+ENV PORT=8080
 
-# Command to run the executable
+# Expose the port (for documentation, Cloud Run ignores it)
+EXPOSE 8080
+
+# Start the Go application
 CMD ["./task-nexus-task-management"]
-
