@@ -1812,71 +1812,49 @@ func (s *taskServiceImpl) UpdateAttributes(ctx context.Context, req *requests.Up
 
 // To be further implemented (prompt)
 func (s *taskServiceImpl) GenerateDescription(ctx context.Context, req *requests.GenerateDescriptionRequest, userId string) (*responses.GenerateDescriptionResponse, *errutils.Error) {
-	bsonUserID, err := bson.ObjectIDFromHex(userId)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
-	}
-
-	bsonProjectID, err := bson.ObjectIDFromHex(req.ProjectID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
-	}
-
-	project, err := s.projectRepo.FindByProjectID(ctx, bsonProjectID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if project == nil {
-		return nil, errutils.NewError(exceptions.ErrProjectNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Project not found: %s", bsonProjectID.Hex()))
-	}
-
-	member, err := s.projectMemberRepo.FindByProjectIDAndUserID(ctx, bsonProjectID, bsonUserID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if member == nil {
-		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
-	}
-
-	task, err := s.taskRepo.FindByTaskRefAndProjectID(ctx, req.TaskRef, bsonProjectID)
-	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-	} else if task == nil {
-		return nil, errutils.NewError(exceptions.ErrTaskNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Task not found: %s", req.TaskRef))
-	}
-
-	var assigneeStr string
-	for _, assignee := range task.Assignees {
-		var point string
-		if assignee.Point != nil {
-			point = strconv.Itoa(*assignee.Point)
-		} else {
-			point = "N/A"
-		}
-
-		if assignee.UserID != nil {
-			user, err := s.userRepo.FindByID(ctx, *assignee.UserID)
-			if err != nil {
-				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
-			}
-
-			assigneeStr += user.DisplayName + ", " + assignee.Position + ", " + point + "\n"
-		} else {
-			assigneeStr += assignee.Position + ", " + point + "\n"
-		}
-	}
 
 	prompt := fmt.Sprintf(`
-	Generate a detailed task description for a software development task.
-		Task Details:
-		- Title: %s
-		- Type: %s
-		- Priority: %s
-		- Project: %s
-		- Status: %s
-		- Assignees: %s
-		- Additional Context: %s
-		(Generate only the description content. Do not include the task details in the description.)
-		The description should be concise yet informative, covering the purpose, scope, requirements, and any necessary technical details.
-	`, task.Title, task.Type.String(), task.Priority.String(), project.Name, task.Status, assigneeStr, req.Prompt)
+	generate task description base on the task title "%s"  in this structure   
+
+   [   
+
+           {   
+
+             id: "4bbfc57b-d00c-49f6-af09-caf198534f1f",   
+
+             type: "paragraph",   
+
+             props: { textColor: "default", backgroundColor: "default", textAlignment: "left" },   
+
+             content: [{ type: "text", text: " ", styles: {} }],   
+
+             children: [],   
+
+           },   
+
+          ....   
+
+         ] 
+
+
+		Structure Reference  
+
+		type ParagraphBlock = {  id: string;  type: "paragraph";  props: DefaultProps;  content: InlineContent[];  children: Block[];}; 
+
+
+
+		type HeadingBlock = {  id: string;  type: "heading";  props: {    level: 1 | 2 | 3 = 1;  } & DefaultProps;  content: InlineContent[];  children: Block[];}; 
+
+
+
+		type BulletListItemBlock = {  id: string;  type: "bulletListItem";  props: DefaultProps;  content: InlineContent[];  children: Block[];}; 
+
+
+
+		type NumberedListItemBlock = {  id: string;  type: "numberedListItem";  props: DefaultProps;  content: InlineContent[];  children: Block[];}; 
+
+		response only JSON 
+	`, req.Prompt)
 
 	resp, err := s.geminiRepo.GenerateTaskDescription(ctx, prompt)
 	if err != nil {

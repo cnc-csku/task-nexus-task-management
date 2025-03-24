@@ -2,7 +2,7 @@ package requests
 
 type CreateInvitationRequest struct {
 	WorkspaceID   string `json:"workspaceId" validate:"required"`
-	InviteeUserID string `json:"inviteeUserId" validate:"required"`
+	InviteeEmail string `json:"inviteeEmail" validate:"required"`
 	Role          string `json:"role" validate:"required,oneof=MODERATOR MEMBER"`
 	CustomMessage string `json:"customMessage"`
 }

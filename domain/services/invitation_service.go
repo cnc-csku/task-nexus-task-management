@@ -58,9 +58,12 @@ func (i *invitationServiceImpl) Create(ctx context.Context, req *requests.Create
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 	}
 
-	bsonInviteeUserID, err := bson.ObjectIDFromHex(req.InviteeUserID)
+	// Find user by email
+	user, err := i.userRepo.FindByEmail(ctx, req.InviteeEmail)
 	if err != nil {
-		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
+		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+	} else if user == nil {
+		return nil, errutils.NewError(exceptions.ErrUserNotFound, errutils.BadRequest).WithDebugMessage("Invitee not found")
 	}
 
 	// Check if the inviter is the owner of the workspace
@@ -74,7 +77,7 @@ func (i *invitationServiceImpl) Create(ctx context.Context, req *requests.Create
 	}
 
 	// Check if the invitee is already a member of the workspace
-	invitee, err := i.workspaceMemberRepo.FindByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, bsonInviteeUserID)
+	invitee, err := i.workspaceMemberRepo.FindByWorkspaceIDAndUserID(ctx, bsonWorkspaceID, user.ID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if invitee != nil {
@@ -82,7 +85,7 @@ func (i *invitationServiceImpl) Create(ctx context.Context, req *requests.Create
 	}
 
 	// Check if the invitee is already invited to the workspace
-	invitation, err := i.invitationRepo.FindByWorkspaceIDAndInviteeUserID(ctx, bsonWorkspaceID, bsonInviteeUserID)
+	invitation, err := i.invitationRepo.FindByWorkspaceIDAndInviteeUserID(ctx, bsonWorkspaceID, user.ID)
 	if err != nil {
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	} else if invitation != nil {
@@ -92,7 +95,7 @@ func (i *invitationServiceImpl) Create(ctx context.Context, req *requests.Create
 	// Create the invitation
 	createInvitationReq := &repositories.CreateInvitationRequest{
 		WorkspaceID:   bsonWorkspaceID,
-		InviteeUserID: bsonInviteeUserID,
+		InviteeUserID: user.ID,
 		Role:          models.InvitationRole(req.Role),
 		Status:        models.InvitationStatusPending,
 		ExpiredAt:     time.Now().Add(constant.InvitationExpirationIn),

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"log"
 	"math"
 
 	"github.com/cnc-csku/task-nexus-go-lib/utils/errutils"
@@ -58,6 +59,8 @@ func (w *workspaceServiceImpl) SetupWorkspace(ctx context.Context, req *requests
 	if svcErr != nil {
 		return nil, svcErr
 	}
+
+	log.Println(isSetupOwnerSetting)
 
 	if !isSetupOwnerSetting.Value.(bool) {
 		return nil, errutils.NewError(exceptions.ErrOwnerNotSetup, errutils.BadRequest)

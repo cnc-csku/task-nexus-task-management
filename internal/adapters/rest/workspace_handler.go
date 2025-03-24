@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/cnc-csku/task-nexus-go-lib/utils/errutils"
@@ -63,6 +64,8 @@ func (w *workspaceHandlerImpl) ListWorkspaceMembers(c echo.Context) error {
 	if err := c.Bind(req); err != nil {
 		return errutils.NewError(err, errutils.BadRequest).ToEchoError()
 	}
+
+	log.Println("================== ASDFSDFDS ==================")
 
 	members, err := w.workspaceService.ListWorkspaceMembers(c.Request().Context(), req)
 	if err != nil {

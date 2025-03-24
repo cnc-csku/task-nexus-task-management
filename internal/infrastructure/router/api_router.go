@@ -109,8 +109,8 @@ func (r *Router) RegisterAPIRouter(e *echo.Echo) {
 		tasks.GET("/:taskRef/comments", r.taskComment.List, r.authMiddleware.Middleware)
 
 		// llm
-		tasks.GET("/:taskRef/generate-description", r.task.GenerateDescription, r.authMiddleware.Middleware)
 	}
+	api.GET("/generate-description", r.task.GenerateDescription, r.authMiddleware.Middleware)
 
 	reports := api.Group("/projects/v1/:projectId/reports/v1")
 	{
