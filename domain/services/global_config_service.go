@@ -65,7 +65,7 @@ func (g *globalSettingServiceImpl) GetGlobalSettingByKey(ctx context.Context, ke
 	// Convert type
 	switch cachedSetting.Type {
 	case string(models.KeyValuePairTypeBoolean):
-		value = cachedSetting.Value.(string) == "1"
+		value = cachedSetting.Value.(string) == "true"
 	case string(models.KeyValuePairTypeString):
 		value = cachedSetting.Value.(string)
 	case string(models.KeyValuePairTypeNumber):

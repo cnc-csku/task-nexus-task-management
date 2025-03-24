@@ -133,7 +133,5 @@ type UpdateTaskAttributesRequestAttribute struct {
 }
 
 type GenerateDescriptionRequest struct {
-	ProjectID string `param:"projectId" validate:"required"`
-	TaskRef   string `param:"taskRef" validate:"required"`
-	Prompt    string `json:"prompt"`
+	Prompt string `query:"prompt"`
 }
