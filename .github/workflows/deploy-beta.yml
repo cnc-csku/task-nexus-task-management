@@ -24,11 +24,12 @@ jobs:
 
       - name: "Build and push container"
         run: |-
-          IMAGE_NAME="graphzc/${{ env.APP_NAME }}"
-          IMAGE_TAG="${GITHUB_REF#refs/*/}"
+          IMAGE_NAME="${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.APP_NAME }}"
+          IMAGE_TAG="${{ github.sha }}"
 
           docker build -f docker/prod.Dockerfile -t "${IMAGE_NAME}:${IMAGE_TAG}" .
           docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+
 #   deploy:
 #     runs-on: "self-hosted"
 #     permissions:
