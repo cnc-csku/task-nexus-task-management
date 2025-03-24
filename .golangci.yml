@@ -1,0 +1,29 @@
+run:
+  # Timeout for analysis, e.g. 30s, 5m.
+  timeout: 5m
+  # Exit code when at least one issue was found.
+  issues-exit-code: 2
+  # Include test files or not.
+  tests: true
+  modules-download-mode: mod
+  allow-parallel-runners: true
+  go: "1.23"
+
+linters:
+  enable:
+    - errcheck
+    - gocritic
+    - gocyclo
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - stylecheck
+    - unused
+    - copyloopvar
+    - errname
+    - errorlint
+    - gofmt
+    - musttag
+
