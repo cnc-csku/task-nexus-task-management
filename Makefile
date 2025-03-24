@@ -12,3 +12,6 @@ swag-gen:
 	swag init -g cmd/app/main.go -o ./docs
 
 generate: wire-gen swag-gen
+
+build:
+	go build -o bin/app cmd/app/main.go

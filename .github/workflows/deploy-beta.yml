@@ -1,0 +1,65 @@
+name: "Deploy Beta"
+on:
+  push:
+    branches:
+      - "feature/cicd"
+env:
+  APP_NAME: "task-nexus-task-management-beta"
+  NAMESPACE: "cnc-beta"
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "Login to GitHub Container Registry"
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: "Build and push container"
+        run: |-
+          IMAGE_NAME="${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.APP_NAME }}"
+          IMAGE_TAG=$(echo ${{ github.sha }} | cut -c8-)
+
+          docker build -f docker/prod.Dockerfile -t "${IMAGE_NAME}:${IMAGE_TAG}" .
+          docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+
+#   deploy:
+#     runs-on: "self-hosted"
+#     permissions:
+#       id-token: write
+#       contents: read
+#     needs: "build"
+#     steps:
+#       - name: "Checkout"
+#         uses: "actions/checkout@v4"
+#         with:
+#           repository: cnc-csku/cnc-ops
+#           token: ${{ secrets.GH_PAT }}
+#           path: cnc-ops
+
+#       - name: Get the version from GITHUB_REF
+#         id: version
+#         run: |
+#           VERSION="${GITHUB_REF#refs/*/}"  # Extract version from the GitHub ref
+#           echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+#       - name: Update version in vars.json in cnc-ops
+#         run: |
+#           echo "Updating version in cnc-ops vars.json in namespace ${{ env.NAMESPACE }} to $VERSION"
+#           jq --arg VERSION "$VERSION" --arg NAMESPACE "${{ env.NAMESPACE }}" '.["${{ env.NAMESPACE }}"].version = $VERSION' cnc-ops/projects/cnc/cnc-recruit-backend/vars/vars.json > tmp.json && mv tmp.json cnc-ops/projects/cnc/cnc-recruit-backend/vars/vars.json
+
+#       - name: Commit changes to cnc-ops
+#         run: |
+#           cd cnc-ops
+#           git config --global user.name "github-actions"
+#           git config --global user.email "github-actions@github.com"
+#           git add projects/cnc/cnc-recruit-backend/vars/vars.json
+#           git commit -m "Update version ${{ env.APP_NAME }} in namespace ${{ env.NAMESPACE }} to $VERSION"
+#           git push https://github.com/cnc-csku/cnc-ops.git HEAD:main
