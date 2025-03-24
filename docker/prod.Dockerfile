@@ -20,7 +20,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN make build
+RUN go build -o bin/app cmd/app/main.go
 
 # ───────────────────────────────────────────────────────────
 # 🚀 Stage 2: Create the final runtime image
@@ -34,10 +34,10 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
-COPY --from=builder /app/task-nexus-task-management .
+COPY --from=builder /app/app .
 
 # Ensure the binary is executable
-RUN chmod +x task-nexus-task-management
+RUN chmod +x app
 
 # Copy timezone info for accurate timestamps
 COPY --from=builder /usr/local/go/lib/time/zoneinfo.zip /zoneinfo.zip
@@ -50,4 +50,4 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Start the Go application
-CMD ["./task-nexus-task-management"]
+CMD ["./app"]
