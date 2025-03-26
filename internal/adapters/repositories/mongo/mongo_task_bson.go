@@ -258,3 +258,12 @@ func (u taskUpdate) UpdateAttributes(in *repositories.UpdateTaskAttributesReques
 		"updated_by": in.UpdatedBy,
 	}
 }
+
+func (u taskUpdate) UpdateStartDateAndDueDate(startDate, dueDate *time.Time, updatedBy bson.ObjectID) {
+	u["$set"] = bson.M{
+		"start_date": startDate,
+		"due_date":   dueDate,
+		"updated_at": time.Now(),
+		"updated_by": updatedBy,
+	}
+}
