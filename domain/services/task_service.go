@@ -1599,25 +1599,21 @@ func (s *taskServiceImpl) UpdateAssignees(ctx context.Context, req *requests.Upd
 		assigneeRequest := repositories.UpdateTaskAssigneesRequestAssignee{
 			Position: assignee.Position,
 			UserID:   bsonAssigneeUserID,
-		}
-
-		// Set point for subtask and level 1 task which has no children
-		if task.Type == models.TaskTypeSubTask ||
-			(!task.HasChildren &&
-				array.ContainAny(
-					[]string{task.Type.String()},
-					[]string{
-						models.TaskTypeStory.String(),
-						models.TaskTypeTask.String(),
-						models.TaskTypeBug.String(),
-					})) {
-			assigneeRequest.Point = assignee.Point
+			Point:    assignee.Point,
 		}
 
 		assignees = append(assignees, assigneeRequest)
 	}
 
-	if task.Type == models.TaskTypeSubTask {
+	if task.Type == models.TaskTypeSubTask ||
+		array.ContainAny(
+			[]string{task.Type.String()},
+			[]string{
+				models.TaskTypeStory.String(),
+				models.TaskTypeTask.String(),
+				models.TaskTypeBug.String(),
+			},
+		) {
 		var currentTotalPoint int
 		for _, assignee := range task.Assignees {
 			if assignee.Point != nil {
@@ -1814,46 +1810,46 @@ func (s *taskServiceImpl) UpdateAttributes(ctx context.Context, req *requests.Up
 func (s *taskServiceImpl) GenerateDescription(ctx context.Context, req *requests.GenerateDescriptionRequest, userId string) (*responses.GenerateDescriptionResponse, *errutils.Error) {
 
 	prompt := fmt.Sprintf(`
-	generate task description base on the task title "%s"  in this structure   
+	generate task description base on the task title "%s"  in this structure
 
-   [   
+   [
 
-           {   
+           {
 
-             id: "4bbfc57b-d00c-49f6-af09-caf198534f1f",   
+             id: "4bbfc57b-d00c-49f6-af09-caf198534f1f",
 
-             type: "paragraph",   
+             type: "paragraph",
 
-             props: { textColor: "default", backgroundColor: "default", textAlignment: "left" },   
+             props: { textColor: "default", backgroundColor: "default", textAlignment: "left" },
 
-             content: [{ type: "text", text: " ", styles: {} }],   
+             content: [{ type: "text", text: " ", styles: {} }],
 
-             children: [],   
+             children: [],
 
-           },   
+           },
 
-          ....   
+          ....
 
-         ] 
-
-
-		Structure Reference  
-
-		type ParagraphBlock = {  id: string;  type: "paragraph";  props: DefaultProps;  content: InlineContent[];  children: Block[];}; 
+         ]
 
 
+		Structure Reference
 
-		type HeadingBlock = {  id: string;  type: "heading";  props: {    level: 1 | 2 | 3 = 1;  } & DefaultProps;  content: InlineContent[];  children: Block[];}; 
+		type ParagraphBlock = {  id: string;  type: "paragraph";  props: DefaultProps;  content: InlineContent[];  children: Block[];};
 
 
 
-		type BulletListItemBlock = {  id: string;  type: "bulletListItem";  props: DefaultProps;  content: InlineContent[];  children: Block[];}; 
+		type HeadingBlock = {  id: string;  type: "heading";  props: {    level: 1 | 2 | 3 = 1;  } & DefaultProps;  content: InlineContent[];  children: Block[];};
 
 
 
-		type NumberedListItemBlock = {  id: string;  type: "numberedListItem";  props: DefaultProps;  content: InlineContent[];  children: Block[];}; 
+		type BulletListItemBlock = {  id: string;  type: "bulletListItem";  props: DefaultProps;  content: InlineContent[];  children: Block[];};
 
-		response only JSON 
+
+
+		type NumberedListItemBlock = {  id: string;  type: "numberedListItem";  props: DefaultProps;  content: InlineContent[];  children: Block[];};
+
+		response only JSON
 	`, req.Prompt)
 
 	resp, err := s.geminiRepo.GenerateTaskDescription(ctx, prompt)
