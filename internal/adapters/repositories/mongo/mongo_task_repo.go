@@ -579,3 +579,33 @@ func (m *mongoTaskRepo) UpdateManyTasksStatus(ctx context.Context, in *repositor
 
 	return nil
 }
+
+func (m *mongoTaskRepo) UpdateStartDateAndDueDate(ctx context.Context, in *repositories.UpdateTaskStartDateAndDueDateRequest) (*models.Task, error) {
+	f := NewTaskFilter()
+	f.WithID(in.ID)
+
+	u := NewTaskUpdate()
+	u.UpdateStartDateAndDueDate(in.StartDate, in.DueDate, in.UpdatedBy)
+
+	err := m.collection.FindOneAndUpdate(ctx, f, u).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return m.FindByID(ctx, in.ID)
+}
+
+func (m *mongoTaskRepo) BulkUpdateStartDateAndDueDate(ctx context.Context, in *repositories.BulkUpdateStartDateAndDueDateRequest) error {
+	f := NewTaskFilter()
+	f.WithIDs(in.TaskIDs)
+
+	u := NewTaskUpdate()
+	u.UpdateStartDateAndDueDate(in.StartDate, in.DueDate, in.UpdatedBy)
+
+	_, err := m.collection.UpdateMany(ctx, f, u)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

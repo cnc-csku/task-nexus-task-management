@@ -110,13 +110,30 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		priority = models.TaskPriorityMedium
 	}
 
-	var bsonSprintID *bson.ObjectID
+	var (
+		bsonSprintID *bson.ObjectID
+		startDate    = req.StartDate
+		dueDate      = req.DueDate
+	)
 	if req.SprintID != nil {
 		sprintID, err := bson.ObjectIDFromHex(*req.SprintID)
 		if err != nil {
 			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.BadRequest).WithDebugMessage(err.Error())
 		}
+
+		sprint, err := s.sprintRepo.FindByID(ctx, sprintID)
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		} else if sprint == nil {
+			return nil, errutils.NewError(exceptions.ErrSprintNotFound, errutils.BadRequest)
+		}
+
 		bsonSprintID = &sprintID
+
+		if sprint.StartDate != nil && sprint.EndDate != nil {
+			startDate = sprint.StartDate
+			dueDate = sprint.EndDate
+		}
 	}
 
 	// Check if task type is valid
@@ -319,8 +336,8 @@ func (s *taskServiceImpl) Create(ctx context.Context, req *requests.CreateTaskRe
 		Status:      defaultWorkflow.Status,
 		Priority:    priority,
 		Sprint:      taskSprint,
-		StartDate:   req.StartDate,
-		DueDate:     req.DueDate,
+		StartDate:   startDate,
+		DueDate:     dueDate,
 		Assignees:   assignees,
 		Approvals:   approvals,
 		Attributes:  attributes,
@@ -1664,7 +1681,11 @@ func (s *taskServiceImpl) UpdateSprint(ctx context.Context, req *requests.Update
 		return nil, errutils.NewError(exceptions.ErrPermissionDenied, errutils.BadRequest).WithDebugMessage("User is not a member of the project")
 	}
 
-	var bsonCurrentSprintID *bson.ObjectID
+	var (
+		bsonCurrentSprintID *bson.ObjectID
+		startDate           *time.Time
+		endDate             *time.Time
+	)
 	if req.CurrentSprintID != nil {
 		currentSprintID, err := bson.ObjectIDFromHex(*req.CurrentSprintID)
 		if err != nil {
@@ -1678,6 +1699,11 @@ func (s *taskServiceImpl) UpdateSprint(ctx context.Context, req *requests.Update
 		} else if sprint == nil {
 			return nil, errutils.NewError(exceptions.ErrSprintNotFound, errutils.BadRequest).WithDebugMessage(fmt.Sprintf("Sprint not found: %s", *req.CurrentSprintID))
 		}
+
+		if sprint.StartDate != nil && sprint.EndDate != nil {
+			startDate = sprint.StartDate
+			endDate = sprint.EndDate
+		}
 	}
 
 	updatedTask, err := s.taskRepo.UpdateCurrentSprintID(ctx, &repositories.UpdateTaskCurrentSprintIDRequest{
@@ -1689,6 +1715,20 @@ func (s *taskServiceImpl) UpdateSprint(ctx context.Context, req *requests.Update
 		return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
 	}
 
+	if startDate != nil && endDate != nil {
+		_, err = s.taskRepo.UpdateStartDateAndDueDate(ctx, &repositories.UpdateTaskStartDateAndDueDateRequest{
+			ID:        task.ID,
+			StartDate: startDate,
+			DueDate:   endDate,
+			UpdatedBy: bsonUserID,
+		})
+		if err != nil {
+			return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+		}
+	}
+
+	// If the updated task is the level 1 task (Task, Story, Bug)
+	// Update all children tasks' sprint to the updated parent task's sprint
 	if array.ContainAny(
 		[]string{task.Type.String()},
 		[]string{
@@ -1714,6 +1754,19 @@ func (s *taskServiceImpl) UpdateSprint(ctx context.Context, req *requests.Update
 			})
 			if err != nil {
 				return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+			}
+
+			// Update all children tasks' start date and due date to the updated parent task's sprint start date and end date
+			if startDate != nil && endDate != nil {
+				err = s.taskRepo.BulkUpdateStartDateAndDueDate(ctx, &repositories.BulkUpdateStartDateAndDueDateRequest{
+					TaskIDs:   childrenTaskIDs,
+					StartDate: startDate,
+					DueDate:   endDate,
+					UpdatedBy: bsonUserID,
+				})
+				if err != nil {
+					return nil, errutils.NewError(exceptions.ErrInternalError, errutils.InternalServerError).WithDebugMessage(err.Error())
+				}
 			}
 		}
 	}
